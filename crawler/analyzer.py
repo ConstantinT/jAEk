@@ -218,7 +218,7 @@ class EventlistenerAnalyzer(AbstractAnalyzer):
     
     def add_element_with_event(self, msg):
         try:
-            logging.debug(msg)
+            #logging.debug(msg)
             if "id" in msg:
                 if msg != "":
                     id = msg['id']
@@ -258,7 +258,6 @@ class EventlistenerAnalyzer(AbstractAnalyzer):
             
     def jsWinObjClearedHandler(self): #Adding here the js-scripts corresponding to the phases
         if not self._analyzing_finished:
-            logging.debug("Inject script")
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
             self.mainFrame().evaluateJavaScript(self._js_lib)
             self.mainFrame().evaluateJavaScript(self._md5)

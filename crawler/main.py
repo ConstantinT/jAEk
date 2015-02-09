@@ -24,20 +24,18 @@ if __name__ == '__main__':
      
     
     
-    #url = "http://localhost:8080/"
-    url = "https://plus.google.com/"
+    url = "http://localhost/form_test1.php"
+    #url = "https://plus.google.com/"
 
-    crawler_config = CrawlConfig("Google", url, max_depth=0, max_click_depth=5, crawl_speed = models.CrawlSpeed.Slow)
+    crawler_config = CrawlConfig("Test55", url, max_depth=1, max_click_depth=5, crawl_speed = models.CrawlSpeed.Fast)
     c = Crawler(crawl_config=crawler_config)#, proxy="localhost", port=8080)
     
     user = CrawlerUser("constantin" , 0)
-    user = CrawlerUser("constantin", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"})
+    #user = CrawlerUser("constantin", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"})
     #user = CrawlerUser("constantin", 0, "http://localhost:8081/", login_data = {"username" : "Admin", "pass" : "admin"}) 
-    user = CrawlerUser("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
+    #user = CrawlerUser("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
     user = c.crawl(user)
     
-    for url in user.visited_urls:
-        logging.debug(url.toString())
     
     #
     #c.crawl(user)

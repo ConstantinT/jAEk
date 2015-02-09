@@ -235,7 +235,7 @@ class Url():
         
         self.params = {}
         self.depth_of_finding = depth_of_finding
-        
+       
         if len(parsed_url.query) > 0:
             query_splitted = self.query.split("&")
             for splits in query_splitted:
@@ -257,14 +257,16 @@ class Url():
                 tmp_params[key] = self.params[key]           
             self.params = tmp_params
         
-    def get_url_structure(self):
+        self.url_hash = self.get_hash()  
+        
+    def get_abstract_url(self):
         url = self.scheme + "://" + self.domain + self.path
         params = self.params
         return url, params
     
     
     def get_hash(self):
-        path, params = self.get_url_structure()
+        path, params = self.get_abstract_url()
         s_to_hash = path
         for k in params:
             s_to_hash += "++" + k
@@ -276,8 +278,12 @@ class Url():
         
     def toString(self):
         return self.complete_url
-        
-        
+    
+    def has_equal_abstract_url(self, other):
+        if not isinstance(other, self.___class__):
+            return False
+        return self.url_hash == other.url_hash
+    
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
@@ -302,6 +308,7 @@ class Link():
             res += " - ID: " + self.html_id
         if self.html_class != "":
             res += " - Class: " + self.html_class
+        res += " - Url_Hash: " + self.url.url_hash
         res += "]"
         return res
     
@@ -314,16 +321,15 @@ class Link():
         return not self.__eq__(other) 
          
 class HtmlForm():
-    def __init__(self, parameters, action, method, submit, dom_adress):
+    def __init__(self, parameters, action, method):
         self.parameter = parameters # Array of FormInput's
         self.action = action
         self.method = method
-        self.submit = submit # Forminput triggering submission
-        self.dom_adress = dom_adress
         self.parameter = sorted(self.parameter, key = lambda parameter: parameter.name)
+        self.form_hash = self.get_hash()
         
     def toString(self):
-        msg = "[Form: Action: '" + self.action + "' Method:' "+ self.method +"' - DomAdress: " + self.dom_adress +"  \n"
+        msg = "[Form: Action: '" + self.action + "' Method:' "+ self.method +" - Formhash: " + self.form_hash + " \n"
         for elem in self.parameter:
             msg += "[Param: " + str(elem.tag) + " Name: " + str(elem.name) + " Inputtype: " + str(elem.input_type) + " Values: " + str(elem.values) + "] \n"
         return msg + "]"
@@ -334,7 +340,7 @@ class HtmlForm():
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return self.get_hash() == other.get_hash()
+        return self.form_hash == other.form_hash
 
     def __ne__(self, other):
         return not self.__eq__(other) 
@@ -391,9 +397,6 @@ class CrawlerUser():
         self.login_data = login_data
         self.username = username
         self.url_with_login_form = url_with_login_form
-        self.visited_urls = []
-        self.visited_pages = {}
-        self.visited_delta_pages = {}
         self.user_id = None
         self.user_level =   user_level
         self.sessions = []

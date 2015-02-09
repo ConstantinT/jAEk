@@ -193,16 +193,11 @@ class FormExtractor(AbstractFilter):
             self.mainFrame().evaluateJavaScript(self._js_lib)
             forms = self.mainFrame().findAllElements("form")
             for form in forms:
-                dom_adress = form.evaluateJavaScript("getXPath(this)")
                 action = form.attribute("action")
                 method = form.attribute("method")
                 form_params = self._extracting_information(form)
-                submit = None
-                for input_el in form_params:
-                    if input_el.input_type == "submit":
-                        submit = input_el
             
-                self.forms.append(HtmlForm(form_params, action, method, submit, dom_adress))
+                self.forms.append(HtmlForm(form_params, action, method))
         self._process_finished = True  
     
     def _extracting_information(self, elem):

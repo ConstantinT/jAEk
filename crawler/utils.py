@@ -3,11 +3,13 @@ Created on 12.11.2014
 
 @author: constantin
 '''
-from models import WebPage, DeltaPage, CrawlSpeed
-from PyQt5.Qt import QWebPage, QUrl
 import logging
 from time import time, sleep
-from abstractanalyzer import AbstractAnalyzer
+import models
+import abstractanalyzer
+
+
+
 
 
 class Factory():
@@ -28,7 +30,7 @@ class PageHandler():
     
     """substract the page-parameters in the parent-class from the delta-class"""
     def subtract_parent_from_delta_page(self, parent_page, delta_page):
-        result = DeltaPage(delta_page.id, delta_page.url, delta_page.html, cookiesjar=None, depth=delta_page.current_depth, generator=delta_page.generator, parent_id=delta_page.parent_id)
+        result = models.DeltaPage(delta_page.id, delta_page.url, delta_page.html, cookiesjar=delta_page.cookiejar, depth=delta_page.current_depth, generator=delta_page.generator, parent_id=delta_page.parent_id)
         result.delta_depth = delta_page.delta_depth
         for link in delta_page.links:
             if link not in parent_page.links:
@@ -140,8 +142,8 @@ class PageHandler():
 This Class prepares a page for analyzing... it renders the initial page and removes all <video> because of memory corruption during processing.
 """  
         
-class PageRenderer(AbstractAnalyzer):
-    def __init__(self, parent, proxy, port, crawl_speed = CrawlSpeed.Medium):
+class PageRenderer(abstractanalyzer.AbstractAnalyzer):
+    def __init__(self, parent, proxy, port, crawl_speed = models.CrawlSpeed.Medium):
         super(PageRenderer, self).__init__(parent,proxy, port, crawl_speed)
         self._loading_complete = False
         f = open("js/lib.js", "r")

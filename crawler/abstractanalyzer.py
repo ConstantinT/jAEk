@@ -3,18 +3,16 @@ Created on 21.11.2014
 
 @author: constantin
 '''
+
 from PyQt5.Qt import QWebPage, pyqtSlot, QWebSettings
-from json.decoder import JSONArray
 import json
-import logging
+
 from time import time, sleep
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkCookie,\
     QNetworkCookieJar
 from PyQt5.QtCore import QObject, QUrl
 from pip._vendor.requests.utils import dict_from_cookiejar
-from enum import Enum
 import models
-
 
 class AbstractAnalyzer(QWebPage):
     '''

@@ -143,6 +143,7 @@ class Crawler(QObject):
                         raise PageNotFoundException("This exception should never be raised...")
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
+                self.print_to_file(parent_page.toString(), "parent.txt")
                 self.current_depth = parent_page.current_depth                
                 url = self.domain_handler.create_url(parent_page.url, depth_of_finding=parent_page.current_depth)
                 
@@ -163,7 +164,7 @@ class Crawler(QObject):
             if self.crawler_state == Crawle_State.normal_page:
                 if not self.domain_handler.is_in_scope(url) or url.depth_of_finding > self.crawl_config.max_depth:
                     logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url.toString())
-                    self.persistentsmanager.visit_url(url, None, 666)
+                    self.persistentsmanager.visit_url(url, None, 000)
                     continue    
                 
             if self.crawler_state == Crawle_State.delta_page:
@@ -260,6 +261,7 @@ class Crawler(QObject):
                 if event not in self._event_executor.supported_events:
                     clickable.clickable_type = ClickableType.Unsuported_Event
                     self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    clickables.append(clickable)
                     continue
                 
                 if clickable.clickable_type == ClickableType.SendingAjax:

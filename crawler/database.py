@@ -98,6 +98,7 @@ class Database():
             self.insert_abstract_url(current_crawl_session, url)
             document = {}
             document["url"] = url.toString()
+            document["url_hash"] = url.url_hash
             document['user_session'] = current_crawl_session
             document["page_id"] = None
             document["visited"] = False
@@ -111,7 +112,7 @@ class Database():
         return Url(url['url'], url['depth_of_finding'])
     
     def get_next_url_for_crawling(self, current_crawl_session):
-        urls = self.visited_urls.find({"user_session":current_crawl_session, "visited" : False})
+        urls = self.visited_urls.find({"user_session":current_crawl_session, "response_code" : None})
         if urls.count() == 0:
             return None
         result = None
@@ -133,14 +134,15 @@ class Database():
     
     
         
-    def visit_url(self, current_crawl_session ,url, webpage_id, response_code):
+    def visit_url(self, current_crawl_session, url, webpage_id, response_code):
         search_doc = {}
         search_doc['url'] = url.toString()
         search_doc['user_session'] = current_crawl_session
         
         update_doc = {}
         update_doc['response_code'] = response_code
-        update_doc['visited'] = True
+        if webpage_id != None:
+            update_doc['visited'] = True
         update_doc['page_id'] = webpage_id
         self.visited_urls.update(search_doc, {"$set": update_doc})
              
@@ -170,7 +172,7 @@ class Database():
         result.links = links
         timemimg_requests = []
         for request in page['timeming_requests']:
-            timemimg_requests.append()
+            timemimg_requests.append(self._parse_timemimg_request_from_db_to_model(request))
         result.timing_requests = timemimg_requests
         ajax = []
         for request in page['ajax_request']:
@@ -188,7 +190,7 @@ class Database():
         return c
     
     def _parse_timemimg_request_from_db_to_model(self, timemimg_request):
-        return TimemingRequest(timemimg_request['method'], timemimg_request['url'], timemimg_request['time'], timemimg_request['trigger'], timemimg_request['function_id'])
+        return TimemingRequest(timemimg_request['method'], timemimg_request['url'], timemimg_request['time'], timemimg_request['event'], timemimg_request['function_id'])
     
     def _parse_ajax_request_from_db_to_model(self, ajax_request):
         tmp = self.clickables.find_one(ajax_request['trigger'])

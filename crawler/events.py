@@ -19,7 +19,7 @@ class EventExecutor(AbstractAnalyzer):
         super(EventExecutor, self).__init__(parent, proxy, port, crawl_speed)
         self._url_changed = False #Inidicates if a event changes a location => treat it as link!
         self._new_url = None
-        self._timing_event = None
+        self.timeming_events = None
         self.supported_events = [ 'click', 'focus', 'blur', 'dblclick', 'input', 'change',
             'mousedown', 'mousemove', 'mouseout', 'mouseover', 'mouseup',
             'resize', 'scroll', 'select', 'submit' ,'load', 'unload', 'mouseleave', 'keyup', 'keydown', 'keypress' ]
@@ -41,7 +41,7 @@ class EventExecutor(AbstractAnalyzer):
         self.new_clickables = []
         self.ajax_requests = []
         self._new_url = None
-        self._timing_event = None
+        self.timeming_events = None
         self._preclicking_ready = False
         self.element_to_click = element_to_click
         self.mainFrame().setHtml(webpage.html, QUrl(webpage.url))
@@ -206,11 +206,11 @@ class EventExecutor(AbstractAnalyzer):
                 time = timingevent['time'] # millisecond
                 event_type = timingevent['type']
                 event_id = timingevent['function_id']
-                if self._timing_event is not None:
-                    if time > self._timing_event[0]:
-                        self._timing_event = (time,event_type,event_id)
+                if self.timeming_events is not None:
+                    if time > self.timeming_events[0]:
+                        self.timeming_events = (time,event_type,event_id)
                 else:
-                    self._timing_event = (time,event_type, event_id)
+                    self.timeming_events = (time,event_type, event_id)
         except KeyError as err:
             logging.debug("Key error occured in Events " + str(err))         
     

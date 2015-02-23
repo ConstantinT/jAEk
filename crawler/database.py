@@ -3,8 +3,7 @@ from models import WebPage, ClickableType, CrawlerUser, Clickable, HtmlForm,\
 from pymongo.connection import Connection
 import pymongo
 import hashlib
-import logging
-import models
+
 
 class Database():
     
@@ -74,12 +73,12 @@ class Database():
     
     
     def insert_abstract_url(self, current_crawl_session, url):
-        url_hash = self.calculate_url_hash(url)
+        url_hash = url.url_hash
         search_doc = {"url_hash" : url_hash, "user_session" : self._current_session_id}
         result = self.abstract_urls.find_one(search_doc)
         path, params = url.get_abstract_url()
         document = {}
-        document["path"] = path
+        document["url"] = path
         document['user_session'] = current_crawl_session
         document['url_hash'] = url_hash
         
@@ -124,6 +123,7 @@ class Database():
                     result = url
         return self._parse_url_from_db_to_model(result)  
     
+    """
     def calculate_url_hash(self, url):
         s_to_hash = url.get_hash()
         s_to_hash += "+/+" + str(self._current_session_id)
@@ -131,7 +131,7 @@ class Database():
         d = hashlib.md5()
         d.update(b_to_hash)
         return d.hexdigest()
-    
+    """
     
         
     def visit_url(self, current_crawl_session, url, webpage_id, response_code):
@@ -276,22 +276,21 @@ class Database():
     
     def insert_form(self, current_crawl_session, form, page_id):
         form_hash = self.calculating_form_hash(current_crawl_session, form, page_id)
-        result = self.forms.find_one({"form_hash":form_hash})
+        result = self.forms.find_one({"form_hash":form_hash, "session_id":current_crawl_session, "web_page_id": page_id})
+        form_doc = {}
         
         if result is not None:
-            for p_db in result['parameters']:
-                for p_form in form.parameter:
-                    if p_db['name'] == p_form.name:
-                        p_form.values.extend(p_db['values'])
-                        p_form.values = sorted(set(p_form.values), key=lambda x: p_form.values.index(x)) #Deduplicates the list
-        form_doc = {}
-        if result is not None:
+            for parameter_from_db_form in result['parameters']:
+                for parameter_from_new_form in form.parameter:
+                    if parameter_from_db_form['name'] == parameter_from_new_form.name:
+                        parameter_from_new_form.values.extend(parameter_from_db_form['values'])
+                    parameter_from_new_form.values = sorted(set(parameter_from_new_form.values), key=lambda x: parameter_from_new_form.values.index(x)) #Deduplicates the list
             form_doc['_id'] = result["_id"]
         form_doc["web_page_id"] = page_id
         form_doc["method"] = form.method
         form_doc["action"] = form.action
         param_doc = []
-        for parameter in form.parameter:
+        for parameter in parameter_from_new_form:
             param_doc.append(self._parse_form_parameter(parameter))
         form_doc['parameters'] = param_doc
         form_doc['session_id'] = current_crawl_session
@@ -444,13 +443,15 @@ class Database():
             result.append(f)
         return result
      
+    
+    """
     def calculating_form_hash(self, current_crawl_session, form, web_page_id):
         s_to_hash = str(current_crawl_session) + ";" + form.form_hash + ";" + str(web_page_id) + ";"
         b_to_hash = s_to_hash.encode("utf-8")
         d = hashlib.md5()
         d.update(b_to_hash)
         return d.hexdigest()
-    
+    """
     
     def get_all_crawled_deltapages_to_url(self, current_crawl_session, url):
         pages = self.delta_pages.find({"url":url, "session_id":current_crawl_session})

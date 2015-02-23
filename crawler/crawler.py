@@ -7,7 +7,7 @@ import logging
 import sys
 import requests
 from models import WebPage, ClickableType, DeltaPage, Url
-from urllib.parse import urlparse, urldefrag
+from urllib.parse import urlparse, urldefrag, urljoin
 from PyQt5.Qt import QApplication, QObject
 from filter import LinkExtractor, FormExtractor
 from analyzer import TimingAnalyzer, EventlistenerAnalyzer, PropertyAnalyzer
@@ -143,7 +143,6 @@ class Crawler(QObject):
                         raise PageNotFoundException("This exception should never be raised...")
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
-                self.print_to_file(parent_page.toString(), "parent.txt")
                 self.current_depth = parent_page.current_depth                
                 url = self.domain_handler.create_url(parent_page.url, depth_of_finding=parent_page.current_depth)
                 
@@ -158,7 +157,6 @@ class Crawler(QObject):
                         self.current_depth = url.depth_of_finding + 1
                 else:
                     break
-            
             
             
             if self.crawler_state == Crawle_State.normal_page:
@@ -710,6 +708,12 @@ class DomainHandler(QObject):
         
         
     def create_url(self, url, requested_url=None, depth_of_finding=None):
+        if requested_url is not None:
+            new_url = urljoin(requested_url, url)
+        else:
+            new_url = url
+        """
+        
         res = ""
         if requested_url is not None:
             index = requested_url.find("#") 
@@ -719,11 +723,11 @@ class DomainHandler(QObject):
             parsed_requested_url = urlparse(parsed_requested_url) 
         else:
             parsed_requested_url = urlparse(self.domain)
-        url_to_request = urlparse(url)
+        new_url_parsed = urlparse(url)
         
-        if url_to_request.netloc != "":  # If url has netloc, we assum it is complete
+        if new_url_parsed.netloc != "":  # If url has netloc, we assum it is complete
             res = url
-        elif url_to_request.netloc == "" and url_to_request.path == "" and url_to_request.query == "" and url_to_request.fragment != "":  # if only fragment is available, than append original url
+        elif new_url_parsed.netloc == "" and new_url_parsed.path == "" and new_url_parsed.query == "" and new_url_parsed.fragment != "":  # if only fragment is available, than append original url
             res = requested_url + url
         else:
             if parsed_requested_url != None:
@@ -738,24 +742,24 @@ class DomainHandler(QObject):
                     tmp = parsed_requested_url.path.split("/")
                     path = ""
                     for part in tmp:  # To find folder of the page
-                        if part.find(".") == -1 and part != "":
+                        if not "." in part and part != "":
                             path += part + "/"
                     res += path
-                if url_to_request.path != "":
-                    if url_to_request.path != "/":
-                        if url_to_request.path[0] == "/":
-                            res += url_to_request.path[1:]
+                if new_url_parsed.path != "":
+                    if new_url_parsed.path != "/":
+                        if new_url_parsed.path[0] == "/":
+                            res += new_url_parsed.path[1:]
                         else:
-                            res += url_to_request.path
-                if url_to_request.query != "":
-                    res += "?" + url_to_request.query
-                if url_to_request.fragment != "":
-                    res += "#" + url_to_request.fragment
+                            res += new_url_parsed.path
+                if new_url_parsed.query != "":
+                    res += "?" + new_url_parsed.query
+                if new_url_parsed.fragment != "":
+                    res += "#" + new_url_parsed.fragment
             else:
                 logging.debug("Connot handle: {} - {}".format(url, requested_url))
                 return None
-        
-        res = Url(res)
+        """
+        res = Url(new_url)
         res.depth_of_finding = depth_of_finding
         return res 
     

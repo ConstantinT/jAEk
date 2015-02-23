@@ -6,21 +6,29 @@ Created on 12.11.2014
 import logging
 import sys
 import requests
-from models import WebPage, ClickableType, DeltaPage, Url
-from urllib.parse import urlparse, urldefrag, urljoin
 from PyQt5.Qt import QApplication, QObject
-from filter import LinkExtractor, FormExtractor
-from analyzer import TimingAnalyzer, EventlistenerAnalyzer, PropertyAnalyzer
-from events import EventExecutor, Event_Result
-from events import XHR_Behavior
-from utils import Factory, PageHandler, PageRenderer
 from enum import Enum
 from requests.utils import dict_from_cookiejar
 from copy import deepcopy
-from execptions import LoginErrorException, LoginFormNotFoundException, \
-    PageNotFoundException
+
 from asyncio.tasks import sleep
-from persistentmanager import PersistentsManager
+from filter.linkextractor import LinkExtractor
+from analyzer.timemimganalzyer import TimingAnalyzer
+from analyzer.propertyanalyzer import PropertyAnalyzer
+from analyzer.eventlisteneranalyzer import EventlistenerAnalyzer
+from filter.formextractor import FormExtractor
+from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
+from utils.utils import PageHandler, form_to_json
+from database.persistentmanager import PersistentsManager
+from utils.execptions import LoginFormNotFoundException, LoginErrorException,\
+    PageNotFoundException
+from models.deltapage import DeltaPage
+from models.webpage import WebPage
+from models.clickabletype import ClickableType
+from utils.pagerenderer import PageRenderer
+from utils.domainhandler import DomainHandler
+
+
 
 
 potential_logout_urls = []
@@ -567,15 +575,14 @@ class Crawler(QObject):
         data1 = keys[0]
         data2 = keys[1]
         for form in login_page.forms:
-            if form.toString().find(data1) > -1 and form.toString().find(data2):
+            if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
                 login_form = form
         return login_form
         
     def login(self, data, login_form):
         if not isinstance(data, dict):
             raise AttributeError("Data must be a dict with login credentials")
-        factory = Factory()
-        data = factory.form_to_json(login_form, data)
+        data = form_to_json(login_form, data)
         login_url = self.domain_handler.create_url(login_form.action, depth_of_finding=0)
         res = self.session_handler.post(login_url.toString(), data=data, proxies=self.request_proxies, verify=False)
         return res.url
@@ -692,111 +699,7 @@ class Crawler(QObject):
     def should_execute_clickable(self, clickable):
         #logging.debug(str(clickable.html_class) + " : " + str(clickable.event))
         return True
-        if clickable.html_class == "yl kH" and clickable.event == "click":
-            return True   
-        else:
-            return False
-'''
-Pagehandling and Scanning2
-'''
-class DomainHandler(QObject):
-    def __init__(self, domain):
-        QObject.__init__(self)
-        o = urlparse(domain)
-        self.domain = o.netloc
-        self.scheme = o.scheme
-        
-        
-    def create_url(self, url, requested_url=None, depth_of_finding=None):
-        if requested_url is not None:
-            new_url = urljoin(requested_url, url)
-        else:
-            new_url = url
-        """
-        
-        res = ""
-        if requested_url is not None:
-            index = requested_url.find("#") 
-            if index != -1:
-                requested_url = requested_url[:index]
-            parsed_requested_url = urldefrag(requested_url)[0]
-            parsed_requested_url = urlparse(parsed_requested_url) 
-        else:
-            parsed_requested_url = urlparse(self.domain)
-        new_url_parsed = urlparse(url)
-        
-        if new_url_parsed.netloc != "":  # If url has netloc, we assum it is complete
-            res = url
-        elif new_url_parsed.netloc == "" and new_url_parsed.path == "" and new_url_parsed.query == "" and new_url_parsed.fragment != "":  # if only fragment is available, than append original url
-            res = requested_url + url
-        else:
-            if parsed_requested_url != None:
-                if parsed_requested_url.scheme == "":
-                    scheme = "http"
-                else:
-                    scheme = parsed_requested_url.scheme
-                res += scheme + "://" + parsed_requested_url.netloc  # requested url must have this!!
-                if res[len(res) - 1] != "/":  # Up to here...url: scheme://domain/
-                    res += "/"
-                if parsed_requested_url.path != "":
-                    tmp = parsed_requested_url.path.split("/")
-                    path = ""
-                    for part in tmp:  # To find folder of the page
-                        if not "." in part and part != "":
-                            path += part + "/"
-                    res += path
-                if new_url_parsed.path != "":
-                    if new_url_parsed.path != "/":
-                        if new_url_parsed.path[0] == "/":
-                            res += new_url_parsed.path[1:]
-                        else:
-                            res += new_url_parsed.path
-                if new_url_parsed.query != "":
-                    res += "?" + new_url_parsed.query
-                if new_url_parsed.fragment != "":
-                    res += "#" + new_url_parsed.fragment
-            else:
-                logging.debug("Connot handle: {} - {}".format(url, requested_url))
-                return None
-        """
-        res = Url(new_url)
-        res.depth_of_finding = depth_of_finding
-        return res 
-    
-    def is_in_scope(self, url):
-        url_splits = url.toString().split(".")
-        end_of_url = url_splits[len(url_splits) - 1]
-        if end_of_url in ['png', "jpg"]:
-            return False
-        parsed_url = urlparse(url.toString())
-        if parsed_url.netloc.find(self.domain) != -1 and parsed_url.fragment == "":
-            return True
-        else:
-            return False
-        
-    def create_url_from_domain(self, domain):
-        return "http://" + domain
 
-    def has_urls_same_structure(self, url1, url2):
-        if url1.__class__ != url2.__class__:
-            raise ValueError("Both must be Url...")
-        
-        if url1.toString() == url2.toString():
-            return True
-        
-        
-        if url1.domain != url2.domain or url1.path != url2.path or len(url1.params) != len(url2.params):
-            return False
-          
-        for key in url1.params:
-            if key not in url2.params:
-                return False
-            
-        for key in url2.params:
-            if key not in url1.params:
-                return False
-        
-        return True
 
 class Crawle_State(Enum):
     normal_page = 0

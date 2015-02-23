@@ -5,20 +5,22 @@ Created on 21.11.2014
 '''
 
 from PyQt5.Qt import QWebPage, pyqtSlot, QWebSettings
-import json
-
-from time import time, sleep
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkCookie,\
     QNetworkCookieJar
 from PyQt5.QtCore import QObject, QUrl
+
+import json
+
+from time import time, sleep
 from pip._vendor.requests.utils import dict_from_cookiejar
-import models
+from models.utils import CrawlSpeed
+
 
 class AbstractAnalyzer(QWebPage):
     '''
     classdocs
     '''    
-    def __init__(self, parent, proxy = "", port = 0, crawl_speed = models.CrawlSpeed.Medium):
+    def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium):
         QWebPage.__init__(self, parent)
         self.app = parent.app
         self._jsbridge = JsBridge(self)
@@ -26,16 +28,16 @@ class AbstractAnalyzer(QWebPage):
         self.mainFrame().javaScriptWindowObjectCleared.connect(self.jsWinObjClearedHandler)
         self.frameCreated.connect(self.frameCreatedHandler)
 
-        if crawl_speed == models.CrawlSpeed.Slow:
+        if crawl_speed == CrawlSpeed.Slow:
             self.wait_for_processing = 1
             self.wait_for_event = 2
-        if crawl_speed == models.CrawlSpeed.Medium:
+        if crawl_speed == CrawlSpeed.Medium:
             self.wait_for_processing = 0.3
             self.wait_for_event = 1
-        if crawl_speed == models.CrawlSpeed.Fast:
+        if crawl_speed == CrawlSpeed.Fast:
             self.wait_for_processing = 0.1
             self.wait_for_event = 0.5
-        if crawl_speed == models.CrawlSpeed.Speed_of_Lightning:
+        if crawl_speed == CrawlSpeed.Speed_of_Lightning:
             self.wait_for_processing = 0.01
             self.wait_for_event = 0.1
         

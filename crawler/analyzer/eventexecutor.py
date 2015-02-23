@@ -1,16 +1,20 @@
 '''
-Created on 12.11.2014
+Created on 23.02.2015
 
 @author: constantin
 '''
 import logging
-from abstractanalyzer import AbstractAnalyzer
-from PyQt5.QtCore import QUrl
-from enum import Enum
-from models import Clickable, AjaxRequest, DeltaPage, KeyClickable, CrawlSpeed
-from time import sleep
 import random
 import string
+from enum import Enum
+from models.ajaxrequest import AjaxRequest
+from models.clickable import Clickable
+from models.deltapage import DeltaPage
+from models.keyclickable import KeyClickable
+from analyzer.abstractanalyzer import AbstractAnalyzer
+from models.utils import CrawlSpeed
+from PyQt5.Qt import QUrl
+
 
 
 class EventExecutor(AbstractAnalyzer):
@@ -110,7 +114,7 @@ class EventExecutor(AbstractAnalyzer):
         real_clickable.evaluateJavaScript(js_code)
         self._wait(0.5)
 
-
+        
         html = self.mainFrame().toHtml()
         if is_key_event:
             generator = KeyClickable(element_to_click, random_char)
@@ -169,7 +173,7 @@ class EventExecutor(AbstractAnalyzer):
                 self.new_clickables.append(tmp)
             except KeyError:
                 pass
-      
+          
     def capturing_requests(self, request):
         if self._preclicking_ready:
             logging.debug("Ajax to: {} captured...".format(request['url']))
@@ -283,7 +287,7 @@ class EventExecutor(AbstractAnalyzer):
         self._url_changed = True
         self._new_url = url
        
-   
+
         
 class Event_Result(Enum):
     Ok = 0

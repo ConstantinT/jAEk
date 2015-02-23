@@ -6,31 +6,28 @@ Created on 12.11.2014
 import logging
 from time import time, sleep
 import models
-import abstractanalyzer
-
-
-
-
-
-class Factory():
-    
-    def form_to_json(self, form, key_values = None):
-        result = {}
-        for elem in form.parameter:
-            if elem.name == "redirect_to": 
-                continue
-            if elem.name not in key_values:
-                result[elem.name] = elem.values
-            else: 
-                result[elem.name] = key_values[elem.name]    
-        return result
+from models.deltapage import DeltaPage
+from analyzer.abstractanalyzer import AbstractAnalyzer
+from models.utils import CrawlSpeed
+ 
+ 
+def form_to_json(form, key_values = None):
+    result = {}
+    for elem in form.parameter:
+        if elem.name == "redirect_to": 
+            continue
+        if elem.name not in key_values:
+            result[elem.name] = elem.values
+        else: 
+            result[elem.name] = key_values[elem.name]    
+    return result
              
  
 class PageHandler():
     
     """substract the page-parameters in the parent-class from the delta-class"""
     def subtract_parent_from_delta_page(self, parent_page, delta_page):
-        result = models.DeltaPage(delta_page.id, delta_page.url, delta_page.html, cookiesjar=delta_page.cookiejar, depth=delta_page.current_depth, generator=delta_page.generator, parent_id=delta_page.parent_id)
+        result = DeltaPage(delta_page.id, delta_page.url, delta_page.html, cookiesjar=delta_page.cookiejar, depth=delta_page.current_depth, generator=delta_page.generator, parent_id=delta_page.parent_id)
         result.delta_depth = delta_page.delta_depth
         for link in delta_page.links:
             if link not in parent_page.links:
@@ -138,63 +135,3 @@ class PageHandler():
     def two_clickables_are_equal(self, c1, c2):
         return c1.event == c2.event and c1.dom_adress == c2.dom_adress and c1.tag == c2.tag #Function_id is no applicable anymore, because of some generic in the method
 
-"""
-This Class prepares a page for analyzing... it renders the initial page and removes all <video> because of memory corruption during processing.
-"""  
-        
-class PageRenderer(abstractanalyzer.AbstractAnalyzer):
-    def __init__(self, parent, proxy, port, crawl_speed = models.CrawlSpeed.Medium):
-        super(PageRenderer, self).__init__(parent,proxy, port, crawl_speed)
-        self._loading_complete = False
-        f = open("js/lib.js", "r")
-        self._lib_js = f.read()
-        f.close()
-        self._current_event = None
-        self._html = None
-        self._analyzing_finished = False
-        self.element_to_click = None
-        self.element_to_click_model = None
-        
-    def loadFinishedHandler(self, result):
-        if not self._analyzing_finished: # Just to ignoring setting of non page....
-            self._wait(0.5)
-            self._load_finished = True
-            
-    def render(self, requested_url, html, timeout=10):
-        logging.debug("Render page...")
-        self._load_finished = False
-        self._analyzing_finished = False
-        t = 0
-        self.mainFrame().setHtml(html)
-        while not self._load_finished and t < timeout:
-            self._wait(0.1)
-            t += 0.1        
-        
-        if not self._load_finished:
-            logging.debug("Renderer timeout...")
-        
-        
-        videos = self.mainFrame().findAllElements("video")
-        if len(videos) > 0:
-            logging.debug(str(len(videos)) + " Videos found...now removing them")
-            for v in videos:
-                v.removeFromDocument() 
-         
-        html = self.mainFrame().toHtml()
-       
-        self._analyzing_finished = True
-        self.mainFrame().setHtml(None)
-        return html
-    
-    def _wait(self, timeout=1):
-        """Wait for delay time
-        """
-        deadline = time() + timeout
-        while time() < deadline:
-            sleep(0)
-            self.app.processEvents()
-            
-    def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        #logging.debug("Console(PageBuilder): " + message + " at: " + str(lineNumber))
-        pass
-    

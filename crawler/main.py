@@ -5,9 +5,10 @@ Created on 12.11.2014
 '''
 import logging
 from crawler import Crawler
-from models import CrawlerUser, CrawlConfig, CrawlSpeed
 from urllib.parse import urljoin
-
+from models.config import CrawlConfig
+from models.user import CrawlerUser
+from models.utils import CrawlSpeed
 
 
 logging.basicConfig(level=logging.DEBUG,

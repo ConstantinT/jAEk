@@ -1,8 +1,16 @@
-from models import WebPage, ClickableType, CrawlerUser, Clickable, HtmlForm,\
-    FormInput, TimemingRequest, AjaxRequest, DeltaPage, Link, Url
+
 from pymongo.connection import Connection
 import pymongo
-import hashlib
+from models.user import CrawlerUser
+from models.url import Url
+from models.webpage import WebPage
+from models.clickable import Clickable
+from models.timemimngrequest import TimemingRequest
+from models.ajaxrequest import AjaxRequest
+from models.link import Link
+from models.clickabletype import ClickableType
+from models.form import HtmlForm, FormInput
+from models.deltapage import DeltaPage
 
 
 class Database():
@@ -180,7 +188,6 @@ class Database():
         result.ajax_requests = ajax
         return result  
     
-    
     def _parse_clickable_from_db_to_model(self, clickable):
         c = Clickable(clickable['event'], clickable['tag'], clickable['dom_adress'], clickable['html_id'], clickable['html_class'], clickable['clickable_depth'], clickable['function_id'])
         c.clicked = clickable['clicked']
@@ -275,7 +282,7 @@ class Database():
         return document
     
     def insert_form(self, current_crawl_session, form, page_id):
-        form_hash = self.calculating_form_hash(current_crawl_session, form, page_id)
+        form_hash = form.form_hash
         result = self.forms.find_one({"form_hash":form_hash, "session_id":current_crawl_session, "web_page_id": page_id})
         form_doc = {}
         
@@ -290,7 +297,7 @@ class Database():
         form_doc["method"] = form.method
         form_doc["action"] = form.action
         param_doc = []
-        for parameter in parameter_from_new_form:
+        for parameter in form.parameter:
             param_doc.append(self._parse_form_parameter(parameter))
         form_doc['parameters'] = param_doc
         form_doc['session_id'] = current_crawl_session
@@ -389,7 +396,6 @@ class Database():
             ajax_reuqests_doc.append(self._parse_ajax_request(current_crawl_session, r, web_page_id=webpage.id))
         self.pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, {"$addToSet" : {"ajax_requests": ajax_reuqests_doc}})
        
-    
         
     def _clickable_type_to_num(self, clickable_type):
         if clickable_type == ClickableType.UI_Change:
@@ -459,8 +465,7 @@ class Database():
         for page in pages:
             result.append(self._parse_delta_page_from_db(current_crawl_session, page))
         return result
-        
-        
+            
     def _parse_delta_page_from_db(self, current_crawl_session, page):
         clickables = self.get_all_clickables_to_page_id(current_crawl_session, page['web_page_id'])
         forms = self.get_all_forms_to_page_id(current_crawl_session, page['web_page_id'])

@@ -3,8 +3,9 @@
 This Class is responsible for storage related things
 
 """
-from database import Database
-from models import ClickableType
+from database.database import Database
+from models.clickabletype import ClickableType
+
 
 
 

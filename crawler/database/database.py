@@ -63,7 +63,7 @@ class Database():
             return tmp
 
     
-    def add_user_session(self, user_id, session):
+    def add_crawl_session(self, user_id, session):
         self.users.update({"_id" : user_id}, {"$addToSet" : {"sessions" : session}})  
         
     def insert_user_and_return_its_id(self, user):
@@ -76,19 +76,18 @@ class Database():
         doc['sessions'] = user.sessions
         if user.login_data is not None:
             doc['login_data'] = user.login_data
-        self._current_session_id = user.sessions[-1]
         self.users.save(doc)
         return user_id
     
     
     def insert_abstract_url(self, current_crawl_session, url):
         url_hash = url.url_hash
-        search_doc = {"url_hash" : url_hash, "user_session" : self._current_session_id}
+        search_doc = {"url_hash" : url_hash, "crawl_session" : current_crawl_session}
         result = self.abstract_urls.find_one(search_doc)
         path, params = url.get_abstract_url()
         document = {}
         document["url"] = path
-        document['user_session'] = current_crawl_session
+        document['crawl_session'] = current_crawl_session
         document['url_hash'] = url_hash
         
         if result is not None:
@@ -102,12 +101,12 @@ class Database():
         self.abstract_urls.save(document)
     
     def insert_url(self, current_crawl_session, url):
-        if self.visited_urls.find({"url":url.toString(), "user_session":current_crawl_session}).count() == 0:
+        if self.visited_urls.find({"url":url.toString(), "crawl_session":current_crawl_session}).count() == 0:
             self.insert_abstract_url(current_crawl_session, url)
             document = {}
             document["url"] = url.toString()
             document["url_hash"] = url.url_hash
-            document['user_session'] = current_crawl_session
+            document['crawl_session'] = current_crawl_session
             document["page_id"] = None
             document["visited"] = False
             document["response_code"] = None
@@ -120,7 +119,7 @@ class Database():
         return Url(url['url'], url['depth_of_finding'])
     
     def get_next_url_for_crawling(self, current_crawl_session):
-        urls = self.visited_urls.find({"user_session":current_crawl_session, "response_code" : None})
+        urls = self.visited_urls.find({"crawl_session":current_crawl_session, "response_code" : None})
         if urls.count() == 0:
             return None
         result = None
@@ -132,21 +131,11 @@ class Database():
                     result = url
         return self._parse_url_from_db_to_model(result)  
     
-    """
-    def calculate_url_hash(self, url):
-        s_to_hash = url.get_hash()
-        s_to_hash += "+/+" + str(self._current_session_id)
-        b_to_hash = s_to_hash.encode("utf-8")
-        d = hashlib.md5()
-        d.update(b_to_hash)
-        return d.hexdigest()
-    """
-    
         
     def visit_url(self, current_crawl_session, url, webpage_id, response_code):
         search_doc = {}
         search_doc['url'] = url.toString()
-        search_doc['user_session'] = current_crawl_session
+        search_doc['crawl_session'] = current_crawl_session
         
         update_doc = {}
         update_doc['response_code'] = response_code
@@ -163,11 +152,11 @@ class Database():
         
         document = self._create_webpage_doc(web_page)
         document['ajax_request'] = []
-        document['user_session'] = current_crawl_session
+        document['crawl_session'] = current_crawl_session
         self.pages.save(document)
         
     def get_web_page(self, page_id, current_crawl_session):
-        page = self.pages.find_one({"user_session": current_crawl_session,"web_page_id":page_id })
+        page = self.pages.find_one({"crawl_session": current_crawl_session,"web_page_id":page_id })
         if page is None:
             return None
         clickables = self.get_all_clickables_to_page_id(current_crawl_session, page_id)
@@ -220,7 +209,7 @@ class Database():
         document["clickable_depth"] = clickable.clickable_depth
         if hasattr(clickable, "random_char"):
             document['random_char'] = clickable.random_char  
-        document['session_id'] = current_crawl_session      
+        document['crawl_session'] = current_crawl_session      
         self.clickables.save(document)
         
     def insert_delta_page(self, current_crawl_session, delta_page):
@@ -230,7 +219,7 @@ class Database():
             self.insert_form(current_crawl_session, form, delta_page.id)
             
         document = self._create_webpage_doc(delta_page)
-        clickable_id = self.clickables.find_one({"session_id" : self._current_session_id, "web_page_id":delta_page.parent_id, "dom_adress":delta_page.generator.dom_adress, "event":delta_page.generator.event})
+        clickable_id = self.clickables.find_one({"crawl_session" : current_crawl_session, "web_page_id":delta_page.parent_id, "dom_adress":delta_page.generator.dom_adress, "event":delta_page.generator.event})
         clickable_id = clickable_id["_id"]
         document['generator'] = clickable_id
         generator_request_doc = []
@@ -238,7 +227,7 @@ class Database():
             doc = {}
             doc["url"] = r.url
             doc["method"] = r.method
-            trigger_id = self.clickables.find_one({"session_id" : self._current_session_id, "dom_adress" : r.trigger.dom_adress, "web_page_id": delta_page.parent_id, "event": r.trigger.event})
+            trigger_id = self.clickables.find_one({"crawl_session" : current_crawl_session, "dom_adress" : r.trigger.dom_adress, "web_page_id": delta_page.parent_id, "event": r.trigger.event})
             trigger_id = trigger_id["_id"]
             doc["trigger"] = trigger_id
             generator_request_doc.append(doc)
@@ -251,17 +240,17 @@ class Database():
             doc = {}
             doc["url"] = ajax.url
             doc["method"] = ajax.method
-            trigger_id = self.clickables.find_one({"session_id" : self._current_session_id, "dom_adress" : ajax.trigger.dom_adress, "web_page_id": delta_page.id, "event": ajax.trigger.event})
+            trigger_id = self.clickables.find_one({"crawl_session" : current_crawl_session, "dom_adress" : ajax.trigger.dom_adress, "web_page_id": delta_page.id, "event": ajax.trigger.event})
             trigger_id = trigger_id["_id"]
             doc["trigger"] = trigger_id
             doc["parameters"] = ajax.parameter
             ajax_request_docs.append(doc)
         document["ajax_requests"] = ajax_request_docs
-        document['user_session'] = current_crawl_session
+        document['crawl_session'] = current_crawl_session
         self.delta_pages.save(document)
     
     def get_delta_page(self, page_id, current_crawl_session):
-        page = self.delta_pages.find_one({"user_session": current_crawl_session,"web_page_id":page_id })
+        page = self.delta_pages.find_one({"crawl_session": current_crawl_session,"web_page_id":page_id })
         if page is None:
             return None
         result = self._parse_delta_page_from_db(current_crawl_session, page)
@@ -278,14 +267,13 @@ class Database():
         timeming_requests_doc = []
         for timing_request in web_page.timing_requests:
             timeming_requests_doc.append(self._parse_timeming_request(timing_request))
-        document['session_id'] = self._current_session_id
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
         return document
     
     def insert_form(self, current_crawl_session, form, page_id):
         form_hash = form.form_hash
-        result = self.forms.find_one({"form_hash":form_hash, "session_id":current_crawl_session, "web_page_id": page_id})
+        result = self.forms.find_one({"form_hash":form_hash, "crawl_session":current_crawl_session, "web_page_id": page_id})
         form_doc = {}
         
         if result is not None:
@@ -302,7 +290,7 @@ class Database():
         for parameter in form.parameter:
             param_doc.append(self._parse_form_parameter(parameter))
         form_doc['parameters'] = param_doc
-        form_doc['session_id'] = current_crawl_session
+        form_doc['crawl_session'] = current_crawl_session
         form_doc['form_hash'] = form_hash
         self.forms.save(form_doc)
     
@@ -344,7 +332,7 @@ class Database():
         search_doc["web_page_id"] = web_page_id
         search_doc["dom_adress"] = clickable_dom_adress
         search_doc["event"] = clickable_event
-        search_doc['session_id'] = current_crawl_session
+        search_doc['crawl_session'] = current_crawl_session
         
         if clickable_type is not None:
             clickable_type = self._clickable_type_to_num(clickable_type)
@@ -368,7 +356,7 @@ class Database():
         search_doc["web_page_id"] = web_page_id
         search_doc["dom_adress"] = clickable_dom_adress
         search_doc["event"] = clickable_event
-        search_doc['session_id'] = current_crawl_session
+        search_doc['crawl_session'] = current_crawl_session
         
         if clickable_type is not None:
             clickable_type = self._clickable_type_to_num(clickable_type)
@@ -386,7 +374,7 @@ class Database():
         doc = {}
         doc["url"] = ajax_request.url
         doc["method"] = ajax_request.method
-        trigger_id = self.clickables.find_one({"session_id": current_crawl_session, "dom_adress" : ajax_request.trigger.dom_adress, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
+        trigger_id = self.clickables.find_one({"crawl_session": current_crawl_session, "dom_adress" : ajax_request.trigger.dom_adress, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
         trigger_id = trigger_id["_id"]
         doc['parameters'] = ajax_request.parameter
         doc["trigger"] = trigger_id
@@ -397,9 +385,9 @@ class Database():
         for r in ajax_reuqests:
             ajax_reuqests_doc.append(self._parse_ajax_request(current_crawl_session, r, web_page_id=webpage.id))
         if not hasattr(webpage, 'parent_id'):
-            result = self.pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
+            result = self.pages.update({"web_page_id": webpage.id, "crawl_session":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
         else:
-            result = self.delta_pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})      
+            result = self.delta_pages.update({"web_page_id": webpage.id, "crawl_session":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})      
         logging.debug(result)
         
         
@@ -433,7 +421,7 @@ class Database():
         return clickable_types[num]
     
     def get_all_clickables_to_page_id(self, current_crawl_session, page_id):
-        clickables = self.clickables.find({"web_page_id" : page_id, "session_id":current_crawl_session})
+        clickables = self.clickables.find({"web_page_id" : page_id, "crawl_session":current_crawl_session})
         result = []
         for clickable in clickables:
             c = Clickable(clickable['event'], clickable['tag'], clickable['dom_adress'], clickable['html_id'], clickable['html_class'], clickable_depth=clickable['clickable_depth'], function_id=clickable['function_id'])
@@ -444,7 +432,7 @@ class Database():
         return result
     
     def get_all_forms_to_page_id(self, current_crawl_session, page_id):
-        forms = self.forms.find({"web_page_id" : page_id, "session_id" : current_crawl_session})
+        forms = self.forms.find({"web_page_id" : page_id, "crawl_session" : current_crawl_session})
         result = []
         for form in forms:
             parameters = []
@@ -454,19 +442,9 @@ class Database():
             f = HtmlForm(parameters, form['action'], form['method'])
             result.append(f)
         return result
-     
-    
-    """
-    def calculating_form_hash(self, current_crawl_session, form, web_page_id):
-        s_to_hash = str(current_crawl_session) + ";" + form.form_hash + ";" + str(web_page_id) + ";"
-        b_to_hash = s_to_hash.encode("utf-8")
-        d = hashlib.md5()
-        d.update(b_to_hash)
-        return d.hexdigest()
-    """
     
     def get_all_crawled_deltapages_to_url(self, current_crawl_session, url):
-        pages = self.delta_pages.find({"url":url, "session_id":current_crawl_session})
+        pages = self.delta_pages.find({"url":url, "crawl_session":current_crawl_session})
         result = []
         for page in pages:
             result.append(self._parse_delta_page_from_db(current_crawl_session, page))

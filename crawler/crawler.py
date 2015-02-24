@@ -432,7 +432,6 @@ class Crawler(QObject):
         self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
                         
     def handle_delta_page_has_only_ajax_requests(self, delta_page, parent_page = None):
-        delta_page.generator.clickable_type = ClickableType.SendingAjax
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
         self.persistentsmanager.extend_ajax_requests_to_webpage(parent_page, delta_page.ajax_requests)
     

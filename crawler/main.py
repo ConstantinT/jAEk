@@ -25,7 +25,7 @@ if __name__ == '__main__':
      
    
     
-    url = "http://localhost:8080/"
+    url = "http://localhost/delta_page_test1.php"
     #url = "https://plus.google.com/"
 
     crawler_config = CrawlConfig("Test55", url, max_depth=3, max_click_depth=3, crawl_speed = CrawlSpeed.Fast)

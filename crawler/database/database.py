@@ -11,6 +11,7 @@ from models.link import Link
 from models.clickabletype import ClickableType
 from models.form import HtmlForm, FormInput
 from models.deltapage import DeltaPage
+import logging
 
 
 class Database():
@@ -226,7 +227,7 @@ class Database():
         for clickable in delta_page.clickables:
             self._insert_clickable(current_crawl_session, delta_page.id, clickable)
         for form in delta_page.forms:
-            self.insert_form(form, delta_page.id)
+            self.insert_form(current_crawl_session, form, delta_page.id)
             
         document = self._create_webpage_doc(delta_page)
         clickable_id = self.clickables.find_one({"session_id" : self._current_session_id, "web_page_id":delta_page.parent_id, "dom_adress":delta_page.generator.dom_adress, "event":delta_page.generator.event})
@@ -253,6 +254,7 @@ class Database():
             trigger_id = self.clickables.find_one({"session_id" : self._current_session_id, "dom_adress" : ajax.trigger.dom_adress, "web_page_id": delta_page.id, "event": ajax.trigger.event})
             trigger_id = trigger_id["_id"]
             doc["trigger"] = trigger_id
+            doc["parameters"] = ajax.parameter
             ajax_request_docs.append(doc)
         document["ajax_requests"] = ajax_request_docs
         document['user_session'] = current_crawl_session
@@ -394,8 +396,12 @@ class Database():
         ajax_reuqests_doc = []
         for r in ajax_reuqests:
             ajax_reuqests_doc.append(self._parse_ajax_request(current_crawl_session, r, web_page_id=webpage.id))
-        self.pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, {"$addToSet" : {"ajax_requests": ajax_reuqests_doc}})
-       
+        if not hasattr(webpage, 'parent_id'):
+            result = self.pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
+        else:
+            result = self.delta_pages.update({"web_page_id": webpage.id, "session_id":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})      
+        logging.debug(result)
+        
         
     def _clickable_type_to_num(self, clickable_type):
         if clickable_type == ClickableType.UI_Change:

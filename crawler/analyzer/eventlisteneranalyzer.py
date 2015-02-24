@@ -52,7 +52,7 @@ class EventlistenerAnalyzer(AbstractAnalyzer):
         
         return tmp
     
-    def add_element_with_event(self, msg):
+    def add_eventlistener_to_element(self, msg):
         try:
             #logging.debug(msg)
             if "id" in msg:

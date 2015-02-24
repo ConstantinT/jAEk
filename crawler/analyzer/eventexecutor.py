@@ -151,7 +151,7 @@ class EventExecutor(AbstractAnalyzer):
      
   
     
-    def add_element_with_event(self, msg):
+    def add_eventlistener_to_element(self, msg):
         if self._preclicking_ready:
             try:
                 if msg['id'] != None and msg['id'] != "":

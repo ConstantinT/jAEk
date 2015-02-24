@@ -268,7 +268,7 @@ function addEventListenerWrapper(elem, args) {
 		"class" : html_class
 	}
 	resp = JSON.stringify(resp)
-	jswrapper.addEventListener(resp)
+	jswrapper.add_EventListener_to_Element(resp)
 	if (args[0] == "change") {
 		inputs = elem.querySelectorAll("input");
 		selects = elem.querySelectorAll("select");
@@ -292,7 +292,7 @@ function addEventListenerWrapper(elem, args) {
 					"class" : html_class
 				}
 				resp = JSON.stringify(resp)
-				jswrapper.addEventListener(resp)
+				jswrapper.add_EventListener_to_Element(resp)
 			}
 		}
 		for (i = 0; i < selects.length; i++) {
@@ -311,7 +311,7 @@ function addEventListenerWrapper(elem, args) {
 				"class" : html_class
 			}
 			resp = JSON.stringify(resp)
-			jswrapper.addEventListener(resp)
+			jswrapper.add_EventListener_to_Element(resp)
 		}
 		for (xx = 0; xx < options.length; xx++){
 			o = options[i]
@@ -329,7 +329,7 @@ function addEventListenerWrapper(elem, args) {
 				"class" : html_class
 			}
 			resp = JSON.stringify(resp)
-			jswrapper.addEventListener(resp)
+			jswrapper.add_EventListener_to_Element(resp)
 		}
 	}
 }
@@ -350,7 +350,7 @@ function bodyAddEventListenerWrapper(elem, args) {
 		"class" : html_class
 	}
 	resp = JSON.stringify(resp)
-	jswrapper.addEventListener(resp)
+	jswrapper.add_EventListener_to_Element(resp)
 
 }
 

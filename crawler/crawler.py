@@ -28,6 +28,7 @@ from models.clickabletype import ClickableType
 from utils.pagerenderer import PageRenderer
 from utils.domainhandler import DomainHandler
 from urllib.parse import urljoin
+from analyzer.dynamicanalyzer import Analyzer
 
 
 
@@ -46,13 +47,14 @@ class Crawler(QObject):
         self._form_extractor = FormExtractor(self, proxy, port, crawl_speed=crawl_config.crawl_speed)
         self._event_executor = EventExecutor(self, proxy, port, crawl_speed=crawl_config.crawl_speed)
         self._page_renderer = PageRenderer(self, proxy, port, crawl_speed=crawl_config.crawl_speed)
+        self._dynamic_analyzer = Analyzer(self, proxy, port, crawl_speed=crawl_config.crawl_speed)
         self.domain_handler = None
         self.current_depth = 0
         self.login_form = None
         self.crawl_with_login = False
         self.session_handler = None
         #self.headers = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.94 Safari/537.36'
-        self.headers = "MyCrawlerTest1"
+        self.headers = "MyCrawlerTestSeite1"
         self.crawler_state = Crawle_State.normal_page
         self.page_handler = PageHandler()
         self.crawl_config = crawl_config
@@ -613,8 +615,13 @@ class Crawler(QObject):
     
             
     def _analyze_webpage(self, current_page, base_url = None):
+        self._dynamic_analyzer.updateCookieJar(current_page.cookiejar, current_page.url)
+        html_after_timeouts, clickables, timeming_requests = self._dynamic_analyzer.analyze(current_page.html, current_page.url) 
+        #print(html_after_timeouts)
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        current_page.clickables.extend(clickables)
+        current_page.timing_requests = timeming_requests
+        forms = (self._form_extractor.extract_forms(html_after_timeouts, current_page.url))
         # TODO: Maybe do to another place
         for form in forms:
             if base_url is not None:
@@ -623,15 +630,15 @@ class Crawler(QObject):
                 self.convert_action_url_to_absolute(form, current_page.url)
         current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url))            
+        current_page.links.extend(self._link_extractor.extract_elements(html_after_timeouts, current_page.url, base_url=base_url))            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
-        self._timing_analyzer.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.timing_requests = self._timing_analyzer.analyze(current_page.html, current_page.url)
+        #self._timing_analyzer.updateCookieJar(current_page.cookiejar, current_page.url)
+        #current_page.timing_requests = self._timing_analyzer.analyze(current_page.html, current_page.url)
         self._property_observer.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.clickables.extend(self._property_observer.analyze(current_page.html, current_page.url))
-        self._addevent_observer.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.clickables.extend(self._addevent_observer.analyze(current_page.html, current_page.url))
+        current_page.clickables.extend(self._property_observer.analyze(html_after_timeouts, current_page.url))
+        #self._addevent_observer.updateCookieJar(current_page.cookiejar, current_page.url)
+        #current_page.clickables.extend(self._addevent_observer.analyze(current_page.html, current_page.url))
         return current_page
     
     def _analyze_webpage_without_timeming(self, current_page, base_url = None):

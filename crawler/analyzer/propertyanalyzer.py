@@ -44,7 +44,7 @@ class PropertyAnalyzer(AbstractAnalyzer):
         self.mainFrame().setHtml(None)
         return self.new_clickables
     
-    def add_element_with_event(self, msg):
+    def add_eventlistener_to_element(self, msg):
         try:
             if msg['id'] != None and msg['id'] != "":
                 id = msg['id']

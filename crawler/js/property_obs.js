@@ -71,7 +71,7 @@ for (my_counter_i = 0; my_counter_i < elems.length; my_counter_i++) {
 				"class" : html_class
 			}
 			resp = JSON.stringify(resp)
-			jswrapper.add_element_with_event(resp)
+			jswrapper.add_EventListener_to_Element(resp)
 		}
 	}
 

@@ -14,10 +14,10 @@ class TimingAnalyzer(AbstractAnalyzer):
         super(TimingAnalyzer, self).__init__(parent, proxy, port, crawl_speed)
         
         self._loading_complete = False
-        self._timing_events = [] # Time to wait for timeout in the webpage
+        self._timeming_events = [] # Time to wait for timeout in the webpage
         self._waiting_for = None #Specifies if we are waitng for timout or intervall
         self._capture_requests = False #Indicates when it is time to capture requests
-        self._current_timing_event = None
+        self._current_timeming_event = None
         
         # Loading necessary files
         f = open('js/lib.js', 'r')
@@ -42,10 +42,10 @@ class TimingAnalyzer(AbstractAnalyzer):
         self.ignore_new_timeouts = True
         delay = 500
         overall_waiting_time = 0
-        while len(self._timing_events) > 0:
-            self._current_timing_event = self._timing_events.pop(0) #Take the first event(ordered by needed time
-            self._waiting_for = self._current_timing_event[1] # Setting kind of event
-            waiting_time_in_milliseconds = (self._current_timing_event[0] - overall_waiting_time) # Taking waiting time and convert it from milliseconds to seconds
+        while len(self._timeming_events) > 0:
+            self._current_timeming_event = self._timeming_events.pop(0) #Take the first event(ordered by needed time
+            self._waiting_for = self._current_timeming_event[1] # Setting kind of event
+            waiting_time_in_milliseconds = (self._current_timeming_event[0] - overall_waiting_time) # Taking waiting time and convert it from milliseconds to seconds
             overall_waiting_time += waiting_time_in_milliseconds
             waiting_time_in_milliseconds = ((waiting_time_in_milliseconds - delay) / 1000.0)
             if waiting_time_in_milliseconds < 0.0:
@@ -79,11 +79,11 @@ class TimingAnalyzer(AbstractAnalyzer):
                 time = timingevent['time'] # millisecond
                 event_type = timingevent['type']
                 event_id = timingevent['function_id']
-                for prev_timing in self._timing_events:
+                for prev_timing in self._timeming_events:
                     if event_id == prev_timing[2]:
                         return 
-                self._timing_events.append((time,event_type, event_id ))
-                self._timing_events = sorted(self._timing_events, key=lambda e : e[0]) # Sort list
+                self._timeming_events.append((time,event_type, event_id ))
+                self._timeming_events = sorted(self._timeming_events, key=lambda e : e[0]) # Sort list
         except KeyError:
             pass
             #logging.debug("Key error occured")
@@ -92,8 +92,8 @@ class TimingAnalyzer(AbstractAnalyzer):
     def capturing_requests(self, request):
         if self._capture_requests:
             logging.debug("Event captured..." + str(request))
-            if self._current_timing_event is not None:
-                ajax_request = TimemingRequest(request['method'], request['url'], self._current_timing_event[0], self._current_timing_event[1], self._current_timing_event[2])
+            if self._current_timeming_event is not None:
+                ajax_request = TimemingRequest(request['method'], request['url'], self._current_timeming_event[0], self._current_timeming_event[1], self._current_timeming_event[2])
             else:
                 ajax_request = TimemingRequest(request['method'], request['url'], None, None, None)    
             self.ajax_requests.append(ajax_request)

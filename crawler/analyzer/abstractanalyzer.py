@@ -14,6 +14,7 @@ import json
 from time import time, sleep
 from pip._vendor.requests.utils import dict_from_cookiejar
 from models.utils import CrawlSpeed
+import logging
 
 
 class AbstractAnalyzer(QWebPage):
@@ -120,53 +121,51 @@ class AbstractAnalyzer(QWebPage):
             self.app.processEvents()
             
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        #logging.debug("Console: " + message + " at: " + str(lineNumber))
+        logging.debug("Console: " + message + " at: " + str(lineNumber))
         pass
 
 class JsBridge(QObject):
 
     
-    def __init__(self, webpage):
+    def __init__(self, analyzer):
         QObject.__init__(self)
-        self._webpage = webpage
+        self.anyalyzer = analyzer
         self._ajax_request = []
     @pyqtSlot(str)
-    def addEventListener(self, msg):
+    def add_EventListener_to_Element(self, msg):
         msg = json.loads(msg)
-        #logging.debug(msg)
-        self._webpage.add_element_with_event(msg)
+        self.anyalyzer.add_eventlistener_to_element(msg)
     @pyqtSlot(str)
     def xmlHTTPRequestOpen(self, msg):
         msg = json.loads(msg)
-        #logging.debug("xmHTTPRequestOpen: " + str(msg))
         self._ajax_request.append(msg)
     @pyqtSlot(str)   
     def xmlHTTPRequestSend(self, msg):
         msg = json.loads(msg)
         according_open = self._ajax_request.pop(0)
         according_open['parameter'] = msg['parameter']
-        self._webpage.capturing_requests(according_open)
+        self.anyalyzer.capturing_requests(according_open)
     @pyqtSlot(str)
     def timeout(self, msg):
         msg = json.loads(msg)
         msg['type'] = "timeout"
-        self._webpage.capture_timeout_call(msg)
+        self.anyalyzer.capture_timeout_call(msg)
     @pyqtSlot(str)
     def intervall(self, msg):
         msg = json.loads(msg)
         msg['type'] = "intervall"
         #logging.debug(msg)
-        self._webpage.capture_timeout_call(msg)
+        self.anyalyzer.capture_timeout_call(msg)
     @pyqtSlot(str)
     def watch(self, msg):
         #msg = json.loads(msg)
         msg['type'] = "intervall"
         #logging.debug(msg)
     @pyqtSlot(str)
-    def add_element_with_event(self, msg):
+    def add_eventlistener_to_element(self, msg):
         msg = json.loads(msg)
         #logging.debug(msg)
-        self._webpage.add_element_with_event(msg)
+        self.anyalyzer.add_eventlistener_to_element(msg)
         
 class NotImplementedException(Exception):  
     def __init__(self, value):

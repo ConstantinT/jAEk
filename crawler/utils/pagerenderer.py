@@ -53,7 +53,7 @@ class PageRenderer(AbstractAnalyzer):
         base_url = None
         head = self.mainFrame().findFirstElement("head")
         base = head.findFirst("base")
-        if base is not None:
+        if base.attribute("href") is not None and base.attribute("href") != "":
             base_url = base.attribute("href")
         html = self.mainFrame().toHtml()
        

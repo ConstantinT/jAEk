@@ -27,6 +27,7 @@ from models.webpage import WebPage
 from models.clickabletype import ClickableType
 from utils.pagerenderer import PageRenderer
 from utils.domainhandler import DomainHandler
+from urllib.parse import urljoin
 
 
 
@@ -50,7 +51,8 @@ class Crawler(QObject):
         self.login_form = None
         self.crawl_with_login = False
         self.session_handler = None
-        self.headers = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.94 Safari/537.36'
+        #self.headers = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.94 Safari/537.36'
+        self.headers = "MyCrawlerTest1"
         self.crawler_state = Crawle_State.normal_page
         self.page_handler = PageHandler()
         self.crawl_config = crawl_config
@@ -220,7 +222,7 @@ class Crawler(QObject):
                         raise LoginErrorException("Relogin failed...")
                                             
             
-            html = self._page_renderer.render(requested_url, html)
+            base_url, html = self._page_renderer.render(requested_url, html)
                              
             if self.crawler_state == Crawle_State.delta_page:
                 current_page.cookiejar = self.session_handler.cookies  # Assigning current cookies to the page
@@ -231,9 +233,9 @@ class Crawler(QObject):
             if self.crawler_state == Crawle_State.normal_page:
                 current_page = WebPage(self.get_next_page_id(), requested_url, html, self.session_handler.cookies, depth=self.current_depth)
                 logging.debug("Now at Page: " + str(current_page.id))
-                current_page = self._analyze_webpage(current_page)
+                current_page = self._analyze_webpage(current_page, base_url)
                 self.persistentsmanager.visit_url(url, current_page.id, response_code)
-                self.extract_new_links_from_page(current_page, self.current_depth)
+                self.extract_new_links_from_page(current_page, self.current_depth, base_url)
                 self.persistentsmanager.store_web_page(current_page)
             """
             Now beginning of event execution
@@ -326,7 +328,7 @@ class Crawler(QObject):
                     clickable.clicked = True
                     delta_page.current_depth = self.current_depth
                     delta_page.cookiejar = self.session_handler.cookies
-                    delta_page = self._analyze_webpage_without_addeventlisteners(delta_page)
+                    delta_page = self._analyze_webpage_without_addeventlisteners(delta_page, base_url)
                     if self.crawler_state == Crawle_State.normal_page:
                         delta_page = self.page_handler.subtract_parent_from_delta_page(current_page, delta_page)
                     if self.crawler_state == Crawle_State.delta_page:
@@ -586,29 +588,42 @@ class Crawler(QObject):
         res = self.session_handler.post(login_url.toString(), data=data, proxies=self.request_proxies, verify=False)
         return res.url
         
-    def extract_new_links_from_page(self, page, current_depth):
+    def extract_new_links_from_page(self, page, current_depth, base_url = None):
+        
+        if base_url is not None:
+            base_url = base_url
+        else:
+            base_url = page.url
+            
         for link in page.links:
             self.persistentsmanager.insert_url(link.url)
         
         if page.ajax_requests is not None:
             for ajax in page.ajax_requests:
-                url = self.domain_handler.create_url(ajax.url, page.url, depth_of_finding=current_depth)
+                url = self.domain_handler.create_url(ajax.url, base_url,  depth_of_finding=current_depth)
                 self.persistentsmanager.insert_url(url)
             
         for ajax in page.timing_requests:
-            url = self.domain_handler.create_url(ajax.url, page.url, depth_of_finding=current_depth)
+            url = self.domain_handler.create_url(ajax.url, base_url, depth_of_finding=current_depth)
             self.persistentsmanager.insert_url(url)
             
         for form in page.forms:
-            url = self.domain_handler.create_url(form.action, page.url, depth_of_finding=current_depth)
+            url = self.domain_handler.create_url(form.action, base_url, depth_of_finding=current_depth)
             self.persistentsmanager.insert_url(url)
     
             
-    def _analyze_webpage(self, current_page):
+    def _analyze_webpage(self, current_page, base_url = None):
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        # TODO: Maybe do to another place
+        for form in forms:
+            if base_url is not None:
+                self.convert_action_url_to_absolute(form, base_url)
+            else:
+                self.convert_action_url_to_absolute(form, current_page.url)
+        current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url))            
+        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url))            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
         self._timing_analyzer.updateCookieJar(current_page.cookiejar, current_page.url)
@@ -619,11 +634,18 @@ class Crawler(QObject):
         current_page.clickables.extend(self._addevent_observer.analyze(current_page.html, current_page.url))
         return current_page
     
-    def _analyze_webpage_without_timeming(self, current_page):
+    def _analyze_webpage_without_timeming(self, current_page, base_url = None):
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        # TODO: Maybe do to another place
+        for form in forms:
+            if base_url is not None:
+                self.convert_action_url_to_absolute(form, base_url)
+            else:
+                self.convert_action_url_to_absolute(form, current_page.url)
+        current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url))            
+        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url))            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
         self._property_observer.updateCookieJar(current_page.cookiejar, current_page.url)
@@ -632,16 +654,27 @@ class Crawler(QObject):
         current_page.clickables.extend(self._addevent_observer.analyze(current_page.html, current_page.url))
         return current_page
     
-    def _analyze_webpage_without_addeventlisteners(self, current_page):
+    def _analyze_webpage_without_addeventlisteners(self, current_page, base_url = None):
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
+        # TODO: Maybe do to another place
+        for form in forms:
+            if base_url is not None:
+                self.convert_action_url_to_absolute(form, base_url)
+            else:
+                self.convert_action_url_to_absolute(form, current_page.url)
+        current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url))            
+        current_page.links.extend(self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url))            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
         self._property_observer.updateCookieJar(current_page.cookiejar, current_page.url)
         current_page.clickables.extend(self._property_observer.analyze(current_page.html, current_page.url))
         return current_page
+    
+    def convert_action_url_to_absolute(self, form, base):
+        form.action = urljoin(base, form.action)
+        return form
     
     def print_to_file(self, item, filename):
         f = open("result/" + str(self.user.user_id) + "/" + filename, "w")

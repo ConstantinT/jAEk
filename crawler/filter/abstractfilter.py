@@ -52,6 +52,7 @@ class AbstractFilter(QWebPage):
         self.networkAccessManager().setCookieJar(qcookiejar)
     
     def userAgentForUrl(self, url):
+        return "MyCrawlerTest1"
         return "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
     
     def loadFinishedHandler(self, result):

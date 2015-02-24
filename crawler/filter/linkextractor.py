@@ -20,13 +20,18 @@ class LinkExtractor(AbstractFilter):
         
         self._process_finished = False        
         self.domain_handler = None
+        self._base_url = None
         
-    def extract_elements(self, html, requested_url, timeout = 10):
+    def extract_elements(self, html, requested_url, timeout = 10, base_url = None):
         if self.domain_handler is None:
             raise DomainHandlerNotSetException("You must set the DomainHandler before extracting Links...")
            
         logging.debug("Start extracting links on " + requested_url + "...") 
         t = 0
+        if base_url is None:
+            self._base_url = requested_url
+        else:
+            self._base_url = base_url
         self.found_paths = []
         self._process_finished = False 
         self._requested_url = requested_url
@@ -77,7 +82,7 @@ class LinkExtractor(AbstractFilter):
                     html_id = elem.attribute("id")
                     html_class = elem.attribute("class")
                     dom_adress = elem.evaluateJavaScript("getXPath(this)")
-                    url = self.domain_handler.create_url(href, self._requested_url)
+                    url = self.domain_handler.create_url(href, self._base_url)
                     link = Link(url, dom_adress, html_id, html_class)
                     found_links.append(link)
                 elif "http://" in href or "https://" in href:

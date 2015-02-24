@@ -48,12 +48,19 @@ class PageRenderer(AbstractAnalyzer):
             logging.debug(str(len(videos)) + " Videos found...now removing them")
             for v in videos:
                 v.removeFromDocument() 
-         
+        
+        
+        base_url = None
+        head = self.mainFrame().findFirstElement("head")
+        base = head.findFirst("base")
+        if base is not None:
+            base_url = base.attribute("href")
         html = self.mainFrame().toHtml()
        
+        logging.debug("Base Url is: {}".format(base_url))
         self._analyzing_finished = True
         self.mainFrame().setHtml(None)
-        return html
+        return base_url, html
     
     def _wait(self, timeout=1):
         """Wait for delay time

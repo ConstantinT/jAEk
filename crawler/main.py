@@ -25,11 +25,11 @@ if __name__ == '__main__':
      
    
     
-    url = "http://localhost:8081/pages/1.php"
+    url = "http://localhost:8081/pages/10.php"
     #url = "http://localhost:8081/pages/1.php"
     #url = "https://plus.google.com/"
 
-    crawler_config = CrawlConfig("Test55", url, max_depth=1, max_click_depth=3, crawl_speed = CrawlSpeed.Fast)
+    crawler_config = CrawlConfig("Test55", url, max_depth=5, max_click_depth=3, crawl_speed = CrawlSpeed.Fast)
     c = Crawler(crawl_config=crawler_config)#, proxy="localhost", port=8080)
     
     user = CrawlerUser("constantin" , 0)

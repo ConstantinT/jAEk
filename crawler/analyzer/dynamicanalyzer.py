@@ -62,9 +62,7 @@ class Analyzer(AbstractAnalyzer):
             self._loading_complete = True
             
     def jsWinObjClearedHandler(self): #Adding here the js-scripts corresponding to the phases
-        logging.debug("JSWinObjCleared...")
         if not self._analyzing_finished:
-            logging.debug("Injection JavaScript")
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
             self.mainFrame().evaluateJavaScript(self._md5)
             self.mainFrame().evaluateJavaScript(self._lib_js)

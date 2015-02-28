@@ -83,7 +83,7 @@ class EventExecutor(AbstractAnalyzer):
             pre_click_elem.evaluateJavaScript(js_code) # Waiting for finish processing
             self._wait(self.wait_for_event) 
         
-        # Now execute the new event
+        # Now execute the target event
         self._preclicking_ready = True
         self._url_changed = False
         self.mainFrame().urlChanged.connect(self._url_changes)
@@ -133,7 +133,12 @@ class EventExecutor(AbstractAnalyzer):
             self.mainFrame().setHtml(None)
             return Event_Result.Ok, delta_page
         
+    def javaScriptAlert(self, frame, msg):
+        logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))
         
+    def javaScriptConfirm(self, frame, msg):
+        logging.debug("Confirm occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))
+        return True
     
     def loadFinishedHandler(self, result):
         if not self._analyzing_finished: # Just to ignoring setting of non page....                
@@ -149,7 +154,8 @@ class EventExecutor(AbstractAnalyzer):
             if self.xhr_options == XHR_Behavior.intercept_xhr: 
                 self.mainFrame().evaluateJavaScript(self._xhr_interception_js) 
      
-  
+    def createWindow(self, win_type):
+        logging.debug("Creating new window...{}".format(win_type))
     
     def add_eventlistener_to_element(self, msg):
         if self._preclicking_ready:

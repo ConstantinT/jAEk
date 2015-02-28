@@ -10,10 +10,11 @@ from PyQt5.Qt import QUrl
 from models.utils import CrawlSpeed
 from filter.abstractfilter import AbstractFilter
 from utils.execptions import DomainHandlerNotSetException
+from models.clickable import Clickable
 
 class LinkExtractor(AbstractFilter):
     '''
-    Simple Link extractor, extracts links to own page
+    Simple Link extractor, extracts links to the own domain
     '''
     def __init__(self, parent, proxy = "" , port = 0, crawl_speed = CrawlSpeed.Medium):
         super(LinkExtractor, self).__init__(parent, proxy, port, crawl_speed)
@@ -32,7 +33,8 @@ class LinkExtractor(AbstractFilter):
             self._base_url = requested_url
         else:
             self._base_url = base_url
-        self.found_paths = []
+        self.new_links = []
+        self.new_clickables = [] # Clickables here are links with the structure: href:javascript:doSemthing()
         self._process_finished = False 
         self._requested_url = requested_url
         self.domain = self.get_domain(requested_url)
@@ -46,7 +48,7 @@ class LinkExtractor(AbstractFilter):
             logging.debug("Timeout Occurs")
         
         self.mainFrame().setHtml(None)
-        return self.found_paths
+        return self.new_links, self.new_clickables
     
     def get_domain(self, url):
         o = urlparse(url)
@@ -60,8 +62,9 @@ class LinkExtractor(AbstractFilter):
     def loadFinishedHandler(self, result):
         if not self._process_finished:
             elems = self.mainFrame().findAllElements("a")
-            res = self._extract_links(elems)
-            self.found_paths.extend(res)
+            new_links, new_clickables = self._extract_links(elems)
+            self.new_links.extend(new_links)
+            self.new_clickables.extend(new_clickables)
             self._process_finished = True
         
     def javaScriptConfirm(self, frame, msg):
@@ -69,6 +72,7 @@ class LinkExtractor(AbstractFilter):
     
     def _extract_links(self, elems):
         found_links = []
+        new_clickables = []
         if(len(elems) == 0):
             #logging.debug("No links found...")
             pass
@@ -76,8 +80,15 @@ class LinkExtractor(AbstractFilter):
             for elem in elems:
                 href = elem.attribute("href")
                 #logging.debug(str(type(elem)) + " href: " + str(href) + " Tagname: " + str(elem.tagName()))
-                if href == "/" or href == "#" or href == self._requested_url or href == "" or "javascript:" in href: #or href[0] == '#':
+                if href == "/" or href == "#" or href == self._requested_url or href == "": #or href[0] == '#':
                     continue
+                elif "javascript:" in href: #We assume it as clickable
+                    html_id = elem.attribute("id")
+                    html_class = elem.attribute("class")
+                    dom_adress = elem.evaluateJavaScript("getXPath(this)")
+                    event = href
+                    tag = "a"
+                    new_clickables.append(Clickable(event, tag, dom_adress, html_id, html_class, None, None))
                 elif self.domain in href or len(href) > 1:
                     html_id = elem.attribute("id")
                     html_class = elem.attribute("class")
@@ -89,4 +100,4 @@ class LinkExtractor(AbstractFilter):
                     continue                
                 else:
                     logging.debug("Elem has attribute href: " + str(elem.attribute("href") + " and matches no criteria"))
-        return found_links  
+        return found_links, new_clickables  

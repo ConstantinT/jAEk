@@ -72,9 +72,17 @@ class Analyzer(AbstractAnalyzer):
     
     def capturing_requests(self, request):
         #logging.debug("Event captured..." + str(request))
-        timeming_request = TimemingRequest(request['method'], request['url'], self._current_timeming_event["time"], self._current_timeming_event["event_type"], self._current_timeming_event["event_id"], request['paramter']) 
-        self._timemimg_requests.append(timeming_request)
-        
+        try: 
+            params = request["parameter"]
+        except KeyError:
+            params = None
+        try:
+            timeming_request = TimemingRequest(request['method'], request['url'], self._current_timeming_event["time"], self._current_timeming_event["event_type"], self._current_timeming_event["event_id"], params) 
+            self._timemimg_requests.append(timeming_request)
+        except TypeError:
+            timeming_request = TimemingRequest(request['method'], request['url'], None, None, None, params)
+            self._timemimg_requests.append(timeming_request)
+            
     def capture_timeout_call(self, timingevent):
         try:
             if timingevent['time'] != "undefined":

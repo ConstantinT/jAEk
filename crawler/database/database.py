@@ -192,7 +192,7 @@ class Database():
     def _parse_ajax_request_from_db_to_model(self, ajax_request):
         tmp = self.clickables.find_one(ajax_request['trigger'])
         trigger = self._parse_clickable_from_db_to_model(tmp)
-        return AjaxRequest(ajax_request['method'], ajax_request['url'], trigger, ajax_request['parameters'])
+        return AjaxRequest(ajax_request['method'], ajax_request['url'], trigger, ajax_request['parameter'])
         
     def _insert_clickable(self, current_crawl_session , web_page_id, clickable):
         document = {}
@@ -230,6 +230,7 @@ class Database():
             trigger_id = self.clickables.find_one({"crawl_session" : current_crawl_session, "dom_adress" : r.trigger.dom_adress, "web_page_id": delta_page.parent_id, "event": r.trigger.event})
             trigger_id = trigger_id["_id"]
             doc["trigger"] = trigger_id
+            doc["parameter"] = r.parameter
             generator_request_doc.append(doc)
         document["generator_requests"] = generator_request_doc
         

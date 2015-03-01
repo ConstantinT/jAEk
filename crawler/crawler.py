@@ -5,23 +5,19 @@ Created on 12.11.2014
 '''
 import logging
 import sys
-import requests
 from PyQt5.Qt import QApplication, QObject
 from enum import Enum
-from requests.utils import dict_from_cookiejar
 from copy import deepcopy
 
-from asyncio.tasks import sleep
 from filter.linkextractor import LinkExtractor
 from analyzer.timemimganalzyer import TimingAnalyzer
 from analyzer.propertyanalyzer import PropertyAnalyzer
 from analyzer.eventlisteneranalyzer import EventlistenerAnalyzer
 from filter.formextractor import FormExtractor
 from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
-from utils.utils import PageHandler, form_to_json
+from utils.utils import PageHandler
 from database.persistentmanager import PersistentsManager
-from utils.execptions import LoginFormNotFoundException, LoginErrorException,\
-    PageNotFoundException
+from utils.execptions import PageNotFoundException
 from models.deltapage import DeltaPage
 from models.webpage import WebPage
 from models.clickabletype import ClickableType
@@ -29,6 +25,7 @@ from utils.pagerenderer import PageRenderer
 from utils.domainhandler import DomainHandler
 from urllib.parse import urljoin
 from analyzer.dynamicanalyzer import Analyzer
+from utils.requestmanager import RequestManager
 
 
 
@@ -50,29 +47,19 @@ class Crawler(QObject):
         self._dynamic_analyzer = Analyzer(self, proxy, port, crawl_speed=crawl_config.crawl_speed)
         self.domain_handler = None
         self.current_depth = 0
-        self.login_form = None
         self.crawl_with_login = False
-        self.session_handler = None
-        #self.headers = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/40.0.2214.94 Safari/537.36'
-        self.headers = "jÄk was here..."
+        
         self.crawler_state = Crawle_State.normal_page
         self.page_handler = PageHandler()
         self.crawl_config = crawl_config
         self.tmp_delta_page_storage = []  # holds the deltapages for further analyses
         self.url_frontier = []
         self.user = None
-        self.landing_page_loged_out = None
-        self.landing_page_loged_in = None
-        self.login_cookie_keys = []
-        self.landing_page_url = None
         self.page_id = 0
         self.current_depth = 0
         self.persistentsmanager = PersistentsManager(self.crawl_config)
-            
-        if proxy != "" and port != 0:
-            self.request_proxies = {"https": proxy + ":" + str(port)}
-        else:
-            self.request_proxies = None
+
+        
         
     def test(self):
         data = {"log" : "admin", "pwd" : "admin"}
@@ -89,41 +76,20 @@ class Crawler(QObject):
         """
         Restore initial state
         """
-        self._event_executor.seen_timeouts = {}
-        self.domain_handler = DomainHandler(self.crawl_config.domain)
+        self.domain_handler = DomainHandler(self.crawl_config.start_page_url)
         self._link_extractor.domain_handler = self.domain_handler
-        self.session_handler = requests.Session()
-        self.session_handler.headers.update({"User-Agent":self.headers})
-        self.landing_page_url = self.domain_handler.create_url(self.crawl_config.domain)
-        self.landing_page_url.depth_of_finding = None
-        self.persistentsmanager.insert_url(self.landing_page_url)
-        self.landing_page_loged_out = None
-        self.landing_page_loged_in = None
-        self.login_cookie_keys = []     
-                    
-        requested_url = None
+        
+        start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
+        self.persistentsmanager.insert_url(start_page_url)
+        self.requestmanager = RequestManager(self.crawl_with_login, self, start_page_url.toString(), self.user.login_data, self.user.url_with_login_form)
+        
+        
         necessary_clicks = []  # Saves the actions the crawler need to reach a delta page
         parent_page = None  # Saves the parent of the delta-page (not other delta pages)
         previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
          
         if self.crawl_with_login:
-            logging.debug("Crawling with login...")
-            login_page = self.get_webpage_without_timeming_analyses(self.user.url_with_login_form)
-            self.login_form = self.find_login_form(login_page, self.user.login_data)
-            if self.login_form is None:
-                raise LoginFormNotFoundException("Could not find login form")
-            self.landing_page_loged_out = self.get_webpage_without_timeming_analyses(self.landing_page_url.toString())
-            logging.debug("Perform login...")
-            self.login(self.user.login_data, self.login_form)
-            logging.debug("Validate login...")
-            self.landing_page_loged_in = self.get_webpage_without_timeming_analyses(self.landing_page_url.toString())
-            if self.landing_page_loged_in.toString() != self.landing_page_loged_out.toString():
-                logging.debug("Login successfull...")
-                c = dict_from_cookiejar(self.session_handler.cookies)
-                for k in c: 
-                    self.login_cookie_keys.append(k)
-            else:
-                raise LoginErrorException("Login failed")
+            self.requestmanager.initial_login()
         else:
             logging.debug("Crawl without login")
 
@@ -184,25 +150,7 @@ class Crawler(QObject):
                     self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")
                     continue
                 
-            logging.debug("Fetching {} ... ".format(url.toString()))
-            counter = 0
-            
-            while True:
-                try:
-                    response = self.session_handler.get(url.toString(), proxies=self.request_proxies, verify=False)
-                    html = response.text
-                    requested_url = response.url
-                    response_code = response.status_code 
-                    break
-                except Exception:
-                    logging.debug("Exception during fetching ressource occours...")
-                    counter += 1
-                    if counter == 3:
-                        logging.debug("Getting Ressource {} not possible...continue with next".format(url.toString()))
-                        html = None
-                        requested_url = url.toString()
-                        response_code = 666
-                    sleep(2)
+            response_url, response_code, html, cookies = self.requestmanager.fetch_page(url.toString())
                     
             
             
@@ -210,41 +158,29 @@ class Crawler(QObject):
                 self.persistentsmanager.visit_url(url, webpage_id=None, response_code=response_code)
                 continue
             
-            if self.crawl_with_login:
-                if len(response.history) > 1:
-                    if requested_url != url.toString():
-                        logging.debug("Possible logout, multiple redirects...")
-                        go_on = self.handling_possible_logout()
-                        if not go_on:
-                            raise LoginErrorException("Relogin failed...")
-                if len(self.session_handler.cookies) < len(self.login_cookie_keys) * .80:
-                    logging.debug("Possible logout, too less cookies...")
-                    go_on = self.handling_possible_logout()
-                    if not go_on:
-                        raise LoginErrorException("Relogin failed...")
-                                            
             
-            base_url, html = self._page_renderer.render(requested_url, html)
+            
+            base_url, html = self._page_renderer.render(response_url, html)
                              
             if self.crawler_state == Crawle_State.delta_page:
-                current_page.cookiejar = self.session_handler.cookies  # Assigning current cookies to the page
+                current_page.cookiejar = cookies  # Assigning current cookies to the page
                 current_page.html = html  # Assigning html
                 logging.debug("Now at Deltapage: " + str(current_page.id))
                 self.persistentsmanager.store_delta_page(current_page)
                 
             if self.crawler_state == Crawle_State.normal_page:
-                current_page = WebPage(self.get_next_page_id(), requested_url, html, self.session_handler.cookies, depth=self.current_depth)
+                current_page = WebPage(self.get_next_page_id(), response_url, html, cookies, depth=self.current_depth, base_url = base_url)
                 logging.debug("Now at Page: " + str(current_page.id))
-                current_page = self._analyze_webpage(current_page, base_url)
+                current_page = self._analyze_webpage(current_page)
                 self.persistentsmanager.visit_url(url, current_page.id, response_code)
-                self.extract_new_links_from_page(current_page, self.current_depth, base_url)
+                self.extract_new_links_from_page(current_page, self.current_depth, current_page.base_url)
                 self.persistentsmanager.store_web_page(current_page)
             """
             Now beginning of event execution
             """
             
             
-            self._event_executor.updateCookieJar(self.session_handler.cookies, requested_url)
+            self._event_executor.updateCookieJar(cookies, response_url)
             clickable_to_process = deepcopy(current_page.clickables)
             clickable_to_process = self.edit_clickables_for_execution(clickable_to_process)
             clickables = []
@@ -329,8 +265,8 @@ class Crawler(QObject):
                 else:
                     clickable.clicked = True
                     delta_page.current_depth = self.current_depth
-                    delta_page.cookiejar = self.session_handler.cookies
-                    delta_page = self._analyze_webpage_without_addeventlisteners(delta_page, base_url)
+                    delta_page.cookiejar = cookies
+                    delta_page = self._analyze_webpage_without_addeventlisteners(delta_page)
                     if self.crawler_state == Crawle_State.normal_page:
                         delta_page = self.page_handler.subtract_parent_from_delta_page(current_page, delta_page)
                     if self.crawler_state == Crawle_State.delta_page:
@@ -539,35 +475,11 @@ class Crawler(QObject):
             self._store_delta_page_for_crawling(delta_page)
     
     
-    """
-    Returns if we can go on or an unrecoverable error occurs
-    """ 
-    def handling_possible_logout(self):
-        num_retries = 0
-        max_num_retries = 3 # We try 3 times to login...
-        
-        landing_page = self.get_webpage_without_timeming_analyses(self.landing_page_url.toString())
-        if self.page_handler.calculate_similarity_between_pages(landing_page, self.landing_page_loged_in) > .8:
-            logging.debug("No logout...continue processing")
-            return True
-        logging.debug("Logout detected...")
-        while(num_retries < max_num_retries ):
-            logging.debug("Try login number " + str(num_retries+1))
-            self.login(self.user.login_data, self.login_form)
-            landing_page_after_login_try = self.get_webpage_without_timeming_analyses(self.landing_page_url.toString())
-            if self.page_handler.calculate_similarity_between_pages(self.landing_page_loged_in, landing_page_after_login_try) > .0:
-                logging.debug("Re login succesfull....continue processing")
-                return True
-            else:
-                logging.debug("Login not successfull...")
-                num_retries ++ 1
-                sleep(2)
-        logging.debug("All loging attempts failed...stop crawling")          
-        return False
+
                    
     def get_webpage_without_timeming_analyses(self, url):
-        response = self.session_handler.get(url, proxies=self.request_proxies, verify=False)
-        login_page = WebPage(-1, url, response.text, self.session_handler.cookies, 0)
+        response, cookies = self.requestmanager.get(url)
+        login_page = WebPage(-1, url, response.text, cookies, 0)
         login_page = self._analyze_webpage_without_timeming(login_page)
         return login_page
         
@@ -582,13 +494,7 @@ class Crawler(QObject):
                 login_form = form
         return login_form
         
-    def login(self, data, login_form):
-        if not isinstance(data, dict):
-            raise AttributeError("Data must be a dict with login credentials")
-        data = form_to_json(login_form, data)
-        login_url = self.domain_handler.create_url(login_form.action, depth_of_finding=0)
-        res = self.session_handler.post(login_url.toString(), data=data, proxies=self.request_proxies, verify=False)
-        return res.url
+    
         
     def extract_new_links_from_page(self, page, current_depth, base_url = None):
         
@@ -614,7 +520,7 @@ class Crawler(QObject):
             self.persistentsmanager.insert_url(url)
     
             
-    def _analyze_webpage(self, current_page, base_url = None):
+    def _analyze_webpage(self, current_page):
         self._dynamic_analyzer.updateCookieJar(current_page.cookiejar, current_page.url)
         html_after_timeouts, clickables, timeming_requests = self._dynamic_analyzer.analyze(current_page.html, current_page.url) 
         
@@ -624,13 +530,13 @@ class Crawler(QObject):
         forms = (self._form_extractor.extract_forms(html_after_timeouts, current_page.url))
         # TODO: Maybe do to another place
         for form in forms:
-            if base_url is not None:
-                self.convert_action_url_to_absolute(form, base_url)
+            if current_page.base_url is not None:
+                self.convert_action_url_to_absolute(form, current_page.base_url)
             else:
                 self.convert_action_url_to_absolute(form, current_page.url)
         current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        new_links, new_clickables = self._link_extractor.extract_elements(html_after_timeouts, current_page.url, base_url=base_url)
+        new_links, new_clickables = self._link_extractor.extract_elements(html_after_timeouts, current_page.url, base_url=current_page.base_url)
         current_page.links.extend(new_links)            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
@@ -641,18 +547,18 @@ class Crawler(QObject):
         current_page.clickables.extend(self._property_observer.analyze(html_after_timeouts, current_page.url))
         return current_page
     
-    def _analyze_webpage_without_addeventlisteners(self, current_page, base_url = None):
+    def _analyze_webpage_without_addeventlisteners(self, current_page):
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
         forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
         # TODO: Maybe do to another place
         for form in forms:
-            if base_url is not None:
-                self.convert_action_url_to_absolute(form, base_url)
+            if current_page.base_url is not None:
+                self.convert_action_url_to_absolute(form, current_page.base_url)
             else:
                 self.convert_action_url_to_absolute(form, current_page.url)
         current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        new_links, new_clickables = self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url)
+        new_links, new_clickables = self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=current_page.base_url)
         current_page.links.extend(new_links)            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth
@@ -667,18 +573,18 @@ class Crawler(QObject):
         current_page.clickables.extend(self._property_observer.analyze(current_page.html, current_page.url))
         return current_page
     
-    def _analyze_webpage_without_timeming(self, current_page, base_url = None):
+    def _analyze_webpage_without_timeming(self, current_page):
         self._form_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
         forms = (self._form_extractor.extract_forms(current_page.html, current_page.url))
         # TODO: Maybe do to another place
         for form in forms:
-            if base_url is not None:
-                self.convert_action_url_to_absolute(form, base_url)
+            if current_page.base_url is not None:
+                self.convert_action_url_to_absolute(form, current_page.base_url)
             else:
                 self.convert_action_url_to_absolute(form, current_page.url)
         current_page.forms = forms
         self._link_extractor.updateCookieJar(current_page.cookiejar, current_page.url)
-        new_links, new_clickables = self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=base_url)
+        new_links, new_clickables = self._link_extractor.extract_elements(current_page.html, current_page.url, base_url=current_page.base_url)
         current_page.links.extend(new_links)            
         for link in current_page.links:
             link.url.depth_of_finding = current_page.current_depth

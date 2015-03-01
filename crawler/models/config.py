@@ -7,10 +7,10 @@ from models.utils import CrawlSpeed
 
 class CrawlConfig():
     
-    def __init__(self, name, domain, max_depth = 5, max_click_depth = 5, crawl_speed = CrawlSpeed.Medium):
+    def __init__(self, name, start_page, max_depth = 5, max_click_depth = 5, crawl_speed = CrawlSpeed.Medium):
         self.name = name
         self.max_depth = max_depth
         self.max_click_depth = max_click_depth
-        self.domain = domain
+        self.start_page_url = start_page
         self.crawl_speed = crawl_speed
         

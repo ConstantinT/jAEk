@@ -161,7 +161,7 @@ class Database():
             return None
         clickables = self.get_all_clickables_to_page_id(current_crawl_session, page_id)
         forms = self.get_all_forms_to_page_id(current_crawl_session, page_id)
-        result = WebPage(page['web_page_id'], page['url'], page['html'], None, page['current_depth'])
+        result = WebPage(page['web_page_id'], page['url'], page['html'], None, page['current_depth'], page['base_url'])
         result.clickables = clickables
         result.forms = forms
         links = []
@@ -270,6 +270,7 @@ class Database():
             timeming_requests_doc.append(self._parse_timeming_request(timing_request))
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
+        document['base_url'] = web_page.base_url
         return document
     
     def insert_form(self, current_crawl_session, form, page_id):

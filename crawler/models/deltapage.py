@@ -9,8 +9,8 @@ from models.webpage import WebPage
 
 class DeltaPage(WebPage):
     
-    def __init__(self, id, url = None, html = None, cookiesjar = None, depth = None, generator = None, parent_id = None, delta_depth = None):
-        WebPage.__init__(self, id, url, html, cookiesjar, depth)
+    def __init__(self, id, url = None, html = None, cookiesjar = None, depth = None, generator = None, parent_id = None, delta_depth = None, base_url = None):
+        WebPage.__init__(self, id, url, html, cookiesjar, depth, base_url=base_url)
         self.generator = generator
         self.generator_requests = []
         self.parent_id = parent_id

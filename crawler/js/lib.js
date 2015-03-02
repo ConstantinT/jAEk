@@ -197,7 +197,6 @@ function XMLHTTPObserverOpen(elem, args) {
 		"method" : args[0]
 	};
 	resp = JSON.stringify(resp)
-	console.log(resp);
 	jswrapper.xmlHTTPRequestOpen(resp)
 }
 
@@ -210,7 +209,6 @@ function XMLHTTPObserverSend(elem, args) {
 		"parameter" : elems
 	};
 	resp = JSON.stringify(resp)
-	console.log(resp);
 	jswrapper.xmlHTTPRequestSend(resp)
 }
 

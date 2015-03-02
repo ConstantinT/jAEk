@@ -97,14 +97,18 @@ class RequestManager(object):
         logging.debug("Logout detected...")
         while(num_retries < max_num_retries ):
             logging.debug("Try login number " + str(num_retries+1))
-            self.login(self.login_data, self._login_form)
+            login_page = self._crawler.get_webpage_without_timeming_analyses(self._url_with_login_form)
+            login_form = self._crawler.find_login_form(login_page, self._login_data)
+            if login_form is None:
+                raise LoginFormNotFoundException("Could not find login form")
+            self.login(self._login_data, login_form)
             landing_page_after_login_try = self._crawler.get_webpage_without_timeming_analyses(self.start_page_url)
-            if self._crawler.page_handler.calculate_similarity_between_pages(self.landing_page_loged_in, landing_page_after_login_try) > .0:
+            if self._crawler.page_handler.calculate_similarity_between_pages(self.landing_page_loged_in, landing_page_after_login_try) > .9:
                 logging.debug("Re login succesfull....continue processing")
                 return True
             else:
                 logging.debug("Login not successfull...")
-                num_retries ++ 1
+                num_retries += 1
                 sleep(2)
         logging.debug("All loging attempts failed...stop crawling")          
         return False
@@ -112,8 +116,8 @@ class RequestManager(object):
     def initial_login(self):
         logging.debug("Crawling with login...")
         login_page = self._crawler.get_webpage_without_timeming_analyses(self._url_with_login_form)
-        self._login_form = self._crawler.find_login_form(login_page, self._login_data)
-        if self._login_form is None:
+        login_form = self._crawler.find_login_form(login_page, self._login_data)
+        if login_form is None:
             raise LoginFormNotFoundException("Could not find login form")
         
         if self._url_with_login_form == self.start_page_url:
@@ -122,7 +126,7 @@ class RequestManager(object):
             self.landing_page_loged_out = self._crawler.get_webpage_without_timeming_analyses(self.start_page_url)
             
         logging.debug("Perform login...")
-        self.login(self._login_data, self._login_form)
+        self.login(self._login_data, login_form)
         logging.debug("Validate login...")
         self.landing_page_loged_in = self._crawler.get_webpage_without_timeming_analyses(self.start_page_url)
         if self.landing_page_loged_in.toString() != self.landing_page_loged_out.toString():

@@ -93,12 +93,7 @@ class Crawler(QObject):
         else:
             logging.debug("Crawl without login")
 
-        """
-        Just for debugging
-        """
         
-        # self.add_new_url(self.domain_handler.create_url("http://localhost:8080/?page_id=5", depth_of_finding=0))
-         
         logging.debug("Crawl with userId: " + str(self.user.user_id))   
         while True:
             logging.debug("=======================New Round=======================")
@@ -122,7 +117,7 @@ class Crawler(QObject):
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
                 self.current_depth = parent_page.current_depth                
-                url = self.domain_handler.create_url(parent_page.url, depth_of_finding=parent_page.current_depth)
+                url = parent_page.url
                 
             else:
                 url = self.persistentsmanager.get_next_url_for_crawling()
@@ -141,7 +136,8 @@ class Crawler(QObject):
                 if not self.domain_handler.is_in_scope(url) or url.depth_of_finding > self.crawl_config.max_depth:
                     logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url.toString())
                     self.persistentsmanager.visit_url(url, None, 000)
-                    continue    
+                    continue   
+                response_url, response_code, html, cookies = self.requestmanager.fetch_page(url.toString()) 
                 
             if self.crawler_state == Crawle_State.delta_page:
                 if current_page.delta_depth == self.crawl_config.max_click_depth:
@@ -149,8 +145,9 @@ class Crawler(QObject):
                     self.persistentsmanager.store_delta_page(current_page)
                     self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")
                     continue
+                response_url, response_code, html, cookies = self.requestmanager.fetch_page(url) 
                 
-            response_url, response_code, html, cookies = self.requestmanager.fetch_page(url.toString())
+            
                     
             
             
@@ -236,7 +233,7 @@ class Crawler(QObject):
                     clickable.clicked = False
                     error_ratio = errors / len(current_page.clickables)
                     if error_ratio > .2:
-                        go_on = self.handling_possible_logout()
+                        go_on = self.requestmanager.handling_possible_logout()
                         if not go_on:
                             #raise LoginErrorException("Cannot login anymore")
                             continue

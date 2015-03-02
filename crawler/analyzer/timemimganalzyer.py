@@ -30,7 +30,7 @@ class TimingAnalyzer(AbstractAnalyzer):
         self._ajax_wrapper = f.read()
         f.close()
 
-    def analyze(self, html, requested_url, timeout=5):
+    def analyze(self, html, requested_url, timeout=60):
         logging.debug("Timing analyze on {} started...".format(requested_url))
         self._analyzing_finished = False
         self._loading_complete = False
@@ -42,7 +42,7 @@ class TimingAnalyzer(AbstractAnalyzer):
         self.ignore_new_timeouts = True
         delay = 500
         overall_waiting_time = 0
-        while len(self._timeming_events) > 0:
+        while len(self._timeming_events)  > 0 and overall_waiting_time < timeout:
             self._current_timeming_event = self._timeming_events.pop(0) #Take the first event(ordered by needed time
             self._waiting_for = self._current_timeming_event[1] # Setting kind of event
             waiting_time_in_milliseconds = (self._current_timeming_event[0] - overall_waiting_time) # Taking waiting time and convert it from milliseconds to seconds

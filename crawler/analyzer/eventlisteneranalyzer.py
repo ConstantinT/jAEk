@@ -91,6 +91,9 @@ class EventlistenerAnalyzer(AbstractAnalyzer):
         if not self._analyzing_finished:
             if result:
                 self._loading_complete = True
+                f = open("text.txt", "w")
+                f.write(self.mainFrame().toHtml())
+                f.close()
             
     def jsWinObjClearedHandler(self): #Adding here the js-scripts corresponding to the phases
         if not self._analyzing_finished:

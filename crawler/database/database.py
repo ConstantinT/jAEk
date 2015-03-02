@@ -390,7 +390,6 @@ class Database():
             result = self.pages.update({"web_page_id": webpage.id, "crawl_session":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
         else:
             result = self.delta_pages.update({"web_page_id": webpage.id, "crawl_session":current_crawl_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})      
-        logging.debug(result)
         
         
     def _clickable_type_to_num(self, clickable_type):

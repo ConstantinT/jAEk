@@ -235,21 +235,31 @@ function intervallWrapper(elem, args) {
 }
 
 function getXPath(element) {
-	var val = element.value;
-	var xpath = '';
-	for (; element && element.nodeType == 1; element = element.parentNode) {
-		var sibblings = element.parentNode.childNodes;
-		var same_tags = []
-		for (var i = 0; i < sibblings.length; i++) { // collecting same tags
-			if (element.tagName === sibblings[i].tagName) {
-				same_tags[same_tags.length] = sibblings[i]
+	// console.log(element.tagName + " : " + element.className + " ; " +
+	// element.id)
+	try {
+		var xpath = '';
+		for (; element && element.nodeType == 1; element = element.parentNode) {
+			// console.log(element.tagName + " : " + element.className + " ; " +
+			// element.id)
+			var sibblings = element.parentNode.childNodes;
+			var same_tags = []
+			for (var i = 0; i < sibblings.length; i++) { // collecting same
+															// tags
+				if (element.tagName === sibblings[i].tagName) {
+					same_tags[same_tags.length] = sibblings[i]
+				}
 			}
+			var id = same_tags.indexOf(element) + 1
+			id > 1 ? (id = '[' + id + ']') : (id = '');
+			xpath = '/' + element.tagName.toLowerCase() + id + xpath;
 		}
-		var id = same_tags.indexOf(element) + 1
-		id > 1 ? (id = '[' + id + ']') : (id = '');
-		xpath = '/' + element.tagName.toLowerCase() + id + xpath;
+		console.log("XPATH: " + xpath)
+		return xpath;
+	} catch (e) {
+		console.log("Error: " + e)
+		return "";
 	}
-	return xpath;
 }
 
 function addEventListenerWrapper(elem, args) {
@@ -257,7 +267,14 @@ function addEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
+	console.log("New Addevent:" + tag + ":" + id + ":" + html_class + ":"
+			+ args[0])
 	dom_adress = getXPath(elem);
+	if (dom_adress.indexOf("/html/body") == -1) {
+		console.log("Domadress is not valid: " + dom_adress)
+		return
+
+	}
 	function_id = MD5(args[1].toString())
 	resp = {
 		"event" : args[0],
@@ -273,7 +290,7 @@ function addEventListenerWrapper(elem, args) {
 		inputs = elem.querySelectorAll("input");
 		selects = elem.querySelectorAll("select");
 		options = elem.querySelectorAll("option");
-		
+
 		for (i = 0; i < inputs.length; i++) {
 			e = inputs[i];
 			if (e.getAttribute("type") == "radio"
@@ -313,7 +330,7 @@ function addEventListenerWrapper(elem, args) {
 			resp = JSON.stringify(resp)
 			jswrapper.add_EventListener_to_Element(resp)
 		}
-		for (xx = 0; xx < options.length; xx++){
+		for (xx = 0; xx < options.length; xx++) {
 			o = options[i]
 			tag = o.tagName
 			id = o.id;
@@ -339,8 +356,10 @@ function bodyAddEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
+	console.log("New Addevent(Body):" + tag + ":" + id + ":" + html_class + ":"
+			+ args[0])
 	function_id = MD5(args[1].toString())
-	dom_adress = getXPath(elem);
+	dom_adress = "/html/body"
 	resp = {
 		"event" : args[0],
 		"function_id" : function_id,

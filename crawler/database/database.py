@@ -100,20 +100,24 @@ class Database():
             document["params"] = params
         self.abstract_urls.save(document)
     
-    def insert_url(self, current_crawl_session, url):
-        if self.visited_urls.find({"url":url.toString(), "crawl_session":current_crawl_session}).count() == 0:
-            self.insert_abstract_url(current_crawl_session, url)
-            document = {}
-            document["url"] = url.toString()
-            document["url_hash"] = url.url_hash
-            document['crawl_session'] = current_crawl_session
-            document["page_id"] = None
-            document["visited"] = False
-            document["response_code"] = None
-            document["url_counter"] = self._per_session_url_counter
-            document['depth_of_finding'] = url.depth_of_finding
-            self._per_session_url_counter += 1
-            self.visited_urls.save(document)
+    def insert_url(self, current_crawl_session, url, is_redirected_url = False):
+        if not is_redirected_url:
+            if self.visited_urls.find({"url":url.toString(), "crawl_session":current_crawl_session}).count() > 0 and self.visited_urls.find({"redirected_to":url.toString(), "crawl_session":current_crawl_session}).count() > 0:
+                return
+            
+        self.insert_abstract_url(current_crawl_session, url)
+        document = {}
+        document["url"] = url.toString()
+        document["url_hash"] = url.url_hash
+        document['crawl_session'] = current_crawl_session
+        document["page_id"] = None
+        document["visited"] = False
+        document["response_code"] = None
+        document['redirected_to'] = None
+        document["url_counter"] = self._per_session_url_counter
+        document['depth_of_finding'] = url.depth_of_finding
+        self._per_session_url_counter += 1
+        self.visited_urls.save(document)
     
     def _parse_url_from_db_to_model(self, url):
         return Url(url['url'], url['depth_of_finding'])
@@ -132,7 +136,7 @@ class Database():
         return self._parse_url_from_db_to_model(result)  
     
         
-    def visit_url(self, current_crawl_session, url, webpage_id, response_code):
+    def visit_url(self, current_crawl_session, url, webpage_id, response_code, redirected_to = None):
         search_doc = {}
         search_doc['url'] = url.toString()
         search_doc['crawl_session'] = current_crawl_session
@@ -142,6 +146,7 @@ class Database():
         if webpage_id != None:
             update_doc['visited'] = True
         update_doc['page_id'] = webpage_id
+        update_doc['redirected_to'] = redirected_to
         self.visited_urls.update(search_doc, {"$set": update_doc})
              
     def insert_page(self, current_crawl_session, web_page):
@@ -346,7 +351,7 @@ class Database():
         if clickable_depth is not None:
             set_doc['clickable_depth'] = clickable_depth
             
-        set_doc["clicked"] = "True"
+        set_doc["clicked"] = True
         set_doc = {"$set": set_doc}
         result = self.clickables.update(search_doc, set_doc)
         return result

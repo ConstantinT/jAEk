@@ -37,7 +37,7 @@ class RequestManager(object):
         
         if not self._crawl_loged_in:
             response_url, response_code, html, response_history = self.__fetch_page(url)
-            return response_url, response_code, html, self.session_handler.cookies
+            return response_url, response_code, html, self.session_handler.cookies, response_history
         else:
             response_url, response_code, html, response_history = self.__fetch_page(url)
               
@@ -57,7 +57,7 @@ class RequestManager(object):
                 else:
                     response_url, response_code, html, response_history = self.__fetch_page(url) 
 
-            return response_url, response_code, html, self.session_handler.cookies
+            return response_url, response_code, html, self.session_handler.cookies, response_history
                        
     def get(self, url):
         return self.session_handler.get(url, proxies=self.request_proxies, verify=False), self.session_handler.cookies

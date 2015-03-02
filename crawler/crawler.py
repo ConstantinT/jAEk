@@ -117,27 +117,27 @@ class Crawler(QObject):
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
                 self.current_depth = parent_page.current_depth                
-                url = parent_page.url
+                url_to_request = parent_page.url
                 
             else:
-                url = self.persistentsmanager.get_next_url_for_crawling()
-                if url is not None:
+                url_to_request = self.persistentsmanager.get_next_url_for_crawling()
+                if url_to_request is not None:
                     self.crawler_state = Crawle_State.normal_page
-                    if url.depth_of_finding is None:
+                    if url_to_request.depth_of_finding is None:
                         self.current_depth = 0
-                        url.depth_of_finding = 0
+                        url_to_request.depth_of_finding = 0
                     else:
-                        self.current_depth = url.depth_of_finding + 1
+                        self.current_depth = url_to_request.depth_of_finding + 1
                 else:
                     break
             
             
             if self.crawler_state == Crawle_State.normal_page:
-                if not self.domain_handler.is_in_scope(url) or url.depth_of_finding > self.crawl_config.max_depth:
-                    logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url.toString())
-                    self.persistentsmanager.visit_url(url, None, 000)
+                if not self.domain_handler.is_in_scope(url_to_request) or url_to_request.depth_of_finding > self.crawl_config.max_depth:
+                    logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url_to_request.toString())
+                    self.persistentsmanager.visit_url(url_to_request, None, 000)
                     continue   
-                response_url, response_code, html, cookies = self.requestmanager.fetch_page(url.toString()) 
+                response_url, response_code, html, cookies, history = self.requestmanager.fetch_page(url_to_request.toString()) 
                 
             if self.crawler_state == Crawle_State.delta_page:
                 if current_page.delta_depth == self.crawl_config.max_click_depth:
@@ -145,17 +145,11 @@ class Crawler(QObject):
                     self.persistentsmanager.store_delta_page(current_page)
                     self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")
                     continue
-                response_url, response_code, html, cookies = self.requestmanager.fetch_page(url) 
+                response_url, response_code, html, cookies, history = self.requestmanager.fetch_page(url_to_request) 
                 
-            
-                    
-            
-            
             if response_code not in [200, 301, 304]:
-                self.persistentsmanager.visit_url(url, webpage_id=None, response_code=response_code)
+                self.persistentsmanager.visit_url(url_to_request, webpage_id=None, response_code=response_code)
                 continue
-            
-            
             
             base_url, html = self._page_renderer.render(response_url, html)
                              
@@ -169,7 +163,13 @@ class Crawler(QObject):
                 current_page = WebPage(self.get_next_page_id(), response_url, html, cookies, depth=self.current_depth, base_url = base_url)
                 logging.debug("Now at Page: " + str(current_page.id))
                 current_page = self._analyze_webpage(current_page)
-                self.persistentsmanager.visit_url(url, current_page.id, response_code)
+                if len(history) == 1:
+                    self.persistentsmanager.visit_url(url_to_request, current_page.id, history[0].status_code, redirected_to=response_url)
+                    response_url = self.domain_handler.create_url(response_url, depth_of_finding=url_to_request.depth_of_finding)
+                    self.persistentsmanager.insert_redirected_url(response_url)
+                    self.persistentsmanager.visit_url(response_url, current_page.id, response_code)
+                else:
+                    self.persistentsmanager.visit_url(url_to_request, current_page.id, response_code)
                 self.extract_new_links_from_page(current_page, self.current_depth, current_page.base_url)
                 self.persistentsmanager.store_web_page(current_page)
             """
@@ -177,7 +177,7 @@ class Crawler(QObject):
             """
             
             
-            self._event_executor.updateCookieJar(cookies, response_url)
+            self._event_executor.updateCookieJar(cookies, response_url.toString())
             clickable_to_process = deepcopy(current_page.clickables)
             clickable_to_process = self.edit_clickables_for_execution(clickable_to_process)
             clickables = []

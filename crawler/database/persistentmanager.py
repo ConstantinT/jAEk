@@ -79,8 +79,11 @@ class PersistentsManager(object):
     def insert_url(self, url):
         self._database.insert_url(self._current_crawl_session, url)
     
-    def visit_url(self, url, webpage_id, response_code):
-        self._database.visit_url(self._current_crawl_session, url, webpage_id, response_code)
+    def insert_redirected_url(self, url):
+        self._database.insert_url(self._current_crawl_session, url, is_redirected_url=True)
+        
+    def visit_url(self, url, webpage_id, response_code, redirected_to = None):
+        self._database.visit_url(self._current_crawl_session, url, webpage_id, response_code, redirected_to)
     
     def extend_ajax_requests_to_webpage(self, webpage, ajax_reuqests):
         self._database.extend_ajax_requests_to_webpage(self._current_crawl_session, webpage, ajax_reuqests)

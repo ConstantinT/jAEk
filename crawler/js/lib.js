@@ -252,7 +252,7 @@ function getXPath(element) {
 			id > 1 ? (id = '[' + id + ']') : (id = '');
 			xpath = '/' + element.tagName.toLowerCase() + id + xpath;
 		}
-		console.log("XPATH: " + xpath)
+		//console.log("XPATH: " + xpath)
 		return xpath;
 	} catch (e) {
 		console.log("Error: " + e)
@@ -265,8 +265,8 @@ function addEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
-	console.log("New Addevent:" + tag + ":" + id + ":" + html_class + ":"
-			+ args[0])
+	//console.log("New Addevent:" + tag + ":" + id + ":" + html_class + ":"
+	//		+ args[0])
 	dom_adress = getXPath(elem);
 	if (dom_adress.indexOf("/html/body") == -1) {
 		console.log("Domadress is not valid: " + dom_adress)
@@ -354,8 +354,8 @@ function bodyAddEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
-	console.log("New Addevent(Body):" + tag + ":" + id + ":" + html_class + ":"
-			+ args[0])
+	//console.log("New Addevent(Body):" + tag + ":" + id + ":" + html_class + ":"
+	//		+ args[0])
 	function_id = MD5(args[1].toString())
 	dom_adress = "/html/body"
 	resp = {

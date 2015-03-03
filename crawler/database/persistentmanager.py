@@ -57,6 +57,14 @@ class PersistentsManager(object):
             self._deltapage_cache.insert(0, delta_page)
         self._database.insert_delta_page(self._current_crawl_session,delta_page)
     
+    def get_page_to_url(self, url):
+        try:
+            url = url.toString()
+        except AttributeError:
+            url = url
+        
+        return self._database.get_webpage_to_url(self._current_crawl_session, url) 
+    
     def get_web_page(self, page_id):
         for page in self._web_page_cache:
             if page_id == page.id:

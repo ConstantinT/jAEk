@@ -156,7 +156,7 @@ class Database():
             self.insert_form(current_crawl_session, form, web_page.id)
         
         document = self._create_webpage_doc(web_page)
-        document['ajax_request'] = []
+        document['ajax_requests'] = []
         document['crawl_session'] = current_crawl_session
         self.pages.save(document)
         
@@ -178,7 +178,7 @@ class Database():
             timemimg_requests.append(self._parse_timemimg_request_from_db_to_model(request))
         result.timing_requests = timemimg_requests
         ajax = []
-        for request in page['ajax_request']:
+        for request in page['ajax_requests']:
             ajax.append(self._parse_ajax_request_from_db_to_model(request))
         result.ajax_requests = ajax
         return result  
@@ -197,7 +197,7 @@ class Database():
     def _parse_ajax_request_from_db_to_model(self, ajax_request):
         tmp = self.clickables.find_one(ajax_request['trigger'])
         trigger = self._parse_clickable_from_db_to_model(tmp)
-        return AjaxRequest(ajax_request['method'], ajax_request['url'], trigger, ajax_request['parameter'])
+        return AjaxRequest(ajax_request['method'], ajax_request['url'], trigger, ajax_request['parameters'])
         
     def _insert_clickable(self, current_crawl_session , web_page_id, clickable):
         document = {}
@@ -473,3 +473,8 @@ class Database():
         result.clickables = clickables
         result.generator_requests = generator_requests
         return result
+    
+    def get_webpage_to_url(self, current_crawl_session ,url):
+        result = self.visited_urls.find_one({"url": url, "crawl_session" : current_crawl_session})
+        if result is not None and result["visited"] is True:
+            return self.get_web_page(result['page_id'], current_crawl_session)

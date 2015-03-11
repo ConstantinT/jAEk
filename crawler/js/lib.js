@@ -233,22 +233,21 @@ function intervallWrapper(elem, args) {
 }
 
 function getXPath(element) {
-	// console.log(element.tagName + " : " + element.className + " ; " +
-	// element.id)
+	//console.log("====Start====")
 	try {
 		var xpath = '';
 		for (; element && element.nodeType == 1; element = element.parentNode) {
-			// console.log(element.tagName + " : " + element.className + " ; " +
-			// element.id)
 			var sibblings = element.parentNode.childNodes;
+			//console.log("Beginn: " + element.tagName + " - " + element.className + " - " + element.id + " - " + sibblings.length + " - Parent: " + element.parentNode.tagName)
 			var same_tags = []
 			for (var i = 0; i < sibblings.length; i++) { // collecting same
-															// tags
+				//console.log(sibblings[i].tagName + " - " + sibblings[i].className + " - " + sibblings[i].id)// tags
 				if (element.tagName === sibblings[i].tagName) {
 					same_tags[same_tags.length] = sibblings[i]
 				}
 			}
 			var id = same_tags.indexOf(element) + 1
+			//console.log("End: " + element.tagName + " - " + element.className + " - " + element.id+ " - " + same_tags.length + " - " + id)
 			id > 1 ? (id = '[' + id + ']') : (id = '');
 			xpath = '/' + element.tagName.toLowerCase() + id + xpath;
 		}
@@ -261,6 +260,7 @@ function getXPath(element) {
 }
 
 function addEventListenerWrapper(elem, args) {
+	//console.log("Add Event")
 	tag = elem.tagName
 	dom_adress = "";
 	id = elem.id;
@@ -282,6 +282,7 @@ function addEventListenerWrapper(elem, args) {
 		"tag" : tag,
 		"class" : html_class
 	}
+	//console.log(resp)
 	resp = JSON.stringify(resp)
 	jswrapper.add_EventListener_to_Element(resp)
 	if (args[0] == "change") {
@@ -350,6 +351,7 @@ function addEventListenerWrapper(elem, args) {
 }
 
 function bodyAddEventListenerWrapper(elem, args) {
+	//console.log("Add event to body")
 	tag = elem.tagName
 	dom_adress = "";
 	id = elem.id;

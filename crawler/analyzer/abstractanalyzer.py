@@ -21,7 +21,7 @@ class AbstractAnalyzer(QWebPage):
     '''
     classdocs
     '''    
-    def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium):
+    def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
         QWebPage.__init__(self, parent)
         self.app = parent.app
         self._jsbridge = JsBridge(self)
@@ -66,7 +66,11 @@ class AbstractAnalyzer(QWebPage):
         f = open("js/md5.js")
         self._md5 = f.read()
         f.close()
-        
+
+        f = open('js/property_obs.js', 'r')
+        self._property_obs_js = f.read()
+        f.close()
+
         enablePlugins = False
         loadImages = False
         self.settings().setAttribute(QWebSettings.PluginsEnabled, enablePlugins)
@@ -75,11 +79,15 @@ class AbstractAnalyzer(QWebPage):
         self.settings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
         self.settings().setAttribute(QWebSettings.JavascriptEnabled, True)
         
+        if network_access_manager:
+            self.setNetworkAccessManager(network_access_manager)
+        
         if proxy != "" and port != 0: 
-            manager = QNetworkAccessManager()
+            manager = self.networkAccessManager()
             p = QNetworkProxy(QNetworkProxy.HttpProxy, proxy, port, None, None)
             manager.setProxy(p)
             self.setNetworkAccessManager(manager)
+        self.networkAccessManager().finished.connect(self.loadComplete)
 
     def analyze(self, html, requested_url, timeout = 20):
         raise NotImplementedException()
@@ -90,7 +98,7 @@ class AbstractAnalyzer(QWebPage):
     def loadFinishedHandler(self, result):
         pass
     
-    def frameCreatedHandler(self):
+    def frameCreatedHandler(self, frame):
         pass
     
     def jsWinObjClearedHandler(self):
@@ -123,6 +131,11 @@ class AbstractAnalyzer(QWebPage):
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
         logging.debug("Console: " + message + " at: " + str(lineNumber))
         pass
+
+    def loadComplete(self, reply):
+        pass
+
+
 
 class JsBridge(QObject):
 

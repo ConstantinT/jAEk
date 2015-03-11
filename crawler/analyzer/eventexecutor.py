@@ -7,6 +7,8 @@ import logging
 import random
 import string
 from enum import Enum
+from analyzer.helper.formhelper import FormHelper
+from analyzer.helper.linkhelper import LinkHelper
 from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
 from models.deltapage import DeltaPage
@@ -19,8 +21,8 @@ from PyQt5.Qt import QUrl
 
 class EventExecutor(AbstractAnalyzer):
     
-    def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium):
-        super(EventExecutor, self).__init__(parent, proxy, port, crawl_speed)
+    def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
+        super(EventExecutor, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._url_changed = False #Inidicates if a event changes a location => treat it as link!
         self._new_url = None
         self.timeming_events = None
@@ -31,6 +33,9 @@ class EventExecutor(AbstractAnalyzer):
         
         self.seen_timeouts = {}
         self.mainFrame().urlChanged.connect(self._url_changes)
+
+        self._link_helper = LinkHelper()
+        self._form_helper = FormHelper()
         
         
 
@@ -114,8 +119,14 @@ class EventExecutor(AbstractAnalyzer):
         real_clickable.evaluateJavaScript(js_code)
         self._wait(0.5)
 
+        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url, webpage.current_depth)
+        forms = self._form_helper.extract_forms(self.mainFrame())
+        self.mainFrame().evaluateJavaScript(self._property_obs_js)
+        self._wait(0.5)
+
         
         html = self.mainFrame().toHtml()
+
         if is_key_event:
             generator = KeyClickable(element_to_click, random_char)
         else:
@@ -128,6 +139,9 @@ class EventExecutor(AbstractAnalyzer):
         else:
             delta_page = DeltaPage(-1, webpage.url, html, generator=generator, parent_id=webpage.id, cookiesjar=webpage.cookiejar)
             delta_page.clickables = self.new_clickables # Set by add eventlistener code
+            delta_page.clickables.extend(clickables)
+            delta_page.links = links
+            delta_page.forms = forms
             delta_page.ajax_requests = self.ajax_requests
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)

@@ -34,9 +34,9 @@ class DeltaPage(WebPage):
             msg += "Clickable: \n"
             for elem in self.clickables:
                 msg += elem.toString() + " \n"
-        if len(self.timing_requests) > 0: 
+        if len(self.timeming_requests) > 0:
             msg += "Timingrequests: \n"
-            for elem in self.timing_requests:
+            for elem in self.timeming_requests:
                 msg += elem.toString() + " \n"
         if len(self.links) > 0: 
             msg += "Static Links: \n"

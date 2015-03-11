@@ -1,3 +1,4 @@
+//console.log("Property_obs injected")
 var elems = document.getElementsByTagName('*')
 // console.log(elems.length + " elems found...")
 for (my_counter_i = 0; my_counter_i < elems.length; my_counter_i++) {
@@ -67,9 +68,10 @@ for (my_counter_i = 0; my_counter_i < elems.length; my_counter_i++) {
 				"event" : events[my_counter_j].method,
 				"id" : id,
 				"tag" : tag,
-				"dom_adress" : dom_adress,
+				"addr" : dom_adress,
 				"class" : html_class
 			}
+            //console.log("Add")
 			resp = JSON.stringify(resp)
 			jswrapper.add_EventListener_to_Element(resp)
 		}

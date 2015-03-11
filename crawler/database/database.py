@@ -176,7 +176,7 @@ class Database():
         timemimg_requests = []
         for request in page['timeming_requests']:
             timemimg_requests.append(self._parse_timemimg_request_from_db_to_model(request))
-        result.timing_requests = timemimg_requests
+        result.timeming_requests = timemimg_requests
         ajax = []
         for request in page['ajax_requests']:
             ajax.append(self._parse_ajax_request_from_db_to_model(request))
@@ -235,7 +235,7 @@ class Database():
             trigger_id = self.clickables.find_one({"crawl_session" : current_crawl_session, "dom_adress" : r.trigger.dom_adress, "web_page_id": delta_page.parent_id, "event": r.trigger.event})
             trigger_id = trigger_id["_id"]
             doc["trigger"] = trigger_id
-            doc["parameter"] = r.parameter
+            doc["parameters"] = r.parameter
             generator_request_doc.append(doc)
         document["generator_requests"] = generator_request_doc
         
@@ -271,7 +271,7 @@ class Database():
         for link in web_page.links:
             document["links"].append(self._parse_link(link)) 
         timeming_requests_doc = []
-        for timing_request in web_page.timing_requests:
+        for timing_request in web_page.timeming_requests:
             timeming_requests_doc.append(self._parse_timeming_request(timing_request))
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth

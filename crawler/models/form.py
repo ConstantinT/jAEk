@@ -8,15 +8,18 @@ import hashlib
 
     
 class HtmlForm():
-    def __init__(self, parameters, action, method):
+    def __init__(self, parameters, action, method, dom_address = None):
         self.parameter = parameters # Array of FormInput's
+        self.parameter = sorted(self.parameter, key = lambda parameter: parameter.name)
         self.action = action
         self.method = method
-        self.parameter = sorted(self.parameter, key = lambda parameter: parameter.name)
         self.form_hash = self.get_hash()
+        self.dom_address = dom_address
         
     def toString(self):
         msg = "[Form: Action: '" + self.action + "' Method:' "+ self.method +" - Formhash: " + self.form_hash + " \n"
+        if self.dom_address is not None:
+            msg += "Dom Address: " + self.dom_address + " \n"
         for elem in self.parameter:
             msg += "[Param: " + str(elem.tag) + " Name: " + str(elem.name) + " Inputtype: " + str(elem.input_type) + " Values: " + str(elem.values) + "] \n"
         return msg + "]"
@@ -63,7 +66,7 @@ class FormInput():
 
 class InputField():
     
-    def __init__(self, input_type, dom_adress, html_id = None, html_class = None, value = None):
+    def __init__(self, input_type, html_id = None, html_class = None, value = None):
         self.input_type = input_type
         self.html_id = html_id
         self.html_class = html_class

@@ -1,10 +1,10 @@
-from analyzer.abstractanalyzer import AbstractAnalyzer
+from analyzer.abstractinteractioncore import AbstractInteractionCore
 from models.utils import CrawlSpeed
 from time import time, sleep
 from PyQt5.Qt import QEventLoop, QTimer, QUrl
 import logging
 
-class Requestor(AbstractAnalyzer):
+class Requestor(AbstractInteractionCore):
     def __init__(self, parent, proxy, port, crawl_speed = CrawlSpeed.Medium):
         super(Requestor, self).__init__(parent, proxy, port, crawl_speed)
         self.app = parent.app

@@ -24,10 +24,7 @@ if __name__ == '__main__':
      
    
     
-    url = "http://localhost/url_change_test1.php"
-    #url = "http://localhost/iframe_test1.php"
-    #url = "http://localhost:8081/pages/1.php"
-    #url = "https://plus.google.com/"
+
     url = "http://localhost:8080"
 
     crawler_config = CrawlConfig("EPESI", url, max_depth=5,

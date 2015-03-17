@@ -17,7 +17,7 @@ from models.utils import CrawlSpeed
 import logging
 
 
-class AbstractAnalyzer(QWebPage):
+class AbstractInteractionCore(QWebPage):
     '''
     classdocs
     '''    
@@ -134,6 +134,90 @@ class AbstractAnalyzer(QWebPage):
 
     def loadComplete(self, reply):
         pass
+
+    def search_element_with_id(self, element_id):
+        elem = self.mainFrame().findAllElements("#" + str(element_id))
+        if len(elem) > 0:
+            return elem[0] # maybe check if there is more than one element
+        else:
+            return None
+
+    def search_element_with_class(self, cls, dom_adress):
+        css_cls_definition = ""
+        classes = cls.split(" ")
+        for cls in classes: #converting class names in css-compatible classnames
+            cls = "." + cls
+            css_cls_definition = css_cls_definition + cls + " "
+        elems = self.mainFrame().findAllElements(css_cls_definition)
+        for elem in elems:
+            if dom_adress == elem.evaluateJavaScript("getXPath(this)"):
+                return elem
+
+    def search_element_without_id_and_class(self, dom_adress):
+        check_dom_adress = dom_adress
+        dom_address = dom_adress.split("/")
+        current_element_in_dom = self.mainFrame().documentElement() #Is HTML-Element
+        while len(dom_address) > 0 and current_element_in_dom is not None:
+            target_tag_name = dom_address.pop(0) # Get and remove the first element
+            target_tag_name = target_tag_name.upper()
+            if len(target_tag_name) == 0:
+                continue
+            elif target_tag_name == "HTML": #or target_tag_name == "body":
+                continue
+            else:
+                tmp = target_tag_name.find("[")
+                if tmp > 0: # target_tag_name looks like tagname[index]
+                    target_tag_name = target_tag_name.split("[")
+                    index = int(target_tag_name[1].split("]")[0]) # get index out of target_tag_name
+                    target_tag_name = target_tag_name[0] # target_tag_name name
+                    last_child = current_element_in_dom.lastChild()
+                    tmp_element = current_element_in_dom.findFirst(target_tag_name) # takes first child
+                    if tmp_element.tagName() == target_tag_name: # if firstchild is from type of target_tag_name, subtrakt 1 from index
+                        index -= 1;
+                    counter = 9999 #Sometimes comparing with last child went wrong, therefore we have an backup counter
+                    while index > 0 and tmp_element != last_child: # take next sibbling until index is 0, if target_tag_name is equal subtrakt one
+                        tmp_element = tmp_element.nextSibling() #
+                        if tmp_element.tagName() == target_tag_name:
+                            index -= 1
+                        counter -= 1
+                        if counter == 0: #If counter 0 then break, we wont find it anymore
+                            current_element_in_dom = None
+                            break
+                    if index == 0 and tmp_element.tagName() == target_tag_name:
+                        current_element_in_dom = tmp_element
+                    else: #We miss the element
+                        current_element_in_dom = None
+                else: #target_tag_name is the only of his type, or the first...is die hell
+                    tmp_element = current_element_in_dom.firstChild()
+                    last_child = current_element_in_dom.lastChild()
+                    counter = 9999
+                    while tmp_element.tagName() != target_tag_name and tmp_element != last_child and counter > 0:
+                        #logging.debug(tmp_element.tagName())
+                        counter -= 1
+                        if tmp_element.tagName() == target_tag_name:
+                            current_element_in_dom = tmp_element
+                            break
+                        else:
+                            tmp_element = tmp_element.nextSibling()
+                    if tmp_element.tagName() != target_tag_name or counter == 0:
+                        current_element_in_dom = None
+                    else:
+                        current_element_in_dom = tmp_element
+
+        tmp_element = None
+        last_child = None
+        dom_address = None
+
+        if current_element_in_dom == None:
+            #logging.debug("Current Elem is None")
+            return None
+        if current_element_in_dom.evaluateJavaScript("getXPath(this)") != check_dom_adress:
+            logging.debug("Element not found: " + str(current_element_in_dom.evaluateJavaScript("getXPath(this)")) + " : " + str(check_dom_adress))
+            return None
+        else:
+            #logging.debug("Element: " + str(current_element_in_dom.evaluateJavaScript("getXPath(this)")) + " found...")
+            return current_element_in_dom
+
 
 
 

@@ -11,6 +11,7 @@
 	}
 	var Simulate = {
 		event : function(element, eventName) {
+            console.log(eventName);
 			if (document.createEvent) {
 				var evt = document.createEvent("HTMLEvents")
 				evt.initEvent(eventName, true, true)

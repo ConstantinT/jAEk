@@ -9,8 +9,9 @@ class FormHelper():
         for form in forms:
             action = form.attribute("action")
             method = form.attribute("method")
+            dom_adress = form.evaluateJavaScript("getXPath(this)")
             form_params = self._extracting_information(form)
-            result.append(HtmlForm(form_params, action, method))
+            result.append(HtmlForm(form_params, action, method, dom_adress))
         return result
 
     def _extracting_information(self, elem):

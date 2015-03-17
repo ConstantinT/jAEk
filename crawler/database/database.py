@@ -293,6 +293,7 @@ class Database():
         form_doc["web_page_id"] = page_id
         form_doc["method"] = form.method
         form_doc["action"] = form.action
+        form_doc["dom_address"] = form.dom_address
         param_doc = []
         for parameter in form.parameter:
             param_doc.append(self._parse_form_parameter(parameter))
@@ -445,7 +446,7 @@ class Database():
             for p in form['parameters']:
                 form_input = FormInput(p['tag'], p['name'], p['input_type'], p['values'])
                 parameters.append(form_input)
-            f = HtmlForm(parameters, form['action'], form['method'])
+            f = HtmlForm(parameters, form['action'], form['method'], form["dom_address"])
             result.append(f)
         return result
     

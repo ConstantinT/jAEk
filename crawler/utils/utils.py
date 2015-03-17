@@ -7,7 +7,7 @@ import logging
 from time import time, sleep
 import models
 from models.deltapage import DeltaPage
-from analyzer.abstractanalyzer import AbstractAnalyzer
+from analyzer.abstractinteractioncore import AbstractInteractionCore
 from models.utils import CrawlSpeed
  
  

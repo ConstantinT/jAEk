@@ -12,14 +12,15 @@ from urllib.parse import urljoin
 from PyQt5.Qt import QApplication, QObject
 
 from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
+from analyzer.formhandler import FormHandler
 from database.persistentmanager import PersistentsManager
 from models.url import Url
-from utils.execptions import PageNotFoundException
+from utils.execptions import PageNotFoundException, LoginException
 from models.deltapage import DeltaPage
 from models.webpage import WebPage
 from models.clickabletype import ClickableType
 from utils.domainhandler import DomainHandler
-from analyzer.dynamicanalyzer import Analyzer
+from analyzer.dynamicanalyzer import InteractionCore
 from network.network import NetWorkAccessManager
 from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, form_to_dict
 
@@ -34,8 +35,10 @@ class Crawler(QObject):
         self._network_access_manager = NetWorkAccessManager(self)
         self._event_executor = EventExecutor(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                              network_access_manager=self._network_access_manager)
-        self._dynamic_analyzer = Analyzer(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
+        self._dynamic_analyzer = InteractionCore(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                           network_access_manager=self._network_access_manager)
+        self._form_handler = FormHandler(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
+                                             network_access_manager=self._network_access_manager)
         self.domain_handler = None
         self.current_depth = 0
         self.crawl_with_login = False
@@ -56,13 +59,14 @@ class Crawler(QObject):
 
         self.user = self.persistentsmanager.init_new_crawl_session_for_user(user)
         self.domain_handler = DomainHandler(self.crawl_config.start_page_url)
-        start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
-        self.persistentsmanager.insert_url(start_page_url)
+        self.start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
+        self.persistentsmanager.insert_url(self.start_page_url)
 
         if self.user.login_data is not None:
             self.crawl_with_login = True
-            self.initial_login(start_page_url, self.user.login_data)
-
+            go_on = self.initial_login(self.domain_handler.create_url(self.user.url_with_login_form), self.user.login_data)
+            if not go_on:
+                raise LoginException("Initial login failed...")
 
         necessary_clicks = []  # Saves the actions the crawler need to reach a delta page
         parent_page = None  # Saves the parent of the delta-page (not other delta pages)
@@ -198,7 +202,7 @@ class Crawler(QObject):
                     self.persistentsmanager.update_clickable(current_page.id, clickable)
                     continue
 
-                if event_state == Event_Result.Target_Element_Not_Founs or event_state == Event_Result.Error_While_Initial_Loading:
+                if event_state == Event_Result.Target_Element_Not_Found or event_state == Event_Result.Error_While_Initial_Loading:
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.Error
                     clickables.append(clickable)
@@ -210,9 +214,9 @@ class Crawler(QObject):
                     clickable.clicked = False
                     error_ratio = errors / len(current_page.clickables)
                     if error_ratio > .2:
-                        go_on = self.requestmanager.handling_possible_logout()
+                        go_on = self.handling_possible_logout()
                         if not go_on:
-                            # raise LoginErrorException("Cannot login anymore")
+                            # raise LoginException("Cannot login anymore")
                             continue
                         else:
                             retrys += 1
@@ -397,8 +401,7 @@ class Crawler(QObject):
         else:
             return clickable
 
-    def handle_delta_page_has_new_links_and_clickables(self, clickable, delta_page, parent_page=None,
-                                                       xhr_behavior=None):
+    def handle_delta_page_has_new_links_and_clickables(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
@@ -554,7 +557,6 @@ class Crawler(QObject):
         data1 = keys[0]
         data2 = keys[1]
         for form in page.forms:
-            logging.debug(form.toString())
             if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
                 login_form = form
         return login_form
@@ -642,35 +644,63 @@ class Crawler(QObject):
         # logging.debug(str(clickable.html_class) + " : " + str(clickable.event))
         return True
 
-    def initial_login(self, base_url, login_data):
-        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(base_url, timeout=10)
-        landing_page_loged_out = WebPage(-1, base_url, html_after_timeouts)
-        landing_page_loged_out.clickables = new_clickables
-        landing_page_loged_out.forms = forms
-        landing_page_loged_out.links = links
-        landing_page_loged_out.timeming_requests = timemimg_requests
-        login_form = self.find_form_with_special_params(landing_page_loged_out, login_data)
-        data = form_to_dict(login_form, login_data)
-        data['history'] = ""
-        data['__action_module__'] = "/Base_Box|0/Base_User_Login|login"
-        url = urljoin(base_url.toString(), login_form.action)
-        url = Url(url)
-        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url, timeout=30, method="POST", data=data)
-        landing_page_loged_in = WebPage(-1, base_url, html_after_timeouts)
-        landing_page_loged_in.clickables = new_clickables
-        landing_page_loged_in.links = links
-        landing_page_loged_in.timeming_requests = timemimg_requests
-        landing_page_loged_in.forms = forms
+    def initial_login(self, url_with_loginform, login_data):
+        self._page_with_loginform_logged_out = self._get_webpage(url_with_loginform)
+        self._login_form = self.find_form_with_special_params(self._page_with_loginform_logged_out, login_data)
 
+        page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, login_data)
+
+        if calculate_similarity_between_pages(self._page_with_loginform_logged_out,page_with_loginform_logged_in) < .5:
+            logging.debug("Initial Login successfull...")
+            return True
+
+        self.page_with_loginform_logged_in = page_with_loginform_logged_in
         f = open("test1.txt", "w")
-        f.write(landing_page_loged_out.toString())
+        f.write(self.landing_page_loged_out.toString())
         f.close()
 
         f = open("test2.txt", "w")
-        f.write(landing_page_loged_in.toString())
+        f.write(page_with_loginform_logged_in.toString())
         f.close()
+        return False
 
-        return True
+    def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None):
+        if page_with_login_form is None:
+            page_with_login_form = self._page_with_loginform_logged_out
+        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
+
+        landing_page_logged_in = WebPage(-1, page_with_login_form.url, html_after_timeouts)
+        landing_page_logged_in.clickables = new_clickables
+        landing_page_logged_in.links = links
+        landing_page_logged_in.timeming_requests = timemimg_requests
+        landing_page_logged_in.forms = forms
+
+        return landing_page_logged_in
+
+    def handle_possible_logout(self):
+        page_with_login_form = self._get_webpage(self._page_with_loginform_logged_out.url)
+        login_form = self.find_form_with_special_params(page_with_login_form, self.user.login_data)
+        if login_form is not None: #So login_form is visible, we are logged out
+            logging.debug("Logout detected, visible login form...")
+            page = self._login_and_return_webpage(login_form, self._page_with_loginform_logged_out, self.user.login_data)
+            if calculate_similarity_between_pages(page, self._page_with_loginform_logged_out) > 0.5:
+                logging.debug("Relogin successfull...continue")
+                return True
+            else:
+                logging.debug("Relogin failed...stop")
+                return False
+
+    def _get_webpage(self, url):
+        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url, timeout=10)
+        result = WebPage(-1, url, html_after_timeouts)
+        result.clickables = new_clickables
+        result.forms = forms
+        result.links = links
+        result.timeming_requests = timemimg_requests
+
+        return result
+
+
 
 
 class CrawlState(Enum):

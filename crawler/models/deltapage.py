@@ -4,7 +4,6 @@ Created on 23.02.2015
 @author: constantin
 '''
 
-from requests.utils import dict_from_cookiejar
 from models.webpage import WebPage
 
 class DeltaPage(WebPage):

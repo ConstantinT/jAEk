@@ -3,7 +3,6 @@ Created on 23.02.2015
 
 @author: constantin
 '''
-from requests.utils import dict_from_cookiejar
 class WebPage:
     
     def __init__(self, id, url = None, html = None, cookiesjar = None, depth = None, base_url = None):
@@ -20,7 +19,11 @@ class WebPage:
         self.base_url = None # Defines if a page contains a <base> tag
         
     def toString(self):
-        msg = "[ Page: " + str(self.url) + " - ID: " + str(self.id) + " - Depth:" + str(self.current_depth) + " \n"
+        try:
+            url = self.url.toString()
+        except AttributeError:
+            url = self.url
+        msg = "[ Page: " + url + " - ID: " + str(self.id) + " - Depth:" + str(self.current_depth) + " \n"
         if self.cookiejar is not None:
             msg += "Cookies: \n"
             c = dict_from_cookiejar(self.cookiejar)

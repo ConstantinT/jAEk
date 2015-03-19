@@ -4,13 +4,10 @@ Created on 12.11.2014
 @author: constantin
 '''
 import logging
-from time import time, sleep
-import models
+
 from models.deltapage import DeltaPage
-from analyzer.abstractinteractioncore import AbstractInteractionCore
-from models.utils import CrawlSpeed
- 
- 
+
+
 def form_to_dict(form, key_values = None):
     result = {}
     for elem in form.parameter:

@@ -27,7 +27,7 @@ class FormHelper():
                     if input_el.hasAttribute("name"):
                         name = input_el.attribute("name")
                     else:
-                        continue
+                        name = ""
                     if input_el.hasAttribute("value"):
                         value = [input_el.attribute("value")]
                     else:

@@ -8,18 +8,18 @@ from urllib.parse import urlparse, urljoin
 class LinkHelper():
 
     def extract_links(self, frame, requested_url, current_depth):
-        elems = frame.findAllElements("a")
-        new_links, new_clickables = self._extract_links(elems, requested_url, current_depth)
+        anchor_tags = frame.findAllElements("a")
+        new_links, new_clickables = self._extract_links(anchor_tags, requested_url, current_depth)
         return new_links, new_clickables
 
-    def _extract_links(self, elems, requested_url, current_depth):
+    def _extract_links(self, elements, requested_url, current_depth):
         found_links = []
         new_clickables = []
-        if(len(elems) == 0):
+        if(len(elements) == 0):
             #logging.debug("No links found...")
             pass
         else:
-            for elem in elems:
+            for elem in elements:
                 href = elem.attribute("href")
                 #logging.debug(str(type(elem)) + " href: " + str(href) + " Tagname: " + str(elem.tagName()))
                 if href == "/" or href == "#" or href == requested_url or href == "": #or href[0] == '#':

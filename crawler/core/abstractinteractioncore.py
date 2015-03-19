@@ -7,12 +7,11 @@ Created on 21.11.2014
 from PyQt5.Qt import QWebPage, pyqtSlot, QWebSettings
 from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkCookie,\
     QNetworkCookieJar
-from PyQt5.QtCore import QObject, QUrl
+from PyQt5.QtCore import QObject, QUrl, QSize
 
 import json
 
 from time import time, sleep
-from pip._vendor.requests.utils import dict_from_cookiejar
 from models.utils import CrawlSpeed
 import logging
 
@@ -28,6 +27,7 @@ class AbstractInteractionCore(QWebPage):
         self.loadFinished.connect(self.loadFinishedHandler)
         self.mainFrame().javaScriptWindowObjectCleared.connect(self.jsWinObjClearedHandler)
         self.frameCreated.connect(self.frameCreatedHandler)
+        self.setViewportSize(QSize(1024, 800))
 
         if crawl_speed == CrawlSpeed.Slow:
             self.wait_for_processing = 1
@@ -87,6 +87,8 @@ class AbstractInteractionCore(QWebPage):
             p = QNetworkProxy(QNetworkProxy.HttpProxy, proxy, port, None, None)
             manager.setProxy(p)
             self.setNetworkAccessManager(manager)
+
+        #Have to connect it here, otherwise I could connect it to the old one and then replaces it
         self.networkAccessManager().finished.connect(self.loadComplete)
 
     def analyze(self, html, requested_url, timeout = 20):
@@ -103,27 +105,20 @@ class AbstractInteractionCore(QWebPage):
     
     def jsWinObjClearedHandler(self):
         pass
-    
+
+    def javaScriptAlert(self, frame, msg):
+        pass
+
     def javaScriptConfirm(self, frame, msg):
         return True
     
     def javaScriptPrompt(self, *args, **kwargs):
         return True
             
-    def updateCookieJar(self, cookiejar, requested_url):     
-        qnetworkcookie_list = []
-        c = dict_from_cookiejar(cookiejar)
-        qcookiejar = QNetworkCookieJar()
-        for k in c: 
-            tmp_cookiejar = QNetworkCookie(k, c[k])
-            qnetworkcookie_list.append(tmp_cookiejar)
-        qcookiejar.setCookiesFromUrl(qnetworkcookie_list,QUrl(requested_url))
-        self.networkAccessManager().setCookieJar(qcookiejar)
-    
-    def _wait(self, waittime=1):
+    def _wait(self, waiting_time=1):
         """Wait for delay time
         """
-        deadline = time() + waittime
+        deadline = time() + waiting_time
         while time() < deadline:
             sleep(0)
             self.app.processEvents()

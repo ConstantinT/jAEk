@@ -1,12 +1,14 @@
 import logging
+
 from PyQt5.Qt import QUrl
-from analyzer.abstractinteractioncore import AbstractInteractionCore
+
+from core.abstractinteractioncore import AbstractInteractionCore
 from analyzer.eventexecutor import Event_Result
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
-from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
 from models.utils import CrawlSpeed
+
 
 __author__ = 'constantin'
 
@@ -48,7 +50,7 @@ class FormHandler(AbstractInteractionCore):
             return Event_Result.Target_Element_Not_Found, None
 
         for elem in form.parameter: #Iterate through abstract form representation
-            if elem.name in data: #Check if we have data we must set
+            if elem.name in data: #Check if we have the data we must set
                 elem_found = False # Indicates if we found the element in the html
                 value_to_set = data[elem.name]
                 for tmp in target_form.findAll(elem.tag): #Locking in the target form, if we found the element we have to set
@@ -69,10 +71,11 @@ class FormHandler(AbstractInteractionCore):
                     q_submit_button = el
                     break
             #q_submit_button.evaluateJavaScript("this.id='oxyfrymbel'")
-
+        else:
+            logging.debug(form.toString())
         method = target_form.attribute("onsubmit")
         #method  = "_chj($('libs_qf_1bbae4d400dd068c367ef84d19555f40').serialize()+'&__action_module__=%2FBase_Box%7C0%2FBase_User_Login%7Clogin','Logge ein','');"
-        if method is not None or method != "":
+        if method is not None and method != "":
             js_code_snippets = method.split(";")
             for snippet in js_code_snippets:
                 if "return" in snippet or snippet == "":
@@ -84,10 +87,11 @@ class FormHandler(AbstractInteractionCore):
             self.mainFrame().evaluateJavaScript(self._addEventListener)
             self._wait(5)
         else:
-            pass
-        #TODO: Implement way for sending forms without onsubmit-method
-        # check between: target_form.evaluateJavaScript("Simulate or document.?form?.submit())
-        # or submit_button click
+            #TODO: Implement way for sending forms without onsubmit-method
+            # check between: target_form.evaluateJavaScript("Simulate or document.?form?.submit())
+            # or submit_button click
+            q_submit_button.evaluateJavaScript("Simulate.click(this);")
+            self._wait(5)
 
         links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url, webpage.current_depth)
         forms = self._form_helper.extract_forms(self.mainFrame())
@@ -104,7 +108,6 @@ class FormHandler(AbstractInteractionCore):
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._md5)
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
-
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
         logging.debug("Console(FormHandler): " + message + " at: " + str(lineNumber))

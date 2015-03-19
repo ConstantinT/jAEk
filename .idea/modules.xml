@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../BenchmarkProject/.idea/BenchmarkProject.iml" filepath="$PROJECT_DIR$/../BenchmarkProject/.idea/BenchmarkProject.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/Crawler2.iml" filepath="$PROJECT_DIR$/.idea/Crawler2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../W3afLogAnalyzer/.idea/W3afLogAnalyzer.iml" filepath="$PROJECT_DIR$/../W3afLogAnalyzer/.idea/W3afLogAnalyzer.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../w3af-master/.idea/w3af-master.iml" filepath="$PROJECT_DIR$/../w3af-master/.idea/w3af-master.iml" />
+    </modules>
+  </component>
+</project>

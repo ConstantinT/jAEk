@@ -7,15 +7,17 @@ import logging
 import random
 import string
 from enum import Enum
+
+from PyQt5.Qt import QUrl
+
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
 from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
 from models.deltapage import DeltaPage
 from models.keyclickable import KeyClickable
-from analyzer.abstractinteractioncore import AbstractInteractionCore
+from core.abstractinteractioncore import AbstractInteractionCore
 from models.utils import CrawlSpeed
-from PyQt5.Qt import QUrl
 
 
 class EventExecutor(AbstractInteractionCore):

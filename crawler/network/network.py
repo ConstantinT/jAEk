@@ -15,13 +15,14 @@ class NetWorkAccessManager(QNetworkAccessManager):
         self.reply = None
         
     def _finished(self, reply):
-        logging.debug("NetworkAccessManager: Reply from {} {}".format(reply.url().toString(), reply.isFinished()))
+        #logging.debug("NetworkAccessManager: Reply from {} {}".format(reply.url().toString(), reply.isFinished()))
         #self.reply.deleteLater()
+        pass
 
         
     def createRequest(self, op, req, device=None):
         self.reply = None
-
+        """
         if op == 1:
             logging.debug("NetworkAccessManager: Request created - Operation: {}, Url: {}".format("Head",req.url().toString()))
         elif op == 2:
@@ -34,12 +35,8 @@ class NetWorkAccessManager(QNetworkAccessManager):
             logging.debug("NetworkAccessManager: Request created - Operation: {}, Url: {}".format("Delete",req.url().toString()))
         else:
             logging.debug("NetworkAccessManager: Request created - Operation: {}, Url: {}".format("CUSTOM",req.url().toString()))
-
+        """
         self.reply = QNetworkAccessManager.createRequest(self, op, req, device)
-        #reply = NetworkReply(self, reply)       
+        #reply = NetworkReply(self, reply)
         return self.reply
-
-    def doPost(self, target, parameters):
-        multipart = QHttpMultiPart(QHttpMultiPart.FormDataType)
-        text = QHttpPart()
 

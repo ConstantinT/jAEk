@@ -13,14 +13,14 @@ from PyQt5.Qt import QApplication, QObject
 
 from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
 from analyzer.formhandler import FormHandler
-from database.persistentmanager import PersistentsManager
+from database.persistentmanager import PersistenceManager
 from models.url import Url
 from utils.execptions import PageNotFoundException, LoginException
 from models.deltapage import DeltaPage
 from models.webpage import WebPage
 from models.clickabletype import ClickableType
 from utils.domainhandler import DomainHandler
-from analyzer.dynamicanalyzer import InteractionCore
+from analyzer.dynamicanalyzer import MainAnalyzer
 from network.network import NetWorkAccessManager
 from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, form_to_dict
 
@@ -29,16 +29,17 @@ potential_logout_urls = []
 
 
 class Crawler(QObject):
-    def __init__(self, crawl_config, proxy="", port=0):
+    def __init__(self, crawl_config, proxy="", port=0, persistence_manager=None):
         QObject.__init__(self)
         self.app = QApplication(sys.argv)
         self._network_access_manager = NetWorkAccessManager(self)
         self._event_executor = EventExecutor(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                              network_access_manager=self._network_access_manager)
-        self._dynamic_analyzer = InteractionCore(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
+        self._dynamic_analyzer = MainAnalyzer(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                           network_access_manager=self._network_access_manager)
         self._form_handler = FormHandler(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                              network_access_manager=self._network_access_manager)
+
         self.domain_handler = None
         self.current_depth = 0
         self.crawl_with_login = False
@@ -52,15 +53,14 @@ class Crawler(QObject):
         self.user = None
         self.page_id = 0
         self.current_depth = 0
-        self.persistentsmanager = PersistentsManager(self.crawl_config)
+        self.persistence_manager = persistence_manager
 
 
     def crawl(self, user):
-
-        self.user = self.persistentsmanager.init_new_crawl_session_for_user(user)
+        self.user = user
         self.domain_handler = DomainHandler(self.crawl_config.start_page_url)
         self.start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
-        self.persistentsmanager.insert_url(self.start_page_url)
+        self.persistence_manager.insert_url(self.start_page_url)
 
         if self.user.login_data is not None:
             self.crawl_with_login = True
@@ -72,7 +72,7 @@ class Crawler(QObject):
         parent_page = None  # Saves the parent of the delta-page (not other delta pages)
         previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
 
-        logging.debug("Crawl with userId: " + str(self.user.user_id))
+        logging.debug("Crawl with userId: " + str(self.user.username))
 
         while True:
             logging.debug("=======================New Round=======================")
@@ -92,7 +92,7 @@ class Crawler(QObject):
                 while isinstance(parent_page, DeltaPage):
                     necessary_clicks.insert(0,
                                             parent_page.generator)  # Insert as first element because of reverse order'
-                    parent_page = self.persistentsmanager.get_page(parent_page.parent_id)
+                    parent_page = self.persistence_manager.get_page(parent_page.parent_id)
                     if parent_page is None:
                         raise PageNotFoundException("This exception should never be raised...")
                     previous_pages.append(parent_page)
@@ -101,7 +101,7 @@ class Crawler(QObject):
                 url_to_request = self.domain_handler.create_url(parent_page.url)
 
             else:
-                url_to_request = self.persistentsmanager.get_next_url_for_crawling()
+                url_to_request = self.persistence_manager.get_next_url_for_crawling()
                 if url_to_request is not None:
                     self.crawler_state = CrawlState.normal_page
                     if url_to_request.depth_of_finding is None:
@@ -116,7 +116,7 @@ class Crawler(QObject):
                 if not self.domain_handler.is_in_scope(
                         url_to_request) or url_to_request.depth_of_finding > self.crawl_config.max_depth:
                     logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url_to_request.toString())
-                    self.persistentsmanager.visit_url(url_to_request, None, 000)
+                    self.persistence_manager.visit_url(url_to_request, None, 000)
                     continue
                 response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
@@ -126,15 +126,15 @@ class Crawler(QObject):
                 current_page.links = links
                 current_page.forms = forms
                 self.domain_handler.complete_urls(current_page)
-                self.persistentsmanager.store_web_page(current_page)
-                self.persistentsmanager.visit_url(url_to_request,current_page.id, response_code)
+                self.persistence_manager.store_web_page(current_page)
+                self.persistence_manager.visit_url(url_to_request,current_page.id, response_code)
                 self.extract_new_links_from_page(current_page, current_page.current_depth, current_page.url)
                 #logging.debug(page.toString())
 
             if self.crawler_state == CrawlState.delta_page:
                 current_page.html = parent_page.html  # Assigning html
                 logging.debug("Now at Deltapage: " + str(current_page.id))
-                self.persistentsmanager.store_delta_page(current_page)
+                self.persistence_manager.store_delta_page(current_page)
             # break
 
             clickable_to_process = deepcopy(current_page.clickables)
@@ -149,7 +149,7 @@ class Crawler(QObject):
                 clickable = clickable_to_process.pop(0)
                 if not self.should_execute_clickable(clickable):
                     clickable.clickable_type = ClickableType.Ignored_by_Crawler
-                    self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    self.persistence_manager.update_clickable(current_page.id, clickable)
                     clickables.append(clickable)
                     continue
                 logging.debug(
@@ -170,7 +170,7 @@ class Crawler(QObject):
                 """
                 if event not in self._event_executor.supported_events:
                     clickable.clickable_type = ClickableType.Unsuported_Event
-                    self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    self.persistence_manager.update_clickable(current_page.id, clickable)
                     clickables.append(clickable)
                     continue
                 """
@@ -199,14 +199,14 @@ class Crawler(QObject):
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.Unsuported_Event
                     clickables.append(clickable)
-                    self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    self.persistence_manager.update_clickable(current_page.id, clickable)
                     continue
 
                 if event_state == Event_Result.Target_Element_Not_Found or event_state == Event_Result.Error_While_Initial_Loading:
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.Error
                     clickables.append(clickable)
-                    self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    self.persistence_manager.update_clickable(current_page.id, clickable)
                     continue
 
                 if event_state == Event_Result.Previous_Click_Not_Found:
@@ -238,9 +238,9 @@ class Crawler(QObject):
                     clickable.clickable_type = ClickableType.Link
                     new_url = self.domain_handler.create_url(delta_page.url,
                                                              depth_of_finding=current_page.current_depth)
-                    self.persistentsmanager.insert_url(new_url)
+                    self.persistence_manager.insert_url(new_url)
                     clickables.append(clickable)
-                    self.persistentsmanager.update_clickable(current_page.id, clickable)
+                    self.persistence_manager.update_clickable(current_page.id, clickable)
                 else:
                     """
                     Everything works fine and I get a normal DeltaPage, now I have to:
@@ -364,7 +364,7 @@ class Crawler(QObject):
 
                     else:
                         clickable.clickable_type = ClickableType.UI_Change
-                        self.persistentsmanager.update_clickable(current_page.id, clickable)
+                        self.persistence_manager.update_clickable(current_page.id, clickable)
 
             current_page.clickables = clickables
             self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")
@@ -374,30 +374,30 @@ class Crawler(QObject):
         delta_page.id = self.get_next_page_id()
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
-        self.persistentsmanager.store_delta_page(delta_page)
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.store_delta_page(delta_page)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
 
     def handle_delta_page_has_only_new_clickables(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
     def handle_delta_page_has_only_new_forms(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
-        self.persistentsmanager.store_delta_page(delta_page)
+        self.persistence_manager.store_delta_page(delta_page)
         self.extract_new_links_from_page(delta_page, self.current_depth)
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
 
     def handle_delta_page_has_only_ajax_requests(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
         clickable.clickable_type = ClickableType.SendingAjax
         if xhr_behavior == XHR_Behavior.observe_xhr:
-            self.persistentsmanager.extend_ajax_requests_to_webpage(parent_page, delta_page.ajax_requests)
+            self.persistence_manager.extend_ajax_requests_to_webpage(parent_page, delta_page.ajax_requests)
         else:
             return clickable
 
@@ -405,7 +405,7 @@ class Crawler(QObject):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
@@ -413,8 +413,8 @@ class Crawler(QObject):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
-        self.persistentsmanager.store_delta_page(delta_page)
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.store_delta_page(delta_page)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
 
     def handle_delta_page_has_new_links_and_ajax_requests(self, clickable, delta_page, parent_page=None,
@@ -425,8 +425,8 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.store_delta_page(delta_page)
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.store_delta_page(delta_page)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
         else:
             clickable.clickable_type = ClickableType.SendingAjax
@@ -435,7 +435,7 @@ class Crawler(QObject):
     def handle_delta_page_has_new_clickable_and_forms(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         delta_page.id = self.get_next_page_id()
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
@@ -447,7 +447,7 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -462,7 +462,7 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -476,7 +476,7 @@ class Crawler(QObject):
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
         delta_page.generator_requests.extend(delta_page.ajax_requests)
         delta_page.ajax_requests = []
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
@@ -488,7 +488,7 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -503,7 +503,7 @@ class Crawler(QObject):
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
             delta_page.id = self.get_next_page_id()
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -516,7 +516,7 @@ class Crawler(QObject):
         delta_page.generator.clickable_type = ClickableType.Creates_new_navigatables
         self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
         delta_page.id = self.get_next_page_id()
-        self.persistentsmanager.update_clickable(parent_page.id, clickable)
+        self.persistence_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
@@ -528,7 +528,7 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -543,7 +543,7 @@ class Crawler(QObject):
             self.extract_new_links_from_page(delta_page, current_depth=self.current_depth)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            self.persistentsmanager.update_clickable(parent_page.id, clickable)
+            self.persistence_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
         else:
@@ -565,20 +565,20 @@ class Crawler(QObject):
     def extract_new_links_from_page(self, page, current_depth, base_url=None):
 
         for link in page.links:
-            self.persistentsmanager.insert_url(link.url)
+            self.persistence_manager.insert_url(link.url)
 
         if page.ajax_requests is not None:
             for ajax in page.ajax_requests:
                 url = self.domain_handler.create_url(ajax.url, None, depth_of_finding=current_depth)
-                self.persistentsmanager.insert_url(url)
+                self.persistence_manager.insert_url(url)
 
         for ajax in page.timeming_requests:
             url = self.domain_handler.create_url(ajax.url, None, depth_of_finding=current_depth)
-            self.persistentsmanager.insert_url(url)
+            self.persistence_manager.insert_url(url)
 
         for form in page.forms:
             url = self.domain_handler.create_url(form.action, None, depth_of_finding=current_depth)
-            self.persistentsmanager.insert_url(url)
+            self.persistence_manager.insert_url(url)
 
 
     def convert_action_url_to_absolute(self, form, base):
@@ -586,7 +586,7 @@ class Crawler(QObject):
         return form
 
     def print_to_file(self, item, filename):
-        f = open("result/" + str(self.user.user_id) + "/" + filename, "w")
+        f = open("result/"+ filename, "w")
         f.write(item)
         f.close()
 
@@ -615,7 +615,7 @@ class Crawler(QObject):
         return self.tmp_delta_page_storage
 
     def get_all_crawled_deltapages_to_url(self, url):
-        result = self.persistentsmanager.get_all_crawled_delta_pages(url)
+        result = self.persistence_manager.get_all_crawled_delta_pages(url)
         return result
 
     def get_next_page_id(self):
@@ -627,7 +627,7 @@ class Crawler(QObject):
 
     def extend_ajax_requests_to_webpage(self, web_page, ajax_requests):
         web_page.ajax_requests.extend(ajax_requests)
-        self.persistentsmanager._extend_ajax_requests_to_webpage(web_page, ajax_requests)
+        self.persistence_manager._extend_ajax_requests_to_webpage(web_page, ajax_requests)
 
     """
     Is called right before event execution starts. Here you can change the order or delete clickables
@@ -650,13 +650,13 @@ class Crawler(QObject):
 
         page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, login_data)
 
-        if calculate_similarity_between_pages(self._page_with_loginform_logged_out,page_with_loginform_logged_in) < .5:
-            logging.debug("Initial Login successfull...")
-            return True
+        #if calculate_similarity_between_pages(self._page_with_loginform_logged_out,page_with_loginform_logged_in) < .5:
+        #    logging.debug("Initial Login successfull...")
+        #    return True
 
         self.page_with_loginform_logged_in = page_with_loginform_logged_in
         f = open("test1.txt", "w")
-        f.write(self.landing_page_loged_out.toString())
+        f.write(self._page_with_loginform_logged_out.toString())
         f.close()
 
         f = open("test2.txt", "w")

@@ -4,10 +4,13 @@ Created on 12.11.2014
 @author: constantin
 '''
 import logging
+
+from attacker import Attacker
 from crawler import Crawler
-from models.config import CrawlConfig
-from models.user import CrawlerUser
+from database.persistentmanager import PersistenceManager
+from utils.config import CrawlConfig, AttackConfig
 from models.utils import CrawlSpeed
+from utils.user import User
 
 
 logging.basicConfig(level=logging.DEBUG,
@@ -22,21 +25,31 @@ if __name__ == '__main__':
     
     logging.info("Crawler started...")
      
-   
-    
 
-    url = "http://localhost:8080"
 
-    crawler_config = CrawlConfig("EPESI", url, max_depth=5,
-max_click_depth=3, crawl_speed = CrawlSpeed.Fast)
-    c = Crawler(crawl_config=crawler_config, proxy="localhost", port=8081)
-    
-    user = CrawlerUser("constantin" , 0)
-    #user = CrawlerUser("constantin", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"})
-    #user = CrawlerUser("constantin", 0, "http://localhost:8080/", login_data = {"username" : "admin", "pass" : "admin"}) 
-    #user = CrawlerUser("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
-    #user = CrawlerUser("constantin", 0, "http://localhost:8080/", login_data = {"user" : "arthur dent", "password" : "arthur"})
-    user = CrawlerUser("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
-    user = c.crawl(user)
-     
+    #url = "http://localhost/alert_test1.php"
+
+    #user = User("constantin", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"})
+    #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username" : "admin", "pass" : "admin"})
+    #user = User("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
+    #user = User("constantin", 0, "http://localhost:8080/", login_data = {"user" : "arthur dent", "password" : "arthur"})
+    #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
+
+
+    url = "http://localhost/attack/index.php"
+
+    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=5,
+max_click_depth=3, crawl_speed=CrawlSpeed.Fast)
+    attack_config = AttackConfig()
+
+    user = User("XSS", 0)
+    persistence_manager = PersistenceManager(user)
+    crawler = Crawler(crawl_config=crawler_config, persistence_manager=persistence_manager)#, proxy="localhost", port=8081)
+    crawler.crawl(user)
+    #TODO: It seems to be that, there is an error if we instanciate crawler and attacker and then call the crawl function. Maybe use one global app!
+
+
+    attacker = Attacker(attack_config, persistence_manager=persistence_manager)
+    logging.debug(attacker.attack(user))
+
     logging.info("Crawler finished")

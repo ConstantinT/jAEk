@@ -1,7 +1,8 @@
-
 from pymongo.connection import Connection
 import pymongo
-from models.user import CrawlerUser
+from models.abstract_urls import AbstractUrl
+
+from utils.user import User
 from models.url import Url
 from models.webpage import WebPage
 from models.clickable import Clickable
@@ -11,7 +12,6 @@ from models.link import Link
 from models.clickabletype import ClickableType
 from models.form import HtmlForm, FormInput
 from models.deltapage import DeltaPage
-import logging
 
 
 class Database():
@@ -58,26 +58,23 @@ class Database():
         if user is None:
             return None
         if user['username'] == username:
-            tmp = CrawlerUser(user['username'], user['user_level'], user['url_with_login_form'], user['login_data']) 
+            tmp = User(user['username'], user['user_level'], user['url_with_login_form'], user['login_data'])
             tmp.sessions = user['sessions']
             return tmp
 
-    
-    def add_crawl_session(self, user_id, session):
-        self.users.update({"_id" : user_id}, {"$addToSet" : {"sessions" : session}})  
         
-    def insert_user_and_return_its_id(self, user):
+    def insert_user(self, user):
         doc = {}
         num_of_users = self.users.count()
         user_id = num_of_users + 1
         doc['_id'] = user_id
         doc['user_level'] = user.user_level
         doc['username'] = user.username
-        doc['sessions'] = user.sessions
-        if user.login_data is not None:
+        doc['sessions'] = user.session
+        if user.login_data is not None and user.url_with_login_form is not None:
+            doc['url_with_login_form'] = user.url_with_login_form
             doc['login_data'] = user.login_data
         self.users.save(doc)
-        return user_id
     
     
     def insert_abstract_url(self, current_crawl_session, url):
@@ -479,3 +476,17 @@ class Database():
         result = self.visited_urls.find_one({"url": url, "crawl_session" : current_crawl_session})
         if result is not None and result["visited"] is True:
             return self.get_web_page(result['page_id'], current_crawl_session)
+
+    def get_all_abstract_urls(self, current_session):
+        all_entrys = self.abstract_urls.find({"crawl_session" : current_session})
+        result = []
+
+        for one_entry in all_entrys:
+            p = []
+            for key in one_entry['params']:
+                values = one_entry['params'][key]
+                p.append((key, values[0]))
+            url = one_entry['url']
+            url_hash = one_entry['url_hash']
+            result.append(AbstractUrl(url, p, url_hash))
+        return result

@@ -3,21 +3,23 @@ Created on 24.02.2015
 
 @author: constantin
 '''
-from PyQt5.QtCore import QByteArray, QUrlQuery
+import logging
+
+from PyQt5.QtCore import QByteArray
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
-from analyzer.abstractinteractioncore import AbstractInteractionCore
+from PyQt5.Qt import QUrl
+
+from core.abstractinteractioncore import AbstractInteractionCore
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
 from models.utils import CrawlSpeed
-import logging
 from models.timemimngrequest import TimemingRequest
 from models.clickable import Clickable
-from PyQt5.Qt import QUrl
 
 
-class InteractionCore(AbstractInteractionCore):
+class MainAnalyzer(AbstractInteractionCore):
     def __init__(self, parent, proxy="", port=0, crawl_speed=CrawlSpeed.Medium, network_access_manager=None):
-        super(InteractionCore, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
+        super(MainAnalyzer, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._loading_complete = False
         self._analyzing_finished = False
         self._link_helper = LinkHelper()
@@ -28,7 +30,7 @@ class InteractionCore(AbstractInteractionCore):
         self._current_timeming_event = None
         self.response_code = None
 
-    def analyze(self, url_to_request, timeout=63, current_depth=None, method="GET", data={}):
+    def analyze(self, url_to_request, timeout=10, current_depth=None, method="GET", data={}):
         logging.debug("Start with dynamic analyzing of {}...".format(url_to_request.toString()))
         self._timemimg_requests = []
         self._new_clickables = []
@@ -80,7 +82,6 @@ class InteractionCore(AbstractInteractionCore):
 
     def loadFinishedHandler(self, result):
         if not self._analyzing_finished:  # Just to ignoring setting of non page....
-            logging.debug("DymanmikAnalyzer finish...")
             self._loading_complete = True
 
 
@@ -129,7 +130,11 @@ class InteractionCore(AbstractInteractionCore):
 
     def loadComplete(self, reply):
         if not self._analyzing_finished:
+            logging.debug("{}".format(reply))
+            logging.debug("Status Code: {}".format(reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)))
             self.response_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+            if self.response_code is None: #TODO: Look for this strange behavior
+                logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
 
     def _make_request(self, url):
         request = QNetworkRequest()
@@ -175,3 +180,6 @@ class InteractionCore(AbstractInteractionCore):
         except KeyError as err:
             # logging.debug(err)
             pass
+
+    def javaScriptAlert(self, frame, msg):
+        logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))

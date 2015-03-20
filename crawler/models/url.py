@@ -47,7 +47,7 @@ class Url():
         
         self.url_hash = self.get_hash()
 
-    def get_value_to_parameter(self, parameter_name):
+    def get_values_to_parameter(self, parameter_name):
         if parameter_name not in self.parameters:
             raise KeyError("{} is not in parameters".format(parameter_name))
         return self.parameters[parameter_name]

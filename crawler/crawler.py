@@ -60,7 +60,7 @@ class Crawler(QObject):
         self.user = user
         self.domain_handler = DomainHandler(self.crawl_config.start_page_url)
         self.start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
-        self.persistence_manager.insert_url(self.start_page_url)
+        self.persistence_manager.insert_url_into_db(self.start_page_url)
 
         if self.user.login_data is not None:
             self.crawl_with_login = True
@@ -238,7 +238,7 @@ class Crawler(QObject):
                     clickable.clickable_type = ClickableType.Link
                     new_url = self.domain_handler.create_url(delta_page.url,
                                                              depth_of_finding=current_page.current_depth)
-                    self.persistence_manager.insert_url(new_url)
+                    self.persistence_manager.insert_url_into_db(new_url)
                     clickables.append(clickable)
                     self.persistence_manager.update_clickable(current_page.id, clickable)
                 else:
@@ -565,20 +565,20 @@ class Crawler(QObject):
     def extract_new_links_from_page(self, page, current_depth, base_url=None):
 
         for link in page.links:
-            self.persistence_manager.insert_url(link.url)
+            self.persistence_manager.insert_url_into_db(link.url)
 
         if page.ajax_requests is not None:
             for ajax in page.ajax_requests:
                 url = self.domain_handler.create_url(ajax.url, None, depth_of_finding=current_depth)
-                self.persistence_manager.insert_url(url)
+                self.persistence_manager.insert_url_into_db(url)
 
         for ajax in page.timeming_requests:
             url = self.domain_handler.create_url(ajax.url, None, depth_of_finding=current_depth)
-            self.persistence_manager.insert_url(url)
+            self.persistence_manager.insert_url_into_db(url)
 
         for form in page.forms:
             url = self.domain_handler.create_url(form.action, None, depth_of_finding=current_depth)
-            self.persistence_manager.insert_url(url)
+            self.persistence_manager.insert_url_into_db(url)
 
 
     def convert_action_url_to_absolute(self, form, base):

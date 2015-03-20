@@ -11,7 +11,7 @@ class PersistenceManager(object):
     
     def __init__(self, user):
         self._database = Database(user.username)
-        self._database.insert_user(user)
+        self._database.insert_user_into_db(user)
         self._web_page_cache = []
         self._deltapage_cache = []
         self._current_session = None
@@ -23,7 +23,7 @@ class PersistenceManager(object):
             if len(self._web_page_cache) + 1 > self.MAX_CACHE_SIZE:
                 del self._web_page_cache[-1]
             self._web_page_cache.insert(0, web_page)
-        self._database.insert_page(self._current_session, web_page)
+        self._database.insert_page_into_db(self._current_session, web_page)
     
     def get_page(self, page_id):
         page = self.get_web_page(page_id)
@@ -39,7 +39,7 @@ class PersistenceManager(object):
             if len(self._deltapage_cache) +1 > self.MAX_CACHE_SIZE:
                 del self._deltapage_cache[-1]
             self._deltapage_cache.insert(0, delta_page)
-        self._database.insert_delta_page(self._current_session,delta_page)
+        self._database.insert_delta_page_into_db(self._current_session,delta_page)
     
     def get_page_to_url(self, url):
         try:
@@ -47,14 +47,14 @@ class PersistenceManager(object):
         except AttributeError:
             url = url
         
-        return self._database.get_webpage_to_url(self._current_session, url)
+        return self._database.get_webpage_to_url_from_db(self._current_session, url)
     
     def get_web_page(self, page_id):
         for page in self._web_page_cache:
             if page_id == page.id:
                 return page
         
-        return self._database.get_web_page(page_id, self._current_session)
+        return self._database.get_web_page_from_db(page_id, self._current_session)
             
     
     def get_delta_page(self, delta_page_id):
@@ -62,17 +62,17 @@ class PersistenceManager(object):
             if delta_page_id == page.id:
                 return page
             
-        return self._database.get_delta_page(delta_page_id, self._current_session)
+        return self._database.get_delta_page_from_db(delta_page_id, self._current_session)
     
     
     def get_next_url_for_crawling(self):
         return self._database.get_next_url_for_crawling(self._current_session)
     
     def insert_url(self, url):
-        self._database.insert_url(self._current_session, url)
+        self._database.insert_url_into_db(self._current_session, url)
     
     def insert_redirected_url(self, url):
-        self._database.insert_url(self._current_session, url, is_redirected_url=True)
+        self._database.insert_url_into_db(self._current_session, url, is_redirected_url=True)
         
     def visit_url(self, url, webpage_id, response_code, redirected_to = None):
         self._database.visit_url(self._current_session, url, webpage_id, response_code, redirected_to)
@@ -82,7 +82,7 @@ class PersistenceManager(object):
     
     
     def get_all_crawled_delta_pages(self, url=None):
-        return self._database.get_all_crawled_deltapages_to_url(self._current_session, url)
+        return self._database.get_all_crawled_deltapages_to_url_from_db(self._current_session, url)
     
     
     def update_clickable(self, web_page_id, clickable):
@@ -92,7 +92,7 @@ class PersistenceManager(object):
             self._database.set_clickable_clicked(self._current_session, web_page_id, clickable.dom_adress, clickable.event, clickable.clickable_depth, clickable.clickable_type, clickable.links_to)
 
     def get_url_description(self, hash):
-        return self._database.get_url_description(self._current_session, hash)
+        return self._database.get_url_description_from_db(self._current_session, hash)
 
     def insert_url_description(self, url_description):
-        self._database.insert_url_description(self._current_session, url_description)
+        self._database.insert_url_description_into_db(self._current_session, url_description)

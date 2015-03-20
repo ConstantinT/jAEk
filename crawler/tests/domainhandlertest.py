@@ -55,8 +55,8 @@ class DomainHandlerTest(unittest.TestCase):
         url_desc = self.persistence_manager.get_url_description(url.url_hash)
         self.assertEqual(url_desc.get_parameter_type("b"), ParameterType.String)
         self.assertEqual(url_desc.get_parameter_type("a"), ParameterType.Digit)
-        self.assertEqual(url.get_value_to_parameter("a")[0], "5")
-        self.assertEqual(url.get_value_to_parameter("b")[0], "abc")
+        self.assertEqual(url.get_values_to_parameter("a")[0], "5")
+        self.assertEqual(url.get_values_to_parameter("b")[0], "abc")
 
 
         url = self.domain_handler.create_url("test.php?a=7&b=abc123", "http://example.com")
@@ -67,11 +67,11 @@ class DomainHandlerTest(unittest.TestCase):
         self.assertEqual(url.path, "/test.php")
         self.assertEqual(url.scheme, "http")
         self.assertEqual(len(url.parameters), 2)
-        self.assertEqual(url.get_value_to_parameter("a")[0], "7")
-        self.assertEqual(url.get_value_to_parameter("b")[0], "abc123")
+        self.assertEqual(url.get_values_to_parameter("a")[0], "7")
+        self.assertEqual(url.get_values_to_parameter("b")[0], "abc123")
 
         with self.assertRaises(KeyError):
-            url.get_value_to_parameter("zzz")
+            url.get_values_to_parameter("zzz")
 
 
 

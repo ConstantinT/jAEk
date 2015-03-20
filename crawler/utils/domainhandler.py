@@ -28,7 +28,7 @@ class DomainHandler():
             new_url = url
         url = Url(new_url, depth_of_finding)
 
-        url_description = self.persistence_manager.get_url_description(url.url_hash)
+        url_description = self.persistence_manager.get_url_description_from_db(url.url_hash)
 
         if url_description is None: # We have not seen a url of that structure
             url_path = url.get_path()
@@ -43,14 +43,14 @@ class DomainHandler():
                 new_parameter['generating'] = False
                 url_description_parameters[key] = new_parameter
             url_description = UrlDescription(url_path, url_description_parameters, url.url_hash)
-            self.persistence_manager.insert_url_description(url_description)
+            self.persistence_manager.insert_url_description_into_db(url_description)
         else:
             for key in url.parameters:
                 current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
                 for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
                     current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
                 url_description.parameters[key]["parameter_type"] = current_parameter_type.value
-            self.persistence_manager.insert_url_description(url_description)
+            self.persistence_manager.insert_url_description_into_db(url_description)
         url.url_description = url_description
         return url
     

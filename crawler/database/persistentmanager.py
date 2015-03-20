@@ -91,5 +91,8 @@ class PersistenceManager(object):
         else:
             self._database.set_clickable_clicked(self._current_session, web_page_id, clickable.dom_adress, clickable.event, clickable.clickable_depth, clickable.clickable_type, clickable.links_to)
 
-    def get_all_abstract_urls(self):
-        return self._database.get_all_abstract_urls(self._current_session)
+    def get_url_description(self, hash):
+        return self._database.get_url_description(self._current_session, hash)
+
+    def insert_url_description(self, url_description):
+        self._database.insert_url_description(self._current_session, url_description)

@@ -1,6 +1,6 @@
 from pymongo.connection import Connection
 import pymongo
-from models.abstract_urls import AbstractUrl
+from models.urldescription import UrlDescription
 
 from utils.user import User
 from models.url import Url
@@ -30,8 +30,9 @@ class Database():
         self.visited_urls.drop() #Clear database
         self.visited_urls.ensure_index( "url", pymongo.ASCENDING, unique=True)
         
-        self.abstract_urls = self.database.abstract_urls
-        self.abstract_urls.drop() #Clear database
+        self.url_descriptions = self.database.url_describtion
+        self.url_descriptions.drop() #Clear database
+        self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
         
         self.clickables = self.database.clickables
         self.clickables.drop()
@@ -76,33 +77,11 @@ class Database():
             doc['login_data'] = user.login_data
         self.users.save(doc)
     
-    
-    def insert_abstract_url(self, current_crawl_session, url):
-        url_hash = url.url_hash
-        search_doc = {"url_hash" : url_hash, "crawl_session" : current_crawl_session}
-        result = self.abstract_urls.find_one(search_doc)
-        path, params = url.get_abstract_url()
-        document = {}
-        document["url"] = path
-        document['crawl_session'] = current_crawl_session
-        document['url_hash'] = url_hash
-        
-        if result is not None:
-            document["_id"] = result["_id"]
-            for k,v in result['params'].items():
-                if v not in params.values():
-                    params[k].extend(v)
-            document["params"] = params
-        else:
-            document["params"] = params
-        self.abstract_urls.save(document)
-    
     def insert_url(self, current_crawl_session, url, is_redirected_url = False):
         if not is_redirected_url:
             if self.visited_urls.find({"url":url.toString(), "crawl_session":current_crawl_session}).count() > 0 and self.visited_urls.find({"redirected_to":url.toString(), "crawl_session":current_crawl_session}).count() > 0:
                 return
-            
-        self.insert_abstract_url(current_crawl_session, url)
+
         document = {}
         document["url"] = url.toString()
         document["url_hash"] = url.url_hash
@@ -477,16 +456,20 @@ class Database():
         if result is not None and result["visited"] is True:
             return self.get_web_page(result['page_id'], current_crawl_session)
 
-    def get_all_abstract_urls(self, current_session):
-        all_entrys = self.abstract_urls.find({"crawl_session" : current_session})
-        result = []
+    def insert_url_description(self, current_session, url_description):
+        search_doc = {"hash":url_description.hash}
+        result = self.url_descriptions.find_one({"session":current_session, "hash":url_description.hash})
+        document = {}
+        if result is not None:
+            document["_id"] = result["_id"]
+        document["path"] = url_description.path
+        document["parameters"] = url_description.parameters
+        document["hash"] = url_description.hash
+        document["session"] = current_session
+        self.url_descriptions.save(document)
 
-        for one_entry in all_entrys:
-            p = []
-            for key in one_entry['params']:
-                values = one_entry['params'][key]
-                p.append((key, values[0]))
-            url = one_entry['url']
-            url_hash = one_entry['url_hash']
-            result.append(AbstractUrl(url, p, url_hash))
-        return result
+    def get_url_description(self, current_session, hash):
+        result = self.url_descriptions.find_one({"crawl_session" : current_session, "hash":hash})
+        if result is None:
+            return None
+        return UrlDescription(result['path'], result["parameters"], result['hash'])

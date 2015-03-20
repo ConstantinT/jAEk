@@ -25,7 +25,7 @@ class Attacker(QObject):
 
     def attack(self, user):
 
-        abstract_urls = self.persistence_manager.get_all_abstract_urls()
+        abstract_urls = self.persistence_manager.get_all_url_descriptions()
         for url in abstract_urls:
             if len(url.parameters) > 0:
                 for i in range(len(url.parameters)):
@@ -33,7 +33,7 @@ class Attacker(QObject):
                         for vector in self._xss_vector.attack_vectors:
                             attack_string = url.path + "?"
                             if i == j:
-                                attack_string += url.parameters[j][0] + "=" + vector.replace("XSS", self._xss_vector.random_generator(12)) + "&"
+                                attack_string += url.parameters[j][0] + "=" + vector.replace("XSS", self._xss_vector.random_string_generator(12)) + "&"
                             else:
                                 attack_string += url.parameters[j][0] + "=" + url.paramters[j][1] + "&"
                             logging.debug("Attack with: {}".format(attack_string[:-1]))

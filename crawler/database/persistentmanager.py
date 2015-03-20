@@ -54,7 +54,7 @@ class PersistenceManager(object):
             if page_id == page.id:
                 return page
         
-        return self._database.get_web_page_from_db(page_id, self._current_session)
+        return self._database._get_web_page_from_db(self._current_session, page_id)
             
     
     def get_delta_page(self, delta_page_id):

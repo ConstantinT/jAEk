@@ -94,6 +94,11 @@ class Database():
         document['depth_of_finding'] = url.depth_of_finding
         self._per_session_url_counter += 1
         self.visited_urls.save(document)
+
+    
+    def get_next_url_for_crawling(self, current_session):
+        urls = self.visited_urls.find({"session":current_session, "visited": False}).sort([('url_counter', pymongo.ASCENDING)]).limit(1)
+        return self._parse_url_from_db(urls[0])
     
     def _parse_url_from_db(self, url):
         return Url(url['url'], url['depth_of_finding'])
@@ -104,21 +109,7 @@ class Database():
         for url in urls:
             result.append(self._parse_url_from_db(url))
         return result
-    
-    def get_next_url_for_crawling(self, current_session):
-        urls = self.visited_urls.find({"session":current_session, "response_code" : None})
-        if urls.count() == 0:
-            return None
-        result = None
-        for url in urls:
-            if result is None:
-                result = url
-            else:
-                if url["url_counter"]<result['url_counter']:
-                    result = url
-        return self._get_url_from_db(result)
-    
-        
+
     def visit_url(self, current_session, url, webpage_id, response_code, redirected_to = None):
         search_doc = {}
         search_doc['url'] = url.toString()
@@ -126,8 +117,7 @@ class Database():
         
         update_doc = {}
         update_doc['response_code'] = response_code
-        if webpage_id != None:
-            update_doc['visited'] = True
+        update_doc['visited'] = True
         update_doc['page_id'] = webpage_id
         update_doc['redirected_to'] = redirected_to
         self.visited_urls.update(search_doc, {"$set": update_doc})
@@ -142,12 +132,23 @@ class Database():
         document['ajax_requests'] = []
         document['session'] = current_session
         self.pages.save(document)
+
+    def get_webpage_to_url_from_db(self, current_session, url):
+        return self._get_web_page_from_db(current_session, url=url)
+
+    def get_webpage_to_id_from_db(self, current_session, id):
+        return self._get_web_page_from_db(current_session, page_id=id)
         
-    def get_web_page_from_db(self, page_id, current_session):
-        page = self.pages.find_one({"session": current_session,"web_page_id":page_id })
+    def _get_web_page_from_db(self, current_session, page_id = None, url = None):
+        if page_id is not None:
+            page = self.pages.find_one({"session": current_session,"web_page_id": page_id })
+        elif url is not None:
+            page = self.pages.find_one({"session": current_session,"url": url})
+        else:
+            return None
         if page is None:
             return None
-        clickables = self.get_all_clickables_to_page_id_from_db(current_session, page_id)
+        clickables = self.get_all_clickables_to_page_id_from_db(current_session, page['web_page_id'])
         forms = self.get_all_forms_to_page_id_from_db(current_session, page_id)
         result = WebPage(page['web_page_id'], page['url'], page['html'], None, page['current_depth'], page['base_url'])
         result.clickables = clickables
@@ -167,7 +168,7 @@ class Database():
         return result  
     
     def _parse_clickable_from_db_to_model(self, clickable):
-        c = Clickable(clickable['event'], clickable['tag'], clickable['dom_adress'], clickable['html_id'], clickable['html_class'], clickable['clickable_depth'], clickable['function_id'])
+        c = Clickable(clickable['event'], clickable['tag'], clickable['dom_address'], clickable['html_id'], clickable['html_class'], clickable['clickable_depth'], clickable['function_id'])
         c.clicked = clickable['clicked']
         c.clickable_type = self._num_to_clickable_type(clickable['clickable_type'])
         c.links_to = clickable['links_to']
@@ -188,7 +189,7 @@ class Database():
         document["tag"] = clickable.tag
         document["html_class"] = clickable.html_class
         document["html_id"] = clickable.id
-        document["dom_adress"] = clickable.dom_adress
+        document["dom_address"] = clickable.dom_address
         document["links_to"] = clickable.links_to
         document["clicked"] = clickable.clicked
         document["clickable_type"] = self._clickable_type_to_num(clickable.clickable_type)
@@ -207,7 +208,7 @@ class Database():
             self.insert_form(current_session, form, delta_page.id)
             
         document = self._create_webpage_doc(delta_page)
-        clickable_id = self.clickables.find_one({"session" : current_session, "web_page_id":delta_page.parent_id, "dom_adress":delta_page.generator.dom_adress, "event":delta_page.generator.event})
+        clickable_id = self.clickables.find_one({"session" : current_session, "web_page_id":delta_page.parent_id, "dom_address":delta_page.generator.dom_address, "event":delta_page.generator.event})
         clickable_id = clickable_id["_id"]
         document['generator'] = clickable_id
         generator_request_doc = []
@@ -249,7 +250,7 @@ class Database():
     
     def insert_form(self, current_session, form, page_id):
         form_hash = form.form_hash
-        result = self.forms.find_one({"form_hash":form_hash, "session":current_session, "web_page_id": page_id})
+        result = self.forms.find_one({"form_hash": form_hash, "session": current_session, "web_page_id": page_id})
         form_doc = {}
         
         if result is not None:
@@ -284,14 +285,14 @@ class Database():
         res = {}
         res['url'] = link.url.toString()
         res['abstract_url_hash'] = link.url.get_hash()
-        res['dom_adress'] = link.dom_adress
+        res['dom_address'] = link.dom_address
         res['html_id'] = link.html_id
         res['html_class'] = link.html_class
         return res
     
     def _parse_link_from_db(self, link):
         url = Url(link['url'])
-        result = Link(url, link['dom_adress'], link['html_id'], link['html_class'])
+        result = Link(url, link['dom_address'], link['html_id'], link['html_class'])
         return result
     
     def _parse_form_parameter_to_db_doc(self, form_parameter):
@@ -302,12 +303,12 @@ class Database():
         param["input_type"] = form_parameter.input_type
         return param
         
-    def set_clickable_clicked(self, current_session,web_page_id, clickable_dom_adress, clickable_event, clickable_depth = None ,clickable_type = None, links_to=None):
+    def set_clickable_clicked(self, current_session,web_page_id, clickable_dom_address, clickable_event, clickable_depth = None ,clickable_type = None, links_to=None):
         search_doc = {}
         set_doc = {}
         
         search_doc["web_page_id"] = web_page_id
-        search_doc["dom_adress"] = clickable_dom_adress
+        search_doc["dom_address"] = clickable_dom_address
         search_doc["event"] = clickable_event
         search_doc['session'] = current_session
         
@@ -326,12 +327,12 @@ class Database():
         result = self.clickables.update(search_doc, set_doc)
         return result
     
-    def set_clickable_ignored(self, current_session, web_page_id, clickable_dom_adress, clickable_event, clickable_depth = None, clickable_type = None):
+    def set_clickable_ignored(self, current_session, web_page_id, clickable_dom_address, clickable_event, clickable_depth = None, clickable_type = None):
         search_doc = {}
         set_doc = {}
         
         search_doc["web_page_id"] = web_page_id
-        search_doc["dom_adress"] = clickable_dom_adress
+        search_doc["dom_address"] = clickable_dom_address
         search_doc["event"] = clickable_event
         search_doc['session'] = current_session
         
@@ -351,20 +352,20 @@ class Database():
         doc = {}
         doc["url"] = ajax_request.url
         doc["method"] = ajax_request.method
-        trigger_id = self.clickables.find_one({"session": current_session, "dom_adress" : ajax_request.trigger.dom_adress, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
+        trigger_id = self.clickables.find_one({"session": current_session, "dom_address" : ajax_request.trigger.dom_address, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
         trigger_id = trigger_id["_id"]
         doc['parameters'] = ajax_request.parameter
         doc["trigger"] = trigger_id
         return doc
     
-    def extend_ajax_requests_to_webpage(self, current_session, webpage, ajax_reuqests):
-        ajax_reuqests_doc = []
-        for r in ajax_reuqests:
-            ajax_reuqests_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, web_page_id=webpage.id))
+    def extend_ajax_requests_to_webpage(self, current_session, webpage, ajax_requests):
+        ajax_requests_doc = []
+        for r in ajax_requests:
+            ajax_requests_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, web_page_id=webpage.id))
         if not hasattr(webpage, 'parent_id'):
-            result = self.pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
+            result = self.pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_requests_doc}}})
         else:
-            result = self.delta_pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_reuqests_doc}}})
+            result = self.delta_pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_requests_doc}}})
         
         
     def _clickable_type_to_num(self, clickable_type):
@@ -400,7 +401,7 @@ class Database():
         clickables = self.clickables.find({"web_page_id" : page_id, "session":current_session})
         result = []
         for clickable in clickables:
-            c = Clickable(clickable['event'], clickable['tag'], clickable['dom_adress'], clickable['html_id'], clickable['html_class'], clickable_depth=clickable['clickable_depth'], function_id=clickable['function_id'])
+            c = Clickable(clickable['event'], clickable['tag'], clickable['dom_address'], clickable['html_id'], clickable['html_class'], clickable_depth=clickable['clickable_depth'], function_id=clickable['function_id'])
             c.links_to = clickable['links_to']
             c.clickable_type = self._num_to_clickable_type(clickable['clickable_type'])
             c.clicked = clickable['clicked']
@@ -443,11 +444,6 @@ class Database():
         result.clickables = clickables
         result.generator_requests = generator_requests
         return result
-    
-    def get_webpage_to_url_from_db(self, current_session ,url):
-        result = self.visited_urls.find_one({"url": url, "session" : current_session})
-        if result is not None and result["visited"] is True:
-            return self.get_web_page_from_db(result['page_id'], current_session)
 
     def insert_url_description_into_db(self, current_session, url_description):
         search_doc = {"hash":url_description.url_hash}

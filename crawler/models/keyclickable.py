@@ -21,7 +21,7 @@ class KeyClickable(Clickable):
             msg += " - Event: " + self.event
         if self.html_class is not None and not self.html_class == "":
             msg += " - Class: " + self.html_class
-        msg += " - Domadress: " + self.dom_adress
+        msg += " - Domadress: " + self.dom_address
         if self.links_to is not None:
             msg += " - Links to: " + self.links_to
         if self.clickable_depth is not None:

@@ -6,10 +6,20 @@ __author__ = 'constantin'
 
 class UrlDescription():
 
-    def __init__(self, path, paramters = {}, hash = None):
+    def __init__(self, path, paramters = {}, url_hash = None):
         self.path = path
         self.parameters = paramters # List of dict: parametername, parametertype, origin, generating <= change of the param creates a new page
-        self.hash = hash
+        self.url_hash = url_hash
+
+    def get_parameter_type(self, parameter_name):
+        if parameter_name not in self.parameters:
+            raise KeyError("{} not found".format(parameter_name))
+        return ParameterType(self.parameters[parameter_name]['parameter_type'])
+
+    def get_parameter_origin(self, parameter_name):
+        if parameter_name not in self.parameters:
+            raise KeyError("{} not found".format(parameter_name))
+        return ParameterType(self.parameters[parameter_name]['origin'])
 
     def toString(self):
         msg = "[Url: {} \n".format(self.path)

@@ -11,8 +11,8 @@ import unittest
 class DomainHandlerTest(unittest.TestCase):
 
     def setUp(self):
-        p = PersistenceManager(User("DummyUser", 0))
-        self.domain_handler = DomainHandler("example.com", p)
+        self.persistence_manager = PersistenceManager(User("DummyUser", 0))
+        self.domain_handler = DomainHandler("example.com", self.persistence_manager)
 
     def test_a_parameter_calculation(self):
         self.assertEqual(self.domain_handler.calculate_new_url_type(None, "a"), ParameterType.Char)
@@ -51,8 +51,27 @@ class DomainHandlerTest(unittest.TestCase):
 
 
     def test_b_create_url_function(self):
-        self.domain_handler.create_url("http://example.com/test.php?a=5&b=abc")
-        self.domain_handler.create_url("http://example.com/test.php?a=7&b=abc123")
+        url = self.domain_handler.create_url("http://example.com/test.php?a=5&b=abc")
+        url_desc = self.persistence_manager.get_url_description(url.url_hash)
+        self.assertEqual(url_desc.get_parameter_type("b"), ParameterType.String)
+        self.assertEqual(url_desc.get_parameter_type("a"), ParameterType.Digit)
+        self.assertEqual(url.get_value_to_parameter("a")[0], "5")
+        self.assertEqual(url.get_value_to_parameter("b")[0], "abc")
+
+
+        url = self.domain_handler.create_url("test.php?a=7&b=abc123", "http://example.com")
+        url_desc = self.persistence_manager.get_url_description(url.url_hash)
+        self.assertEqual(url_desc.get_parameter_type("b"), ParameterType.AlphaNumerical)
+        self.assertEqual(url_desc.get_parameter_type("a"), ParameterType.Digit)
+        self.assertEqual(url.domain, "example.com")
+        self.assertEqual(url.path, "/test.php")
+        self.assertEqual(url.scheme, "http")
+        self.assertEqual(len(url.parameters), 2)
+        self.assertEqual(url.get_value_to_parameter("a")[0], "7")
+        self.assertEqual(url.get_value_to_parameter("b")[0], "abc123")
+
+        with self.assertRaises(KeyError):
+            url.get_value_to_parameter("zzz")
 
 
 

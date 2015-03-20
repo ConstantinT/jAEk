@@ -45,9 +45,14 @@ class Url():
                 tmp_params[key] = self.parameters[key]
             self.parameters = tmp_params
         
-        self.url_hash = self.get_hash()  
+        self.url_hash = self.get_hash()
+
+    def get_value_to_parameter(self, parameter_name):
+        if parameter_name not in self.parameters:
+            raise KeyError("{} is not in parameters".format(parameter_name))
+        return self.parameters[parameter_name]
         
-    def get_abstract_url(self):
+    def get_url_description(self):
         return self.url_description
 
     def get_path(self):
@@ -65,7 +70,7 @@ class Url():
     def toString(self):
         return self.complete_url
     
-    def has_equal_abstract_url(self, other):
+    def has_equal_description(self, other):
         if not isinstance(other, self.___class__):
             return False
         return self.url_hash == other.url_hash

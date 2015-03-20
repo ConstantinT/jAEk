@@ -457,19 +457,19 @@ class Database():
             return self.get_web_page(result['page_id'], current_crawl_session)
 
     def insert_url_description(self, current_session, url_description):
-        search_doc = {"hash":url_description.hash}
-        result = self.url_descriptions.find_one({"session":current_session, "hash":url_description.hash})
+        search_doc = {"hash":url_description.url_hash}
+        result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_description.url_hash})
         document = {}
         if result is not None:
             document["_id"] = result["_id"]
         document["path"] = url_description.path
         document["parameters"] = url_description.parameters
-        document["hash"] = url_description.hash
+        document["url_hash"] = url_description.url_hash
         document["session"] = current_session
         self.url_descriptions.save(document)
 
-    def get_url_description(self, current_session, hash):
-        result = self.url_descriptions.find_one({"crawl_session" : current_session, "hash":hash})
+    def get_url_description(self, current_session, url_hash):
+        result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})
         if result is None:
             return None
-        return UrlDescription(result['path'], result["parameters"], result['hash'])
+        return UrlDescription(result['path'], result["parameters"], result['url_hash'])

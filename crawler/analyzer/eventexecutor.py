@@ -16,11 +16,11 @@ from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
 from models.deltapage import DeltaPage
 from models.keyclickable import KeyClickable
-from core.abstractinteractioncore import AbstractInteractionCore
+from core.interactioncore import InteractionCore
 from models.utils import CrawlSpeed
 
 
-class EventExecutor(AbstractInteractionCore):
+class EventExecutor(InteractionCore):
     def __init__(self, parent, proxy="", port=0, crawl_speed=CrawlSpeed.Medium, network_access_manager=None):
         super(EventExecutor, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._url_changed = False  # Inidicates if a event changes a location => treat it as link!
@@ -53,7 +53,7 @@ class EventExecutor(AbstractInteractionCore):
         self._new_clickables = []
         self.element_to_click = element_to_click
         self.mainFrame().setHtml(webpage.html, QUrl(webpage.url))
-        target_tag = element_to_click.dom_adress.split("/")
+        target_tag = element_to_click.dom_address.split("/")
         target_tag = target_tag[-1]
         if target_tag in ['video']:
             return Event_Result.Unsupported_Tag, None
@@ -72,9 +72,9 @@ class EventExecutor(AbstractInteractionCore):
             if click.id != None and click.id != "":
                 pre_click_elem = self.search_element_with_id(click.id)
             if click.html_class != None and pre_click_elem == None:
-                pre_click_elem = self.search_element_with_class(click.html_class, click.dom_adress)
+                pre_click_elem = self.search_element_with_class(click.html_class, click.dom_address)
             if pre_click_elem == None:
-                pre_click_elem = self.search_element_without_id_and_class(click.dom_adress)
+                pre_click_elem = self.search_element_without_id_and_class(click.dom_address)
 
             if pre_click_elem is None:
                 logging.debug("Preclicking element not found")
@@ -108,9 +108,9 @@ class EventExecutor(AbstractInteractionCore):
         if element_to_click.id != None and element_to_click.id != "":
             real_clickable = self.search_element_with_id(element_to_click.id)
         if element_to_click.html_class != None and real_clickable == None:
-            real_clickable = self.search_element_with_class(element_to_click.html_class, element_to_click.dom_adress)
+            real_clickable = self.search_element_with_class(element_to_click.html_class, element_to_click.dom_address)
         if real_clickable == None:
-            real_clickable = self.search_element_without_id_and_class(element_to_click.dom_adress)
+            real_clickable = self.search_element_without_id_and_class(element_to_click.dom_address)
 
         if real_clickable is None:
             logging.debug("Target Clickable not found")

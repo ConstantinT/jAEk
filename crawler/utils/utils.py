@@ -71,6 +71,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
             for p2_form in page2.forms:
                 if p1_form.toString() == p2_form.toString():
                     is_in_other = True
+                    break
             if is_in_other:
                 identical_forms += 1.0
                 form_counter -= 1.0
@@ -87,6 +88,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
             for p2_link in page2.links:
                 if p1_link == p2_link:
                     is_in_other = True
+                    break
             if is_in_other:
                 identical_links += 1.0
                 link_counter -= 1.0
@@ -104,6 +106,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
             for p2_clickable in page2.clickables:
                 if two_clickables_are_equal(p1_clickable, p2_clickable):
                     is_in_other = True
+                    break
             if is_in_other:
                 identical_clickables += 1.0
                 clickable_counter -= 1.0
@@ -117,17 +120,22 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         result = similarity / sum_weight
     else:
         result = 1
+    """
     f = open("similarities/" + str(page1.id) + " - " + str(page2.id) + ".txt", "w")
     f.write(page1.toString())
     f.write(" \n \n ======================================================= \n \n")
     f.write(page2.toString())
-    f.write("\n \n ====================Ergebniss=========================== \n \n")
+    f.write("\n \n ====================Result=========================== \n \n")
     f.write("Similatiry = " + str(result) + " - Formsimilarity: " + str(form_similarity) + " - Linksimilarity: " + str(link_similarity) + " - Clickablesimilarity: " + str(clickable_similarity))
     f.write("\n Formweight: "+ str(form_weight) + " Formnum: " +str(form_counter) + " - Linkweight: " + str(link_weight) + " Linknum: " + str(link_counter) + " - Clickableweight: " + str(clickable_weight) + " Clickablenum: " + str(clickable_counter) )
     f.close()
-    logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))
+    #logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))
+    """
     return result
 
 def two_clickables_are_equal(c1, c2):
-    return c1.event == c2.event and c1.dom_adress == c2.dom_adress and c1.tag == c2.tag #Function_id is no applicable anymore, because of some generic in the method
+    tmp = c1.event == c2.event and c1.dom_address == c2.dom_address and c1.tag == c2.tag
+    if c1.clickable_type is not None and c2.clickable_type is not None:
+        tmp = tmp and c1.clickable_type == c2.clickable_type
+    return tmp
 

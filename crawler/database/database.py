@@ -1,3 +1,4 @@
+import logging
 from pymongo.connection import Connection
 import pymongo
 from models.urldescription import UrlDescription
@@ -13,39 +14,38 @@ from models.clickabletype import ClickableType
 from models.form import HtmlForm, FormInput
 from models.deltapage import DeltaPage
 
+#Keywords
+
+SESSION = "session"
+DOM_ADDRESS = "dom_address"
 
 class Database():
     
-    def __init__(self, db_name):
+    def __init__(self, db_name, drop_dbs = True):
         self.connection=Connection()
         self.database = self.connection[db_name]
-        
-        
         self.pages = self.database.pages
-        self.pages.drop() #Clear database
         #self.pages.ensure_index( "id", pymongo.ASCENDING, unique=True)
-        
-        
-        self.visited_urls = self.database.visited_urls
-        self.visited_urls.drop() #Clear database
-        self.visited_urls.ensure_index( "url", pymongo.ASCENDING, unique=True)
-        
+        self.urls = self.database.urls
         self.url_descriptions = self.database.url_describtion
-        self.url_descriptions.drop() #Clear database
-        self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
-        
+
         self.clickables = self.database.clickables
-        self.clickables.drop()
-        
         self.delta_pages = self.database.delta_pages
-        self.delta_pages.drop()
-        
         self.forms = self.database.forms
-        self.forms.drop()
-        
         self.users = self.database.users
-        self.users.drop()
         self._per_session_url_counter = 0
+
+        if drop_dbs:
+            self.pages.drop() #Clear database
+            self.urls.drop() #Clear database
+            self.url_descriptions.drop()
+            self.delta_pages.drop()
+            self.clickables.drop()
+            self.forms.drop()
+            self.users.drop()
+            self.urls.ensure_index("url", pymongo.ASCENDING, unique=True)
+            #self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
+
         
     def __del__(self):
         self.connection.close()
@@ -79,7 +79,7 @@ class Database():
     
     def insert_url_into_db(self, current_session, url, is_redirected_url = False):
         if not is_redirected_url:
-            if self.visited_urls.find({"url":url.toString(), "session":current_session}).count() > 0 and self.visited_urls.find({"redirected_to":url.toString(), "session":current_session}).count() > 0:
+            if self.urls.find({"url":url.toString(), "session":current_session}).count() > 0 and self.urls.find({"redirected_to":url.toString(), "session":current_session}).count() > 0:
                 return
 
         document = {}
@@ -93,20 +93,27 @@ class Database():
         document["url_counter"] = self._per_session_url_counter
         document['depth_of_finding'] = url.depth_of_finding
         self._per_session_url_counter += 1
-        self.visited_urls.save(document)
+        self.urls.save(document)
 
     
     def get_next_url_for_crawling(self, current_session):
-        urls = self.visited_urls.find({"session":current_session, "visited": False}).sort([('url_counter', pymongo.ASCENDING)]).limit(1)
-        return self._parse_url_from_db(urls[0])
+        urls = self.urls.find({"session":current_session, "visited": False}).sort([('url_counter', pymongo.ASCENDING)]).limit(1)
+        if urls is None or urls.count() == 0:
+            return None
+        else:
+            url = self._parse_url_from_db(urls[0])
+            url.url_description = self.get_url_description_from_db(current_session, url.url_hash)
+            return url
     
     def _parse_url_from_db(self, url):
         return Url(url['url'], url['depth_of_finding'])
 
     def get_urls_from_db_to_hash(self, current_session, url_hash):
-        urls = self.visited_urls.find({"session":current_session, "url_hash": url_hash})
+        urls = self.urls.find({"session":current_session, "url_hash": url_hash})
         result = []
+        url_description = self.get_url_description_from_db(current_session, url_hash)
         for url in urls:
+            url.url_description = url_description
             result.append(self._parse_url_from_db(url))
         return result
 
@@ -120,7 +127,7 @@ class Database():
         update_doc['visited'] = True
         update_doc['page_id'] = webpage_id
         update_doc['redirected_to'] = redirected_to
-        self.visited_urls.update(search_doc, {"$set": update_doc})
+        self.urls.update(search_doc, {"$set": update_doc})
              
     def insert_page_into_db(self, current_session, web_page):
         for clickable in web_page.clickables:
@@ -133,23 +140,31 @@ class Database():
         document['session'] = current_session
         self.pages.save(document)
 
+    def get_all_pages(self, current_session):
+        results = []
+        pages = self.pages.find({"session": current_session})
+        for page in pages:
+            results.append(self._get_web_page_from_db(current_session=current_session, page=page))
+        return results
+
     def get_webpage_to_url_from_db(self, current_session, url):
         return self._get_web_page_from_db(current_session, url=url)
 
     def get_webpage_to_id_from_db(self, current_session, id):
         return self._get_web_page_from_db(current_session, page_id=id)
         
-    def _get_web_page_from_db(self, current_session, page_id = None, url = None):
-        if page_id is not None:
-            page = self.pages.find_one({"session": current_session,"web_page_id": page_id })
-        elif url is not None:
-            page = self.pages.find_one({"session": current_session,"url": url})
-        else:
-            return None
+    def _get_web_page_from_db(self, current_session, page_id= None, url= None, page= None):
         if page is None:
-            return None
+            if page_id is not None:
+                page = self.pages.find_one({"session": current_session,"web_page_id": page_id })
+            elif url is not None:
+                page = self.pages.find_one({"session": current_session,"url": url})
+            else:
+                raise AttributeError("You must specifies either page_id or url")
+            if page is None:
+                return None
         clickables = self.get_all_clickables_to_page_id_from_db(current_session, page['web_page_id'])
-        forms = self.get_all_forms_to_page_id_from_db(current_session, page_id)
+        forms = self.get_all_forms_to_page_id_from_db(current_session, page['web_page_id'])
         result = WebPage(page['web_page_id'], page['url'], page['html'], None, page['current_depth'], page['base_url'])
         result.clickables = clickables
         result.forms = forms
@@ -225,7 +240,7 @@ class Database():
         document['session'] = current_session
         self.delta_pages.save(document)
     
-    def get_delta_page_from_db(self, page_id, current_session):
+    def get_delta_page_to_id(self, current_session, page_id):
         page = self.delta_pages.find_one({"session": current_session,"web_page_id":page_id })
         if page is None:
             return None
@@ -242,7 +257,7 @@ class Database():
             document["links"].append(self._parse_link_to_db_doc(link))
         timeming_requests_doc = []
         for timing_request in web_page.timeming_requests:
-            timeming_requests_doc.append(self._parse_timeming_requestto_db_doc(timing_request))
+            timeming_requests_doc.append(self._parse_timing_requestto_db_doc(timing_request))
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
         document['base_url'] = web_page.base_url
@@ -272,7 +287,7 @@ class Database():
         form_doc['form_hash'] = form_hash
         self.forms.save(form_doc)
     
-    def _parse_timeming_requestto_db_doc(self, request):
+    def _parse_timing_requestto_db_doc(self, request):
         res = {}
         res['method'] = request.method
         res['url'] = request.url
@@ -398,7 +413,7 @@ class Database():
         return clickable_types[num]
     
     def get_all_clickables_to_page_id_from_db(self, current_session, page_id):
-        clickables = self.clickables.find({"web_page_id" : page_id, "session":current_session})
+        clickables = self.clickables.find({"web_page_id": page_id, "session": current_session})
         result = []
         for clickable in clickables:
             c = Clickable(clickable['event'], clickable['tag'], clickable['dom_address'], clickable['html_id'], clickable['html_class'], clickable_depth=clickable['clickable_depth'], function_id=clickable['function_id'])
@@ -446,7 +461,7 @@ class Database():
         return result
 
     def insert_url_description_into_db(self, current_session, url_description):
-        search_doc = {"hash":url_description.url_hash}
+        search_doc = {"hash": url_description.url_hash}
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_description.url_hash})
         document = {}
         if result is not None:
@@ -455,7 +470,8 @@ class Database():
         document["parameters"] = url_description.parameters
         document["url_hash"] = url_description.url_hash
         document["session"] = current_session
-        self.url_descriptions.save(document)
+        result = self.url_descriptions.save(document)
+        logging.debug(result)
 
     def get_url_description_from_db(self, current_session, url_hash):
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})

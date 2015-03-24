@@ -9,7 +9,7 @@ from PyQt5.QtCore import QByteArray
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
 from PyQt5.Qt import QUrl
 
-from core.abstractinteractioncore import AbstractInteractionCore
+from core.interactioncore import InteractionCore
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
 from models.utils import CrawlSpeed
@@ -17,7 +17,7 @@ from models.timemimngrequest import TimemingRequest
 from models.clickable import Clickable
 
 
-class MainAnalyzer(AbstractInteractionCore):
+class MainAnalyzer(InteractionCore):
     def __init__(self, parent, proxy="", port=0, crawl_speed=CrawlSpeed.Medium, network_access_manager=None):
         super(MainAnalyzer, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._loading_complete = False
@@ -130,10 +130,10 @@ class MainAnalyzer(AbstractInteractionCore):
 
     def loadComplete(self, reply):
         if not self._analyzing_finished:
-            logging.debug("{}".format(reply))
-            logging.debug("Status Code: {}".format(reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)))
+            #logging.debug("{}".format(reply))
+            #logging.debug("Status Code: {}".format(reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)))
             self.response_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-            if self.response_code is None: #TODO: Look for this strange behavior
+            if self.response_code is None:
                 logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
 
     def _make_request(self, url):
@@ -176,7 +176,8 @@ class MainAnalyzer(AbstractInteractionCore):
             function_id = msg['function_id']
             if tag is not None and dom_address != "":
                 tmp = Clickable(event, tag, dom_address, id, html_class, function_id=function_id)
-                self._new_clickables.append(tmp)
+                if tmp not in self._new_clickables:
+                    self._new_clickables.append(tmp)
         except KeyError as err:
             # logging.debug(err)
             pass

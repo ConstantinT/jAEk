@@ -16,9 +16,9 @@ import uuid
 
 class User():
     
-    def __init__(self, username,  user_level, url_with_login_form = None, login_data = None):
+    def __init__(self, username,  user_level, url_with_login_form=None, login_data=None, session=uuid.uuid4()):
         self.login_data = login_data
         self.username = username
         self.url_with_login_form = url_with_login_form
         self.user_level = user_level
-        self.session = uuid.uuid4()
+        self.session = session

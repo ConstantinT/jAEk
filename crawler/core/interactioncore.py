@@ -15,10 +15,9 @@ from time import time, sleep
 from models.utils import CrawlSpeed
 import logging
 
-
-class AbstractInteractionCore(QWebPage):
+class InteractionCore(QWebPage):
     '''
-    classdocs
+    This is the main class for interacting with a webpage, here are all necessary js-files loaded, and signal connections build
     '''    
     def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
         QWebPage.__init__(self, parent)

@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.Qt import QUrl
 
-from core.abstractinteractioncore import AbstractInteractionCore
+from core.interactioncore import InteractionCore
 from analyzer.eventexecutor import Event_Result
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
@@ -13,7 +13,7 @@ from models.utils import CrawlSpeed
 __author__ = 'constantin'
 
 
-class FormHandler(AbstractInteractionCore):
+class FormHandler(InteractionCore):
 
 
     def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
@@ -132,7 +132,7 @@ class FormHandler(AbstractInteractionCore):
                     id = msg['id']
                 else:
                     id = None
-            domadress = msg['addr']
+            dom_address = msg['addr']
             event = msg['event']
             if event == "":
                 event = None
@@ -146,8 +146,8 @@ class FormHandler(AbstractInteractionCore):
                 else:
                     html_class = None
             function_id = msg['function_id']
-            if tag is not None and domadress != "":
-                tmp = Clickable(event, tag, domadress, id, html_class, function_id=function_id)
+            if tag is not None and dom_address != "":
+                tmp = Clickable(event, tag, dom_address, id, html_class, function_id=function_id)
                 self._new_clickables.append(tmp)
         except KeyError as err:
             #logging.debug(err)

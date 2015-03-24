@@ -14,13 +14,14 @@ from PyQt5.Qt import QApplication, QObject
 from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
 from analyzer.formhandler import FormHandler
 from database.persistentmanager import PersistenceManager
+from models.clustermanager import ClusterManager
 from models.url import Url
 from utils.execptions import PageNotFoundException, LoginException
 from models.deltapage import DeltaPage
 from models.webpage import WebPage
 from models.clickabletype import ClickableType
 from utils.domainhandler import DomainHandler
-from analyzer.dynamicanalyzer import MainAnalyzer
+from analyzer.mainanalyzer import MainAnalyzer
 from network.network import NetWorkAccessManager
 from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, form_to_dict
 
@@ -55,10 +56,12 @@ class Crawler(QObject):
         self.current_depth = 0
         self.persistence_manager = persistence_manager
 
+        self.cluster_manager = ClusterManager(self.persistence_manager) # dict with url_hash and
+
 
     def crawl(self, user):
         self.user = user
-        self.domain_handler = DomainHandler(self.crawl_config.start_page_url)
+        self.domain_handler = DomainHandler(self.crawl_config.start_page_url, self.persistence_manager)
         self.start_page_url = self.domain_handler.create_url(self.crawl_config.start_page_url, None)
         self.persistence_manager.insert_url_into_db(self.start_page_url)
 
@@ -92,7 +95,7 @@ class Crawler(QObject):
                 while isinstance(parent_page, DeltaPage):
                     necessary_clicks.insert(0,
                                             parent_page.generator)  # Insert as first element because of reverse order'
-                    parent_page = self.persistence_manager.get_page(parent_page.parent_id)
+                    parent_page = self.persistence_manager.get_page_to_id(parent_page.parent_id)
                     if parent_page is None:
                         raise PageNotFoundException("This exception should never be raised...")
                     previous_pages.append(parent_page)
@@ -101,7 +104,7 @@ class Crawler(QObject):
                 url_to_request = self.domain_handler.create_url(parent_page.url)
 
             else:
-                url_to_request = self.persistence_manager.get_next_url_for_crawling()
+                url_to_request = self.domain_handler.get_next_url_for_crawling()
                 if url_to_request is not None:
                     self.crawler_state = CrawlState.normal_page
                     if url_to_request.depth_of_finding is None:
@@ -142,15 +145,15 @@ class Crawler(QObject):
             clickables = []
             counter = 1  # Just a counter for displaying progress
             errors = 0  # Count the errors(Missing preclickable or target elements=
-            retrys = 0  # Count the retries
-            MAX_RETRYS_FOR_CLICKING = 5
+            retries = 0  # Count the retries
+            max_retries_for_clicking = 5
 
-            while len(clickable_to_process) > 0 and retrys < MAX_RETRYS_FOR_CLICKING:
+            while len(clickable_to_process) > 0 and retries < max_retries_for_clicking:
                 clickable = clickable_to_process.pop(0)
                 if not self.should_execute_clickable(clickable):
                     clickable.clickable_type = ClickableType.Ignored_by_Crawler
                     self.persistence_manager.update_clickable(current_page.id, clickable)
-                    clickables.append(clickable)
+                    #clickables.append(clickable)
                     continue
                 logging.debug(
                     "Processing Clickable Number {} - {} left".format(str(counter), str(len(clickable_to_process))))
@@ -219,7 +222,7 @@ class Crawler(QObject):
                             # raise LoginException("Cannot login anymore")
                             continue
                         else:
-                            retrys += 1
+                            retries += 1
                             errors = 0
                             clickable_to_process.append(clickable)
                             continue
@@ -266,87 +269,87 @@ class Crawler(QObject):
                             delta_page.ajax_requests) > 0 or len(delta_page.forms) > 0:
                         if len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_only_new_links(clickable, delta_page, current_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_links(clickable, delta_page, current_page,
                                                                                   xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_only_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_only_ajax_requests(clickable, delta_page,
                                                                                       current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_new_links_and_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_and_ajax_requests(clickable, delta_page,
                                                                                                current_page,
                                                                                                xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_only_new_clickables(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_clickables(clickable, delta_page,
                                                                                        current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_new_links_and_clickables(clickable, delta_page,
+                            clicclickable_process_againkable = self.handle_delta_page_has_new_links_and_clickables(clickable, delta_page,
                                                                                             current_page, xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_new_clickables_and_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_clickables_and_ajax_requests(clickable,
                                                                                                     delta_page,
                                                                                                     current_page,
                                                                                                     xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable = self.handle_delta_page_has_new_links_ajax_requests__clickables(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_links_ajax_requests__clickables(clickable,
                                                                                                        delta_page,
                                                                                                        current_page,
                                                                                                        xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_only_new_forms(clickable, delta_page, current_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_forms(clickable, delta_page, current_page,
                                                                                   xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_links_and_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_and_forms(clickable, delta_page,
                                                                                        current_page, xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_forms_and_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_forms_and_ajax_requests(clickable, delta_page,
                                                                                                current_page,
                                                                                                xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_links_forms_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_forms_ajax_requests(clickable, delta_page,
                                                                                                  current_page,
                                                                                                  xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_clickable_and_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_clickable_and_forms(clickable, delta_page,
                                                                                            current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_links_clickables_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms(clickable, delta_page,
                                                                                               current_page,
                                                                                               xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_clickables_forms_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_clickables_forms_ajax_requests(clickable,
                                                                                                       delta_page,
                                                                                                       current_page,
                                                                                                       xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable = self.handle_delta_page_has_new_links_clickables_forms_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms_ajax_requests(clickable,
                                                                                                             delta_page,
                                                                                                             current_page,
                                                                                                             xhr_behavior)
@@ -358,16 +361,25 @@ class Crawler(QObject):
                             logging.debug("    Forms: " + str(len(delta_page.forms)))
                             logging.debug("    AjaxRequests: " + str(len(delta_page.ajax_requests)))
 
-                        if clickable is not None:
+                        if clickable_process_again is not None:
                             clickable.clicked = False
                             clickable_to_process.append(clickable)
+                        else:
+                            clickables.append(clickable)
 
                     else:
                         clickable.clickable_type = ClickableType.UI_Change
                         self.persistence_manager.update_clickable(current_page.id, clickable)
+                        clickables.append(clickable)
 
             current_page.clickables = clickables
-            self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")
+            #self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")4
+            self.cluster_manager.add_to_nearest_cluster(current_page)
+        logging.debug("Crawling is ready...")
+
+
+
+
 
 
     def handle_delta_page_has_only_new_links(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
@@ -594,14 +606,14 @@ class Crawler(QObject):
         for d_pages in self.tmp_delta_page_storage:
             if d_pages.url == delta_page.url:
                 page_similarity = calculate_similarity_between_pages(delta_page, d_pages, clickable_weight=1,
-                                                                     form_weight=0, link_weight=0)
+                                                                     form_weight=1, link_weight=1)
                 if page_similarity >= 0.9:
                     logging.debug("Equal page is already stored...")
                     return False
         for d_pages in self.get_all_crawled_deltapages_to_url(delta_page.url):
             if d_pages.url == delta_page.url:
                 page_similarity = calculate_similarity_between_pages(delta_page, d_pages, clickable_weight=1,
-                                                                     form_weight=0, link_weight=0)
+                                                                     form_weight=1, link_weight=1)
                 if page_similarity >= 0.9:
                     logging.debug("Equal page is already seen...")
                     return False

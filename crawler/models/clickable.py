@@ -6,10 +6,10 @@ class Clickable():
     Models interesting element with events as attributes
     '''
     
-    def __init__(self, event, tag, dom_adress, id = None, html_class = None, clickable_depth = None, function_id = None):
+    def __init__(self, event, tag, dom_address, id = None, html_class = None, clickable_depth = None, function_id = None):
         self.event = event
         self.tag = tag
-        self.dom_address = dom_adress
+        self.dom_address = dom_address
         self.id = id
         self.html_class = html_class
         self.links_to = None
@@ -27,7 +27,7 @@ class Clickable():
             msg += " - Event: " + self.event
         if self.html_class is not None and not self.html_class == "":
             msg += " - Class: " + self.html_class
-        msg += " - Domadress: " + self.dom_address
+        msg += " - Domaddress: " + self.dom_address
         if self.links_to is not None:
             msg += " - Links to: " + self.links_to
         if self.clickable_depth is not None:
@@ -57,7 +57,7 @@ class Clickable():
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return self.dom_address == other.dom_address and self.event == other.event
+        return self.dom_address == other.dom_address and self.event == other.event and self.clickable_type == other.clickable_type and self.links_to == other.links_to
 
     def __ne__(self, other):
         return not self.__eq__(other)        

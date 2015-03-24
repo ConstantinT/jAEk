@@ -16,42 +16,49 @@ class DomainHandler():
         self.scheme = o.scheme
         self.persistence_manager = persistence_manager
         
-        
+    def get_next_url_for_crawling(self):
+        url = self.persistence_manager.get_next_url_for_crawling()
+        return self.create_url(url)
+
     def create_url(self, url, requested_url=None, depth_of_finding=None):
+
         if requested_url is not None:
             try:
                 url = url.toString()
             except AttributeError:
                 url = url
             new_url = urljoin(requested_url, url)
+            url = Url(new_url)
         else:
-            new_url = url
-        url = Url(new_url, depth_of_finding)
+            try:
+                new_url = url.toString() # if there is nor error we have already a Url Object
+            except AttributeError:
+                url = Url(url, depth_of_finding) # else we must create one
 
-        url_description = self.persistence_manager.get_url_description_from_db(url.url_hash)
-
-        if url_description is None: # We have not seen a url of that structure
-            url_path = url.get_path()
-            url_description_parameters = {}
-            for key in url.parameters:
-                new_parameter = {}
-                current_parameter_type = None
-                new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
-                for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
-                    current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                new_parameter['parameter_type'] = current_parameter_type.value
-                new_parameter['generating'] = False
-                url_description_parameters[key] = new_parameter
-            url_description = UrlDescription(url_path, url_description_parameters, url.url_hash)
-            self.persistence_manager.insert_url_description_into_db(url_description)
-        else:
-            for key in url.parameters:
-                current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
-                for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
-                    current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                url_description.parameters[key]["parameter_type"] = current_parameter_type.value
-            self.persistence_manager.insert_url_description_into_db(url_description)
-        url.url_description = url_description
+        if url.url_description is None:
+            url_description = self.persistence_manager.get_url_description_to_hash(url.url_hash)
+            if url_description is None: # We have not seen a url of that structure
+                url_path = url.get_path()
+                url_description_parameters = {}
+                for key in url.parameters:
+                    new_parameter = {}
+                    current_parameter_type = None
+                    new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
+                    for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                    new_parameter['parameter_type'] = current_parameter_type.value
+                    new_parameter['generating'] = False
+                    url_description_parameters[key] = new_parameter
+                url_description = UrlDescription(url_path, url_description_parameters, url.url_hash)
+                self.persistence_manager.insert_url_description_into_db(url_description)
+            else:
+                for key in url.parameters:
+                    current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
+                    for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                    url_description.parameters[key]["parameter_type"] = current_parameter_type.value
+                self.persistence_manager.insert_url_description_into_db(url_description)
+            url.url_description = url_description
         return url
     
     def is_in_scope(self, url):

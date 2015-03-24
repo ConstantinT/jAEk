@@ -8,14 +8,14 @@ class Link():
     
     def __init__(self, url, dom_adress, html_id = "", html_class = ""):
         self.url = url 
-        self.dom_adress = dom_adress
+        self.dom_address = dom_adress
         self.html_id = html_id
         self.html_class = html_class
         
     def toString(self):
         res = "["
         res += "HREF: " + self.url.toString()
-        res += " - Domadress: " + self.dom_adress
+        res += " - Domadress: " + self.dom_address
         if self.html_id != "":
             res += " - ID: " + self.html_id
         if self.html_class != "":

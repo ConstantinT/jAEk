@@ -1,13 +1,13 @@
 from enum import Enum
 import logging
 from PyQt5.QtCore import QUrl
-from core.abstractinteractioncore import AbstractInteractionCore
+from core.interactioncore import InteractionCore
 from models.utils import CrawlSpeed
 
 __author__ = 'constantin'
 
 
-class XSSAttacker(AbstractInteractionCore):
+class XSSAttacker(InteractionCore):
 
     def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
         super(XSSAttacker, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)

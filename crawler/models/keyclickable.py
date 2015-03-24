@@ -9,7 +9,7 @@ from models.clickabletype import ClickableType
 class KeyClickable(Clickable):
     
     def __init__(self, clickable, key_event):
-        Clickable.__init__(self, clickable.event, clickable.tag, clickable.dom_adress, clickable.id, clickable.html_class, clickable.clickable_depth, clickable.function_id)
+        Clickable.__init__(self, clickable.event, clickable.tag, clickable.dom_address, clickable.id, clickable.html_class, clickable.clickable_depth, clickable.function_id)
         self.random_char = key_event #Is the key typed in for triggering the clickabel
     
     def toString(self):   

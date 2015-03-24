@@ -3,11 +3,11 @@ import logging
 
 from PyQt5.Qt import QEventLoop, QTimer, QUrl
 
-from core.abstractinteractioncore import AbstractInteractionCore
+from core.interactioncore import InteractionCore
 from models.utils import CrawlSpeed
 
 
-class Requestor(AbstractInteractionCore):
+class Requestor(InteractionCore):
     def __init__(self, parent, proxy, port, crawl_speed = CrawlSpeed.Medium):
         super(Requestor, self).__init__(parent, proxy, port, crawl_speed)
         self.app = parent.app

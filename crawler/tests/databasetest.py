@@ -54,11 +54,11 @@ class DataBaseTests(unittest.TestCase):
         url2 = Url(TEST_URL2, depth_of_finding=25)
 
         self.database.insert_url_into_db(SESSION, url1)
-        self.assertEqual(self.database.visited_urls.count(), 1)
+        self.assertEqual(self.database.urls.count(), 1)
         self.database.insert_url_into_db(SESSION, url1)
-        self.assertEqual(self.database.visited_urls.count(), 1)
+        self.assertEqual(self.database.urls.count(), 1)
         self.database.insert_url_into_db(SESSION, url2)
-        self.assertEqual(self.database.visited_urls.count(), 2)
+        self.assertEqual(self.database.urls.count(), 2)
 
 
     def test_clickables(self):

@@ -14,20 +14,19 @@ class Link():
         
     def toString(self):
         res = "["
-        res += "HREF: " + self.url.toString()
+        res += "HREF: " + self.url
         res += " - Domadress: " + self.dom_address
         if self.html_id != "":
             res += " - ID: " + self.html_id
         if self.html_class != "":
             res += " - Class: " + self.html_class
-        res += " - Url_Hash: " + self.url.url_hash
         res += "]"
         return res
     
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return self.url.toString() == other.url.toString()
+        return self.url == other.url
 
     def __ne__(self, other):
         return not self.__eq__(other) 

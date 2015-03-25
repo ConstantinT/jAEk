@@ -1,7 +1,7 @@
 import logging
 from pymongo.connection import Connection
 import pymongo
-from models.urldescription import UrlDescription
+from models.urlstructure import UrlStructure
 
 from utils.user import User
 from models.url import Url
@@ -128,6 +128,12 @@ class Database():
         update_doc['page_id'] = webpage_id
         update_doc['redirected_to'] = redirected_to
         self.urls.update(search_doc, {"$set": update_doc})
+
+    def get_url_to_id(self, current_session, id):
+        result = self.urls.find_one({"session":current_session, "page_id": id})
+        if result is None:
+            return None
+        return result['url']
              
     def insert_page_into_db(self, current_session, web_page):
         for clickable in web_page.clickables:
@@ -257,7 +263,7 @@ class Database():
             document["links"].append(self._parse_link_to_db_doc(link))
         timeming_requests_doc = []
         for timing_request in web_page.timeming_requests:
-            timeming_requests_doc.append(self._parse_timing_requestto_db_doc(timing_request))
+            timeming_requests_doc.append(self._parse_timing_request_to_db_doc(timing_request))
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
         document['base_url'] = web_page.base_url
@@ -287,7 +293,7 @@ class Database():
         form_doc['form_hash'] = form_hash
         self.forms.save(form_doc)
     
-    def _parse_timing_requestto_db_doc(self, request):
+    def _parse_timing_request_to_db_doc(self, request):
         res = {}
         res['method'] = request.method
         res['url'] = request.url
@@ -298,16 +304,14 @@ class Database():
         
     def _parse_link_to_db_doc(self, link):
         res = {}
-        res['url'] = link.url.toString()
-        res['abstract_url_hash'] = link.url.get_hash()
+        res['url'] = link.url
         res['dom_address'] = link.dom_address
         res['html_id'] = link.html_id
         res['html_class'] = link.html_class
         return res
     
     def _parse_link_from_db(self, link):
-        url = Url(link['url'])
-        result = Link(url, link['dom_address'], link['html_id'], link['html_class'])
+        result = Link(link['url'], link['dom_address'], link['html_id'], link['html_class'])
         return result
     
     def _parse_form_parameter_to_db_doc(self, form_parameter):
@@ -477,4 +481,7 @@ class Database():
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})
         if result is None:
             return None
-        return UrlDescription(result['path'], result["parameters"], result['url_hash'])
+        return UrlStructure(result['path'], result["parameters"], result['url_hash'])
+
+    def url_exists(self, current_session, url):
+        return self.urls.find({"url":url, "session":current_session}).count() > 0

@@ -1,9 +1,12 @@
+
+import matplotlib.pyplot as plt
+import networkx
 from models.url import Url
 from utils.utils import calculate_similarity_between_pages
 
 __author__ = 'constantin'
 
-CLUSTER_THRESHOLD = .7
+CLUSTER_THRESHOLD = .8
 
 class ClusterManager():
     """
@@ -24,42 +27,50 @@ class ClusterManager():
         except:
             raise KeyError("No cluster with that id found")
 
-    def add_new_cluster(self, web_page_id= None, web_page=None):
-        if web_page is not None:
-            web_page_url = web_page.url
-            web_page_url = Url(web_page_url)
-            web_page_id = web_page.id
-        elif web_page_id is not None:
-            web_page_url = self._persistence_manager.get_web_page_to_id(web_page_id).url
-            web_page_url = Url(web_page_url)
-        else:
-            raise AttributeError("Need to specifie web_page_id or web_page")
-        web_page_url.url_description = self._persistence_manager.get_url_description_to_hash(web_page_url.url_hash)
-        self._clusters[web_page_url.url_description] = [web_page_id]
-
-    def add_to_cluster(self, url_description, web_page_id):
-        try:
-            self._clusters[url_description].append(web_page_id)
-        except:
-            raise KeyError("No cluster found with this id")
-
-    def add_to_nearest_cluster(self, web_page):
-        if len(self._clusters) == 0: #We have no cluster, so add as first
-            self.add_new_cluster(web_page=web_page)
+    def add_to_webpage_to_cluster(self, web_page):
+        url = Url(web_page.url)
+        if not url.url_hash in self._clusters: # it is the first
+            self._clusters[url.url_hash] = [[web_page.id]]
             return
-        nearest_cluster = (0, 0) # id, similarity value
-        for url_description in self._clusters:
-            similarity = 0.0
-            for web_page_id in self._clusters[url_description]:
-                page = self._persistence_manager.get_web_page_to_id(web_page_id)
-                similarity += calculate_similarity_between_pages(web_page, page)
-            similarity /= len(self._clusters[url_description])
-            if similarity > nearest_cluster[1]:
-                nearest_cluster = (url_description, similarity)
+        nearest_cluster = (0, 0) # list, similarity value
+        for cluster in self._clusters[url.url_hash]:  # A cluster is a simple list of web_page_ids
+            average_cluster_similarity = 0
+            for webpage_id in cluster:
+                page = self._persistence_manager.get_web_page_to_id(webpage_id)
+                similarity = calculate_similarity_between_pages(web_page, page)
+                average_cluster_similarity += similarity
+            average_cluster_similarity = average_cluster_similarity / len(cluster)
+            if average_cluster_similarity > nearest_cluster[1]:
+                nearest_cluster = (cluster, average_cluster_similarity)
         if nearest_cluster[1] > CLUSTER_THRESHOLD:
-            self.add_to_cluster(nearest_cluster[0], web_page_id=web_page.id)
+            nearest_cluster[0].append(web_page.id)
         else:
-            self.add_new_cluster(web_page=web_page)
+            self._clusters[url.url_hash].append([web_page.id]) # If it is here, then we must at a new list to the list of clusters
+
+
+
+
+
+    def draw_clusters(self):
+        G = networkx.Graph()
+        all_clusters = self._clusters.values()
+        for different_clusters in all_clusters:
+            for cluster in different_clusters:
+                for page_id in cluster:
+                    url = self._persistence_manager.get_url_to_id(page_id)
+                    G.add_node(page_id, url=url)
+                edges = []
+                for i in range(len(cluster)):
+                    for j in range(i+1, len(cluster)):
+                        edges.append((cluster[i], cluster[j]))
+                G.add_edges_from(edges)
+        labels=dict((n,d['url']) for n, d in G.nodes(data=True))
+        networkx.draw_networkx(G, labels=labels)
+        plt.show()
+
+
+
+
 
 
 

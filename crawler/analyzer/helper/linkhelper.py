@@ -7,12 +7,12 @@ from urllib.parse import urlparse, urljoin
 
 class LinkHelper():
 
-    def extract_links(self, frame, requested_url, current_depth):
+    def extract_links(self, frame, requested_url):
         anchor_tags = frame.findAllElements("a")
-        new_links, new_clickables = self._extract_links(anchor_tags, requested_url, current_depth)
+        new_links, new_clickables = self._extract_links(anchor_tags, requested_url)
         return new_links, new_clickables
 
-    def _extract_links(self, elements, requested_url, current_depth):
+    def _extract_links(self, elements, requested_url):
         found_links = []
         new_clickables = []
         if(len(elements) == 0):
@@ -36,7 +36,6 @@ class LinkHelper():
                     html_class = elem.attribute("class")
                     dom_adress = elem.evaluateJavaScript("getXPath(this)")
                     url = href
-                    url = Url(url, current_depth)
                     link = Link(url, dom_adress, html_id, html_class)
                     found_links.append(link)
                 elif "http://" in href or "https://" in href:

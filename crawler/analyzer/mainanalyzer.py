@@ -69,7 +69,7 @@ class MainAnalyzer(InteractionCore):
             overall_waiting_time += waiting_time_in_milliseconds
 
         self.mainFrame().evaluateJavaScript(self._property_obs_js)
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), url_to_request, current_depth)
+        links, clickables = self._link_helper.extract_links(self.mainFrame(), url_to_request)
         forms = self._form_helper.extract_forms(self.mainFrame())
         self._wait(0.5)
 

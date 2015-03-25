@@ -4,7 +4,7 @@ import hashlib
 __author__ = 'constantin'
 
 
-class UrlDescription():
+class UrlStructure():
 
     def __init__(self, path, paramters = {}, url_hash = None):
         self.path = path

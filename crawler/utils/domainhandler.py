@@ -6,7 +6,7 @@ Created on 23.02.2015
 import string
 from urllib.parse import urlparse, urljoin
 from models.url import Url
-from models.urldescription import ParameterType, ParameterOrigin, UrlDescription
+from models.urlstructure import ParameterType, ParameterOrigin, UrlStructure
 
 
 class DomainHandler():
@@ -18,10 +18,11 @@ class DomainHandler():
         
     def get_next_url_for_crawling(self):
         url = self.persistence_manager.get_next_url_for_crawling()
-        return self.create_url(url)
+        if url is None:
+            return None
+        return self._create_url(url)
 
-    def create_url(self, url, requested_url=None, depth_of_finding=None):
-
+    def _create_url(self, url, requested_url=None, depth_of_finding=None):
         if requested_url is not None:
             try:
                 url = url.toString()
@@ -35,30 +36,31 @@ class DomainHandler():
             except AttributeError:
                 url = Url(url, depth_of_finding) # else we must create one
 
-        if url.url_description is None:
-            url_description = self.persistence_manager.get_url_description_to_hash(url.url_hash)
-            if url_description is None: # We have not seen a url of that structure
-                url_path = url.get_path()
-                url_description_parameters = {}
-                for key in url.parameters:
-                    new_parameter = {}
-                    current_parameter_type = None
-                    new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
-                    for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
-                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                    new_parameter['parameter_type'] = current_parameter_type.value
-                    new_parameter['generating'] = False
-                    url_description_parameters[key] = new_parameter
-                url_description = UrlDescription(url_path, url_description_parameters, url.url_hash)
-                self.persistence_manager.insert_url_description_into_db(url_description)
-            else:
-                for key in url.parameters:
-                    current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
-                    for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
-                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                    url_description.parameters[key]["parameter_type"] = current_parameter_type.value
-                self.persistence_manager.insert_url_description_into_db(url_description)
-            url.url_description = url_description
+        if not self.persistence_manager.url_exists(url.toString()):
+            if url.url_description is None:
+                url_description = self.persistence_manager.get_url_description_to_hash(url.url_hash)
+                if url_description is None: # We have not seen a url of that structure
+                    url_path = url.get_path()
+                    url_description_parameters = {}
+                    for key in url.parameters:
+                        new_parameter = {}
+                        current_parameter_type = None
+                        new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
+                        for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                            current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                        new_parameter['parameter_type'] = current_parameter_type.value
+                        new_parameter['generating'] = False
+                        url_description_parameters[key] = new_parameter
+                    url_description = UrlStructure(url_path, url_description_parameters, url.url_hash)
+                    self.persistence_manager.insert_url_description_into_db(url_description)
+                else:
+                    for key in url.parameters:
+                        current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
+                        for value in url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                            current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                        url_description.parameters[key]["parameter_type"] = current_parameter_type.value
+                    self.persistence_manager.insert_url_description_into_db(url_description)
+                url.url_description = url_description
         return url
     
     def is_in_scope(self, url):
@@ -104,13 +106,11 @@ class DomainHandler():
             base_url = web_page.url
 
         for link in web_page.links:
-            link.url = self.create_url(link.url, web_page.url, web_page.current_depth)
-
+            link.url = urljoin(base_url, link.url)
         for request in web_page.timeming_requests:
             request.url = urljoin(base_url, request.url)
         for form in web_page.forms:
             form.action = urljoin(base_url, form.action)
-
         try:
             for ajax in web_page.ajax_requests:
                 ajax.url = urljoin(base_url, ajax.url)
@@ -118,6 +118,25 @@ class DomainHandler():
             pass
 
         return web_page
+
+    def extract_new_links_for_crawling(self, page, current_depth, base_url=None):
+
+        for link in page.links:
+            url = self._create_url(link.url, None, depth_of_finding=current_depth)
+            self.persistence_manager.insert_url_into_db(url)
+
+        if page.ajax_requests is not None:
+            for ajax in page.ajax_requests:
+                url = self._create_url(ajax.url, None, depth_of_finding=current_depth)
+                self.persistence_manager.insert_url_into_db(url)
+
+        for ajax in page.timeming_requests:
+            url = self._create_url(ajax.url, None, depth_of_finding=current_depth)
+            self.persistence_manager.insert_url_into_db(url)
+
+        for form in page.forms:
+            url = self._create_url(form.action, None, depth_of_finding=current_depth)
+            self.persistence_manager.insert_url_into_db(url)
 
     def calculate_new_url_type(self, current_type, value):
         if current_type is None: # When we see it the first time, then we just set this param to None

@@ -1,5 +1,5 @@
 from database.persistentmanager import PersistenceManager
-from models.urldescription import ParameterType
+from models.urlstructure import ParameterType
 from utils.domainhandler import DomainHandler
 from utils.user import User
 
@@ -51,7 +51,7 @@ class DomainHandlerTest(unittest.TestCase):
 
 
     def test_b_create_url_function(self):
-        url = self.domain_handler.create_url("http://example.com/test.php?a=5&b=abc")
+        url = self.domain_handler._create_url("http://example.com/test.php?a=5&b=abc")
         url_desc = self.persistence_manager.get_url_description(url.url_hash)
         self.assertEqual(url_desc.get_parameter_type("b"), ParameterType.String)
         self.assertEqual(url_desc.get_parameter_type("a"), ParameterType.Digit)
@@ -59,7 +59,7 @@ class DomainHandlerTest(unittest.TestCase):
         self.assertEqual(url.get_values_to_parameter("b")[0], "abc")
 
 
-        url = self.domain_handler.create_url("test.php?a=7&b=abc123", "http://example.com")
+        url = self.domain_handler._create_url("test.php?a=7&b=abc123", "http://example.com")
         url_desc = self.persistence_manager.get_url_description(url.url_hash)
         self.assertEqual(url_desc.get_parameter_type("b"), ParameterType.AlphaNumerical)
         self.assertEqual(url_desc.get_parameter_type("a"), ParameterType.Digit)

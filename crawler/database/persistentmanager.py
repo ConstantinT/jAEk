@@ -62,7 +62,9 @@ class PersistenceManager(object):
                 return page
             
         return self._database.get_delta_page_to_id(self._current_session, delta_page_id)
-    
+
+    def url_exists(self, url):
+        return self._database.url_exists(self._current_session, url)
     
     def get_next_url_for_crawling(self):
         return self._database.get_next_url_for_crawling(self._current_session)
@@ -104,3 +106,6 @@ class PersistenceManager(object):
 
     def insert_url_description_into_db(self, url_description):
         self._database.insert_url_description_into_db(self._current_session, url_description)
+
+    def get_url_to_id(self, id):
+        return self._database.get_url_to_id(self._current_session, id)

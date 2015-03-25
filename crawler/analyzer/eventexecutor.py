@@ -119,7 +119,7 @@ class EventExecutor(InteractionCore):
         real_clickable.evaluateJavaScript(js_code)
         self._wait(0.5)
 
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url, webpage.current_depth)
+        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
         forms = self._form_helper.extract_forms(self.mainFrame())
         self.mainFrame().evaluateJavaScript(self._property_obs_js)
         self._wait(0.5)

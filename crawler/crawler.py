@@ -374,8 +374,8 @@ class Crawler(QObject):
 
             current_page.clickables = clickables
             #self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")4
-            self.cluster_manager.add_to_webpage_to_cluster(current_page)
-        self.cluster_manager.draw_clusters()
+            self.cluster_manager.add_webpage_to_cluster(current_page)
+        #self.cluster_manager.draw_clusters()
         logging.debug("Crawling is ready...")
 
 

@@ -33,6 +33,7 @@ class Database():
         self.delta_pages = self.database.delta_pages
         self.forms = self.database.forms
         self.users = self.database.users
+        self.clusters = self.database.clusters
         self._per_session_url_counter = 0
 
         if drop_dbs:
@@ -43,6 +44,7 @@ class Database():
             self.clickables.drop()
             self.forms.drop()
             self.users.drop()
+            self.clusters.drop()
             self.urls.ensure_index("url", pymongo.ASCENDING, unique=True)
             #self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
 
@@ -485,3 +487,14 @@ class Database():
 
     def url_exists(self, current_session, url):
         return self.urls.find({"url":url, "session":current_session}).count() > 0
+
+    def write_cluster(self, current_session, url_hash, clusters):
+        self.clusters.remove( {"session": current_session, "url_hash": url_hash})
+        self.clusters.save({"session": current_session, "url_hash": url_hash, "clusters": clusters})
+
+    def get_clusters(self, current_session, url_hash):
+        result = self.clusters.find_one({"session": current_session, "url_hash": url_hash})
+        try:
+            return result["clusters"]
+        except TypeError:
+            return None

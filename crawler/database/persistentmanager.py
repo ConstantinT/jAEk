@@ -109,3 +109,9 @@ class PersistenceManager(object):
 
     def get_url_to_id(self, id):
         return self._database.get_url_to_id(self._current_session, id)
+
+    def write_clusters(self, url_hash, clusters):
+        self._database.write_cluster(self._current_session, url_hash, clusters)
+
+    def get_clusters(self, url_hash):
+        return self._database.get_clusters(self._current_session, url_hash)

@@ -120,7 +120,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         result = similarity / sum_weight
     else:
         result = 1
-    """
+
     f = open("similarities/" + str(page1.id) + " - " + str(page2.id) + ".txt", "w")
     f.write(page1.toString())
     f.write(" \n \n ======================================================= \n \n")
@@ -130,7 +130,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
     f.write("\n Formweight: "+ str(form_weight) + " Formnum: " +str(form_counter) + " - Linkweight: " + str(link_weight) + " Linknum: " + str(link_counter) + " - Clickableweight: " + str(clickable_weight) + " Clickablenum: " + str(clickable_counter) )
     f.close()
     #logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))
-    """
+
     return result
 
 def two_clickables_are_equal(c1, c2):

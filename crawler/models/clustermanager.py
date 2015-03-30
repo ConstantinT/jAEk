@@ -19,7 +19,6 @@ class ClusterManager():
     """
 
     def __init__(self, persistence_manager):
-        self._clusters = {} #A dictionary containing the clusters => List of web_page_ids
         self._persistence_manager = persistence_manager
         self._similarity_cache = {} #Stores in a tripple: List(ids), result
 
@@ -47,8 +46,12 @@ class ClusterManager():
                 else:
                     tmp.append(c)
             tmp.append(webpage.id)
-            cluster = self.hierarchical_clustering(tmp, 0.2)
-            self._persistence_manager.write_clusters(url.url_hash, cluster)
+            new_clusters = self.hierarchical_clustering(tmp, 0.2)
+            for c in new_clusters:
+                if isinstance(c, int): # Konvert integer to list, so mongo store all seperate single clusters in its own lists.
+                    new_clusters.remove(c)
+                    new_clusters.insert(0, [c])
+            self._persistence_manager.write_clusters(url.url_hash, new_clusters)
 
 
     def hierarchical_clustering(self, clusters, threshold):

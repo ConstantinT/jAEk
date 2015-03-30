@@ -477,7 +477,6 @@ class Database():
         document["url_hash"] = url_description.url_hash
         document["session"] = current_session
         result = self.url_descriptions.save(document)
-        logging.debug(result)
 
     def get_url_description_from_db(self, current_session, url_hash):
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})

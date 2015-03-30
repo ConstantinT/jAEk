@@ -57,7 +57,7 @@ def transfer_clicked_from_parent_to_delta(parent_page, delta_page):
 
     return delta_page
 
-def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, form_weight = 1.0, link_weight = 1.0):
+def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, form_weight = 1.0, link_weight = 1.0, verbose= False):
 
     if page1.toString() == page2.toString():
         return 1.0
@@ -120,16 +120,16 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         result = similarity / sum_weight
     else:
         result = 1
-
-    f = open("similarities/" + str(page1.id) + " - " + str(page2.id) + ".txt", "w")
-    f.write(page1.toString())
-    f.write(" \n \n ======================================================= \n \n")
-    f.write(page2.toString())
-    f.write("\n \n ====================Result=========================== \n \n")
-    f.write("Similatiry = " + str(result) + " - Formsimilarity: " + str(form_similarity) + " - Linksimilarity: " + str(link_similarity) + " - Clickablesimilarity: " + str(clickable_similarity))
-    f.write("\n Formweight: "+ str(form_weight) + " Formnum: " +str(form_counter) + " - Linkweight: " + str(link_weight) + " Linknum: " + str(link_counter) + " - Clickableweight: " + str(clickable_weight) + " Clickablenum: " + str(clickable_counter) )
-    f.close()
-    #logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))
+    if verbose:
+        f = open("similarities/" + str(page1.id) + " - " + str(page2.id) + ".txt", "w")
+        f.write(page1.toString())
+        f.write(" \n \n ======================================================= \n \n")
+        f.write(page2.toString())
+        f.write("\n \n ====================Result=========================== \n \n")
+        f.write("Similatiry = " + str(result) + " - Formsimilarity: " + str(form_similarity) + " - Linksimilarity: " + str(link_similarity) + " - Clickablesimilarity: " + str(clickable_similarity))
+        f.write("\n Formweight: "+ str(form_weight) + " Formnum: " +str(form_counter) + " - Linkweight: " + str(link_weight) + " Linknum: " + str(link_counter) + " - Clickableweight: " + str(clickable_weight) + " Clickablenum: " + str(clickable_counter) )
+        f.close()
+        logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))
 
     return result
 

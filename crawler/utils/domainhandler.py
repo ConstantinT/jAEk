@@ -141,7 +141,7 @@ class DomainHandler():
     def calculate_new_url_type(self, current_type, value):
         if current_type is None: # When we see it the first time, then we just set this param to None
             if len(value) == 1:
-                if value in string.ascii_lowercase + string.ascii_uppercase:
+                if value in string.ascii_lowercase + string.ascii_uppercase + "/":
                     return ParameterType.Char
                 elif self._is_int(value):
                     return ParameterType.Digit

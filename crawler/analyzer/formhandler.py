@@ -93,7 +93,7 @@ class FormHandler(InteractionCore):
             q_submit_button.evaluateJavaScript("Simulate.click(this);")
             self._wait(5)
 
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url, webpage.current_depth)
+        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
         forms = self._form_helper.extract_forms(self.mainFrame())
         html = self.mainFrame().toHtml()
         f = open("html.txt", "w")

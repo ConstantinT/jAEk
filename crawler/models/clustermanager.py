@@ -3,7 +3,6 @@ import logging
 from copy import deepcopy
 import matplotlib.pyplot as plt
 import networkx
-from models.cluster import Cluster
 from models.url import Url
 from utils.utils import calculate_similarity_between_pages
 from sklearn.neighbors import NearestNeighbors
@@ -11,7 +10,7 @@ from sklearn.neighbors import DistanceMetric
 
 __author__ = 'constantin'
 
-CLUSTER_THRESHOLD = .8
+CLUSTER_THRESHOLD = .4
 
 class ClusterManager():
     """
@@ -46,7 +45,7 @@ class ClusterManager():
                 else:
                     tmp.append(c)
             tmp.append(webpage.id)
-            new_clusters = self.hierarchical_clustering(tmp, 0.2)
+            new_clusters = self.hierarchical_clustering(tmp, CLUSTER_THRESHOLD)
             for c in new_clusters:
                 if isinstance(c, int): # Konvert integer to list, so mongo store all seperate single clusters in its own lists.
                     new_clusters.remove(c)
@@ -91,7 +90,7 @@ class ClusterManager():
             cluster2 = [cluster2]
         else:
             cluster2 = list(cluster2)
-        all_nodes =  cluster1 +  cluster2
+        all_nodes =  cluster1 + cluster2
         all_combinations = list(itertools.combinations(all_nodes, 2))
         distances = []
         for combi in all_combinations:
@@ -118,22 +117,9 @@ class ClusterManager():
         name = sorted(name)
         return str(name[0])+"$"+str(name[1])
 
-    def draw_clusters(self):
-        G = networkx.Graph()
-        all_clusters = self._clusters.values()
-        for different_clusters in all_clusters:
-            for cluster in different_clusters:
-                for page_id in cluster:
-                    url = self._persistence_manager.get_url_to_id(page_id)
-                    G.add_node(page_id, url=url)
-                edges = []
-                for i in range(len(cluster)):
-                    for j in range(i+1, len(cluster)):
-                        edges.append((cluster[i], cluster[j]))
-                G.add_edges_from(edges)
-        labels=dict((n,d['url']) for n, d in G.nodes(data=True))
-        networkx.draw_networkx(G, labels=labels)
-        plt.show()
+    def calculate_url_per_cluster(self, url_hash):
+        clusters = self._persistence_manager.get_clusters(url_hash)
+        num_of_clusters = len(clusters)
 
 
 

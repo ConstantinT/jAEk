@@ -18,12 +18,12 @@ class Url():
         else:
             self.path = ""
         self.query = parsed_url.query
-        
+
         self.parameters = {}
         self.depth_of_finding = depth_of_finding
 
         self.url_description = None
-       
+
         if len(parsed_url.query) > 0:
             query_splitted = self.query.split("&")
             for splits in query_splitted:
@@ -44,19 +44,27 @@ class Url():
             for key in keys:
                 tmp_params[key] = self.parameters[key]
             self.parameters = tmp_params
-        
+
         self.url_hash = self.get_hash()
 
     def get_values_to_parameter(self, parameter_name):
         if parameter_name not in self.parameters:
             raise KeyError("{} is not in parameters".format(parameter_name))
         return self.parameters[parameter_name]
-        
+
     def get_url_description(self):
         return self.url_description
 
     def get_path(self):
-        return self.scheme + "://" + self.domain + "/" + self.path
+        result = self.scheme + "://" + self.domain
+        if self.path is not None and len(self.path) > 0:
+            if self.path[0] == "/":
+                result = self.scheme + "://" + self.domain + self.path
+            else:
+                result = self.scheme + "://" + self.domain + "/" + self.path
+            return result
+        else:
+            return ""
 
     def get_hash(self):
         s_to_hash = self.path
@@ -69,12 +77,12 @@ class Url():
 
     def toString(self):
         return self.complete_url
-    
+
     def has_equal_description(self, other):
         if not isinstance(other, self.___class__):
             return False
         return self.url_hash == other.url_hash
-    
+
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False

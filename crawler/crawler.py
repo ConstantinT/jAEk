@@ -656,7 +656,7 @@ class Crawler(QObject):
         f = open("test2.txt", "w")
         f.write(page_with_loginform_logged_in.toString())
         f.close()
-        return False
+        return calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_loginform_logged_in) < 0.5
 
     def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None):
         if page_with_login_form is None:

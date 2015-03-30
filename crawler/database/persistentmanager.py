@@ -39,7 +39,7 @@ class PersistenceManager(object):
             if len(self._deltapage_cache) +1 > self.MAX_CACHE_SIZE:
                 del self._deltapage_cache[-1]
             self._deltapage_cache.insert(0, delta_page)
-        self._database.insert_delta_page_into_db(self._current_session,delta_page)
+        self._database.insert_delta_page_into_db(self._current_session, delta_page)
 
     def get_page_to_url(self, url):
         try:
@@ -115,3 +115,6 @@ class PersistenceManager(object):
 
     def get_clusters(self, url_hash):
         return self._database.get_clusters(self._current_session, url_hash)
+
+    def count_visited_url_per_hash(self, url_hash):
+        return self._database.count_visited_urls_per_hash(self._current_session, url_hash)

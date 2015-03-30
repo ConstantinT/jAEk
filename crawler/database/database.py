@@ -131,6 +131,9 @@ class Database():
         update_doc['redirected_to'] = redirected_to
         self.urls.update(search_doc, {"$set": update_doc})
 
+    def count_visited_urls_per_hash(self, current_session, url_hash):
+        return self.urls.find({"session":current_session, "url_hash": url_hash, "visited": True}).count()
+
     def get_url_to_id(self, current_session, id):
         result = self.urls.find_one({"session":current_session, "page_id": id})
         if result is None:
@@ -236,7 +239,7 @@ class Database():
         document['generator'] = clickable_id
         generator_request_doc = []
         for r in delta_page.generator_requests:
-            generator_request_doc.append(self._parse_ajax_request_to_db_doc(r, current_session, delta_page.id))
+            generator_request_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, delta_page.id))
         document["generator_requests"] = generator_request_doc
         
         document['delta_depth'] = delta_page.delta_depth

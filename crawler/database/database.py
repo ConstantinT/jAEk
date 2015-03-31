@@ -239,7 +239,7 @@ class Database():
         document['generator'] = clickable_id
         generator_request_doc = []
         for r in delta_page.generator_requests:
-            generator_request_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, delta_page.id))
+            generator_request_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, delta_page.parent_id))
         document["generator_requests"] = generator_request_doc
         
         document['delta_depth'] = delta_page.delta_depth
@@ -262,7 +262,7 @@ class Database():
         document = {}
         document["web_page_id"] = web_page.id
         document["url"] = web_page.url
-        document["html"] = web_page.html
+        document["html"] = ""#web_page.html
         document["links"] = []
         for link in web_page.links:
             document["links"].append(self._parse_link_to_db_doc(link))

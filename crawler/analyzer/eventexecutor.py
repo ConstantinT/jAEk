@@ -66,6 +66,7 @@ class EventExecutor(InteractionCore):
             logging.debug("Timeout occurs while initial page loading...")
             return Event_Result.Error_While_Initial_Loading, None
         # Prepare Page for clicking...
+        self._wait(0.5)
         for click in pre_clicks:
             pre_click_elem = None
             logging.debug("Click on: " + click.toString())
@@ -88,7 +89,7 @@ class EventExecutor(InteractionCore):
             self._wait(self.wait_for_event)
 
             # Now execute the target event
-        self._preclicking_ready = True
+
         self._url_changed = False
         self.mainFrame().urlChanged.connect(self._url_changes)
         js_code = element_to_click.event
@@ -117,8 +118,9 @@ class EventExecutor(InteractionCore):
             return Event_Result.Target_Element_Not_Found, None
 
         real_clickable.evaluateJavaScript(js_code)
+        self._preclicking_ready = True
         self._wait(0.5)
-
+        self._preclicking_ready = False
         links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
         forms = self._form_helper.extract_forms(self.mainFrame())
         self.mainFrame().evaluateJavaScript(self._property_obs_js)

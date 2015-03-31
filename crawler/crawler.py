@@ -121,16 +121,19 @@ class Crawler(QObject):
                     logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url_to_request.toString())
                     self.persistence_manager.visit_url(url_to_request, None, 000)
                     continue
-                response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
+                response_code, response_url, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
-                current_page = WebPage(self.get_next_page_id(), url_to_request.toString(), html_after_timeouts)
+                current_page = WebPage(self.get_next_page_id(), response_url, html_after_timeouts)
                 current_page.timeming_requests = timemimg_requests
                 current_page.clickables = new_clickables
                 current_page.links = links
                 current_page.forms = forms
                 self.domain_handler.complete_urls(current_page)
                 self.persistence_manager.store_web_page(current_page)
-                self.persistence_manager.visit_url(url_to_request,current_page.id, response_code)
+                if response_code == 200:
+                    self.persistence_manager.visit_url(url_to_request, current_page.id, response_code)
+                else:
+                    self.persistence_manager.visit_url(url_to_request, current_page.id, response_code, response_url)
                 self.domain_handler.extract_new_links_for_crawling(current_page, current_page.current_depth, current_page.url)
                 #logging.debug(page.toString())
 
@@ -229,10 +232,10 @@ class Crawler(QObject):
                     else:
                         clickable_to_process.append(clickable)
 
-                if self.crawler_state == CrawlState.NormalPage:
-                    delta_page.delta_depth = 1
-                if self.crawler_state == CrawlState.DeltaPage:
+                try:
                     delta_page.delta_depth = current_page.delta_depth + 1
+                except AttributeError:
+                    delta_page.delta_depth = 1
 
                 if event_state == Event_Result.URL_Changed:
                     logging.debug("DeltaPage has new Url..." + delta_page.url)
@@ -255,6 +258,7 @@ class Crawler(QObject):
                         - Handle it after the result of the substraction
                     """
                     clickable.clicked = True
+                    clickable.clickable_depth = delta_page.delta_depth
                     delta_page.current_depth = self.current_depth
                     delta_page = self.domain_handler.complete_urls(delta_page)
 
@@ -661,8 +665,10 @@ class Crawler(QObject):
     def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None):
         if page_with_login_form is None:
             page_with_login_form = self._page_with_loginform_logged_out
-        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
-
+        try:
+            response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
+        except ValueError:
+            return None
         landing_page_logged_in = WebPage(-1, page_with_login_form.url, html_after_timeouts)
         landing_page_logged_in.clickables = new_clickables
         landing_page_logged_in.links = links
@@ -685,7 +691,7 @@ class Crawler(QObject):
                 return False
 
     def _get_webpage(self, url):
-        response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url, timeout=10)
+        response_code, response_url, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url, timeout=10)
         result = WebPage(-1, url, html_after_timeouts)
         result.clickables = new_clickables
         result.forms = forms

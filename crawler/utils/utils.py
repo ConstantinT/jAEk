@@ -33,17 +33,19 @@ def subtract_parent_from_delta_page(parent_page, delta_page):
         clickable_is_already_in_main = False
         for m_clickable in parent_page.clickables:
             if d_clickable == m_clickable:
-                clickable_is_already_in_main = True
-        if clickable_is_already_in_main == False:
-            result.clickables.append(d_clickable)
+                break
+                #clickable_is_already_in_main = True
+        #if clickable_is_already_in_main == False:
+            #result.clickables.append(d_clickable)
     
     for d_form in delta_page.forms:
         forms_is_already_in_main = False
         for m_form in parent_page.forms:
             if d_form == m_form:
-                forms_is_already_in_main = True
-        if forms_is_already_in_main == False:
-            result.forms.append(d_form)
+                break
+                #forms_is_already_in_main = True
+        #if forms_is_already_in_main == False:
+            #result.forms.append(d_form)
 
     result.ajax_requests = delta_page.ajax_requests # They are just capturing the new one
     return result

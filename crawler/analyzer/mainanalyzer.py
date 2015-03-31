@@ -28,7 +28,7 @@ class MainAnalyzer(InteractionCore):
         self._new_clickables = []
         self._timeming_events = []
         self._current_timeming_event = None
-        self.response_code = None
+        self.response_code = {}
 
     def analyze(self, url_to_request, timeout=10, current_depth=None, method="GET", data={}):
         logging.debug("Start with dynamic analyzing of {}...".format(url_to_request.toString()))
@@ -38,6 +38,7 @@ class MainAnalyzer(InteractionCore):
         self._current_timeming_event = None
         self._loading_complete = False
         self._analyzing_finished = False
+        self.response_code = {}
         if method == "GET":
             self.mainFrame().load(QUrl(url_to_request.toString()))
         else:
@@ -67,7 +68,8 @@ class MainAnalyzer(InteractionCore):
                 "Now waiting for: {} seconds for {}".format(str(waiting_time_in_milliseconds), self._waiting_for))
             self._wait(waiting_time_in_milliseconds)  # Waiting for 100 millisecond before expected event
             overall_waiting_time += waiting_time_in_milliseconds
-
+        if overall_waiting_time < 1:
+            self._wait((1-overall_waiting_time))
         self.mainFrame().evaluateJavaScript(self._property_obs_js)
         links, clickables = self._link_helper.extract_links(self.mainFrame(), url_to_request)
         forms = self._form_helper.extract_forms(self.mainFrame())
@@ -75,9 +77,18 @@ class MainAnalyzer(InteractionCore):
 
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()
+        response_url = self.mainFrame().url().toString()
         self.mainFrame().setHtml(None)
+        f = open("main.txt", "w")
+        f.write(html_after_timeouts)
+        f.close()
         self._new_clickables.extend(clickables)
-        return self.response_code, html_after_timeouts, self._new_clickables, forms, links, self._timemimg_requests
+        response_code = None
+        try:
+            response_code = self.response_code[url_to_request.toString()]
+        except KeyError:
+            pass
+        return response_code, response_url, html_after_timeouts, self._new_clickables, forms, links, self._timemimg_requests
 
 
     def loadFinishedHandler(self, result):
@@ -130,11 +141,11 @@ class MainAnalyzer(InteractionCore):
 
     def loadComplete(self, reply):
         if not self._analyzing_finished:
-            #logging.debug("{}".format(reply))
-            #logging.debug("Status Code: {}".format(reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)))
-            self.response_code = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-            if self.response_code is None:
+            if reply.attribute(QNetworkRequest.HttpStatusCodeAttribute) is None:
                 logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
+                return
+            self.response_code[reply.url().toString()] = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+
 
     def _make_request(self, url):
         request = QNetworkRequest()

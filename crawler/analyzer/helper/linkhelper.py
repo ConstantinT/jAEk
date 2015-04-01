@@ -8,6 +8,10 @@ from urllib.parse import urlparse, urljoin
 class LinkHelper():
 
     def extract_links(self, frame, requested_url):
+        try:
+            requested_url = requested_url.toString()
+        except AttributeError:
+            requested_url = requested_url
         anchor_tags = frame.findAllElements("a")
         new_links, new_clickables = self._extract_links(anchor_tags, requested_url)
         return new_links, new_clickables

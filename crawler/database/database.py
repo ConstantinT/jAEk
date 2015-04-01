@@ -121,9 +121,11 @@ class Database():
 
     def visit_url(self, current_session, url, webpage_id, response_code, redirected_to = None):
         search_doc = {}
-        search_doc['url'] = url.toString()
+        try:
+            search_doc['url'] = url.toString()
+        except AttributeError:
+            search_doc['url'] = url
         search_doc['session'] = current_session
-        
         update_doc = {}
         update_doc['response_code'] = response_code
         update_doc['visited'] = True

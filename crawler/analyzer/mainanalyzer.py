@@ -15,6 +15,7 @@ from analyzer.helper.linkhelper import LinkHelper
 from models.utils import CrawlSpeed
 from models.timemimngrequest import TimemingRequest
 from models.clickable import Clickable
+from models.webpage import WebPage
 
 
 class MainAnalyzer(InteractionCore):
@@ -31,7 +32,12 @@ class MainAnalyzer(InteractionCore):
         self.response_code = {}
 
     def analyze(self, url_to_request, timeout=10, current_depth=None, method="GET", data={}):
-        logging.debug("Start with dynamic analyzing of {}...".format(url_to_request.toString()))
+        try:
+            url_to_request = url_to_request.toString()
+        except AttributeError:
+            url_to_request = url_to_request
+
+        logging.debug("Start analyzing of {}...".format(url_to_request))
         self._timemimg_requests = []
         self._new_clickables = []
         self._timeming_events = []
@@ -40,9 +46,9 @@ class MainAnalyzer(InteractionCore):
         self._analyzing_finished = False
         self.response_code = {}
         if method == "GET":
-            self.mainFrame().load(QUrl(url_to_request.toString()))
+            self.mainFrame().load(QUrl(url_to_request))
         else:
-            request = self._make_request(url_to_request.toString())
+            request = self._make_request(url_to_request)
             data = self.post_data_to_array(data)
             request.setRawHeader('Content-Type', QByteArray('application/x-www-form-urlencoded'))
             self.mainFrame().load(request,
@@ -85,10 +91,17 @@ class MainAnalyzer(InteractionCore):
         self._new_clickables.extend(clickables)
         response_code = None
         try:
-            response_code = self.response_code[url_to_request.toString()]
+            response_code = self.response_code[url_to_request]
         except KeyError:
             pass
-        return response_code, response_url, html_after_timeouts, self._new_clickables, forms, links, self._timemimg_requests
+
+
+        current_page = WebPage(self.parent().get_next_page_id(), response_url, html_after_timeouts)
+        current_page.timeming_requests = self._timemimg_requests
+        current_page.clickables = self._new_clickables
+        current_page.links = links
+        current_page.forms = forms
+        return response_code, current_page
 
 
     def loadFinishedHandler(self, result):

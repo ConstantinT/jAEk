@@ -25,10 +25,14 @@ class FormHandler(InteractionCore):
 
 
     def submit_form(self, form, webpage, data=dict(), timeout=5):
-        logging.debug("FormHandler on Page: {} started...".format(webpage.url.toString()))
+        logging.debug("FormHandler on Page: {} started...".format(webpage.url))
         self._loading_complete = False
         self._analyzing_finished = False
-        self.mainFrame().setHtml(webpage.html, QUrl(webpage.url.toString()))
+        try:
+            url = webpage.url.toString()
+        except AttributeError:
+            url = webpage.url
+        self.mainFrame().setHtml(webpage.html, QUrl(url))
         self._new_clickables = []
 
         t = 0.0
@@ -93,7 +97,7 @@ class FormHandler(InteractionCore):
             q_submit_button.evaluateJavaScript("Simulate.click(this);")
             self._wait(5)
 
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
+        links, clickables = self._link_helper.extract_links(self.mainFrame(), url)
         forms = self._form_helper.extract_forms(self.mainFrame())
         html = self.mainFrame().toHtml()
         f = open("html.txt", "w")

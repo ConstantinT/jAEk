@@ -67,7 +67,7 @@ class Crawler(QObject):
 
         if self.user.login_data is not None:
             self.crawl_with_login = True
-            go_on = self.initial_login(self.domain_handler._create_url(self.user.url_with_login_form), self.user.login_data)
+            go_on = self.initial_login(self.user.url_with_login_form, self.user.login_data)
             if not go_on:
                 raise LoginException("Initial login failed...")
 
@@ -101,7 +101,7 @@ class Crawler(QObject):
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
                 self.current_depth = parent_page.current_depth
-                url_to_request = self.domain_handler._create_url(parent_page.url)
+                url_to_request = parent_page.url
 
             else:
                 url_to_request = self.domain_handler.get_next_url_for_crawling()
@@ -121,19 +121,13 @@ class Crawler(QObject):
                     logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url_to_request.toString())
                     self.persistence_manager.visit_url(url_to_request, None, 000)
                     continue
-                response_code, response_url, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
-
-                current_page = WebPage(self.get_next_page_id(), response_url, html_after_timeouts)
-                current_page.timeming_requests = timemimg_requests
-                current_page.clickables = new_clickables
-                current_page.links = links
-                current_page.forms = forms
+                response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                 self.domain_handler.complete_urls(current_page)
                 self.persistence_manager.store_web_page(current_page)
                 if response_code == 200:
                     self.persistence_manager.visit_url(url_to_request, current_page.id, response_code)
                 else:
-                    self.persistence_manager.visit_url(url_to_request, current_page.id, response_code, response_url)
+                    self.persistence_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
                 self.domain_handler.extract_new_links_for_crawling(current_page, current_page.current_depth, current_page.url)
                 #logging.debug(page.toString())
 
@@ -178,6 +172,7 @@ class Crawler(QObject):
                     clickable.clickable_type = ClickableType.Unsuported_Event
                     self.persistence_manager.update_clickable(current_page.id, clickable)
                     clickables.append(clickable)
+                    logging.debug("Skipping unsupported event: {}".format(event))
                     continue
                 """
                 Because I want first a run without sending something to the backend, I distinguish if I know an element or not.
@@ -691,13 +686,7 @@ class Crawler(QObject):
                 return False
 
     def _get_webpage(self, url):
-        response_code, response_url, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._dynamic_analyzer.analyze(url, timeout=10)
-        result = WebPage(-1, url, html_after_timeouts)
-        result.clickables = new_clickables
-        result.forms = forms
-        result.links = links
-        result.timeming_requests = timemimg_requests
-
+        response_code, result = self._dynamic_analyzer.analyze(url, timeout=10)
         return result
 
 

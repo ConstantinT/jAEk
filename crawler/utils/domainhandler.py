@@ -20,7 +20,7 @@ class DomainHandler():
         url = self.persistence_manager.get_next_url_for_crawling()
         if url is None:
             return None
-        return self._create_url(url)
+        return url
 
     def _create_url(self, url, requested_url=None, depth_of_finding=None):
         if requested_url is not None:
@@ -64,11 +64,15 @@ class DomainHandler():
         return url
     
     def is_in_scope(self, url):
-        url_splits = url.toString().split(".")
+        try:
+            url = url.toString()
+        except AttributeError:
+            url = url
+        url_splits = url.split(".")
         end_of_url = url_splits[len(url_splits) - 1]
         if end_of_url in ['png', "jpg"]:
             return False
-        parsed_url = urlparse(url.toString())
+        parsed_url = urlparse(url)
         if parsed_url.netloc.find(self.domain) != -1 and parsed_url.fragment == "":
             return True
         else:

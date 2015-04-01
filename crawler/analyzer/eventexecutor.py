@@ -94,7 +94,7 @@ class EventExecutor(InteractionCore):
         self.mainFrame().urlChanged.connect(self._url_changes)
         js_code = element_to_click.event
         if js_code[0:2] == "on":
-            js_code = js_code[2:]  # if event beginns with on, escape it
+            js_code = js_code[2:]  # if event begins with on, escape it
         is_key_event = False
         if js_code in self.key_events:
             is_key_event = True

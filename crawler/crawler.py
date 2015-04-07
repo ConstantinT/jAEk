@@ -10,8 +10,7 @@ from PyQt5.Qt import QApplication, QObject
 
 from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
 from analyzer.formhandler import FormHandler
-from database.persistentmanager import PersistenceManager
-from models.clustermanager import ClusterManager
+from core.clustermanager import ClusterManager
 from models.url import Url
 from utils.execptions import PageNotFoundException, LoginException
 from models.deltapage import DeltaPage
@@ -20,7 +19,7 @@ from models.clickabletype import ClickableType
 from utils.domainhandler import DomainHandler
 from analyzer.mainanalyzer import MainAnalyzer
 from network.network import NetWorkAccessManager
-from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, form_to_dict, count_cookies
+from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, count_cookies
 
 
 potential_logout_urls = []
@@ -99,12 +98,12 @@ class Crawler(QObject):
 
             else:
                 possible_urls = self.persistence_manager.get_all_unvisited_urls_sorted_by_hash()
-                if len(possible_urls) == 0:
+                if len(possible_urls) > 0:
                     self.crawler_state = CrawlState.NormalPage
                     cluster_per_urls = []
                     for key in possible_urls:
                         cluster_per_urls.append((key, self.cluster_manager.calculate_cluster_per_visited_urls(key)))
-                    next_url_hash = max(cluster_per_urls,key=lambda x: x[1])[0]
+                    next_url_hash, max_cluster_per_url = max(cluster_per_urls, key=lambda x: x[1])
                     possible_urls = possible_urls[next_url_hash]
                     url_to_request = possible_urls.pop(random.randint(0, len(possible_urls) - 1))
                     if url_to_request.depth_of_finding is None:

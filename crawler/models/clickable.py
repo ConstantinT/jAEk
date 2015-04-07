@@ -36,7 +36,7 @@ class Clickable():
             msg += " - FunctionID: " + self.function_id
         if self.clickable_type is not None:
             if self.clickable_type == ClickableType.CreatesNewNavigatables:
-                msg += " - ClickableType: Create_new_navigatable"
+                msg += " - ClickableType: CreateNewNavigatable"
             elif self.clickable_type == ClickableType.Link:
                 msg += " - ClickableType: Link"
             elif self.clickable_type == ClickableType.SendingAjax:

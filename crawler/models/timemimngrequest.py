@@ -16,5 +16,5 @@ class TimemingRequest():
         self.time = time
         self.parameters = paramters
     def toString(self):
-        return "[Timeming - Methode: " + str(self.method) + " - Url: "+ str(self.url) + " - Trigger: " + str(self.event) +" - FunctionID: " + str(self.function_id) + "]"
+        return "[Timeming - Methode: " + str(self.method) + " - Url: "+ str(self.url.toString()) + " - Trigger: " + str(self.event) +" - FunctionID: " + str(self.function_id) + "]"
         

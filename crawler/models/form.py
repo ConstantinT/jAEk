@@ -12,11 +12,19 @@ class HtmlForm():
         self.parameter = sorted(self.parameter, key=lambda parameter: parameter.name)
         self.action = action
         self.method = method
-        self.form_hash = self.get_hash()
+        self.form_hash = None
         self.dom_address = dom_address
 
+    @property
+    def get_form_hash(self):
+        if self.form_hash is not None:
+            return self.form_hash
+        else:
+            self.form_hash = self.get_hash()
+            return self.form_hash
+
     def toString(self):
-        msg = "[Form: Action: '" + self.action + "' Method:' " + self.method + " - Formhash: " + self.form_hash + " \n"
+        msg = "[Form: Action: '" + self.action.abstract_url + "' Method:' " + self.method + " - Formhash: " + self.get_hash() + " \n"
         if self.dom_address is not None:
             msg += "Dom Address: " + self.dom_address + " \n"
         for elem in self.parameter:
@@ -30,13 +38,13 @@ class HtmlForm():
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return self.form_hash == other.form_hash
+        return self.get_hash() == other.get_hash()
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def get_hash(self):
-        s_to_hash = self.action + ";" + self.method + ";"
+        s_to_hash = self.action.abstract_url + ";" + self.method + ";"
         for p in self.parameter:
             s_to_hash += p.name + ";" + p.tag + ";" + str(p.input_type) + ";"
         b_to_hash = s_to_hash.encode("utf-8")

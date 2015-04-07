@@ -87,25 +87,25 @@ class PersistenceManager(object):
     
     
     def update_clickable(self, web_page_id, clickable):
-        if clickable.clickable_type == ClickableType.Ignored_by_Crawler or clickable.clickable_type == ClickableType.Unsuported_Event:
+        if clickable.clickable_type == ClickableType.IgnoredByCrawler or clickable.clickable_type == ClickableType.UnsupportedEvent:
             self._database.set_clickable_ignored(self._current_session, web_page_id, clickable.dom_address, clickable.event, clickable.clickable_depth, clickable.clickable_type)
         else:
             self._database.set_clickable_clicked(self._current_session, web_page_id, clickable.dom_address, clickable.event, clickable.clickable_depth, clickable.clickable_type, clickable.links_to)
 
-    def get_url_description(self, hash):
-        return self._database.get_url_description_from_db(self._current_session, hash)
+    def get_url_structure(self, hash):
+        return self._database.get_url_structure_from_db(self._current_session, hash)
 
-    def insert_url_description(self, url_description):
-        self._database.insert_url_description_into_db(self._current_session, url_description)
+    def insert_url_structure(self, url_description):
+        self._database.insert_url_structure_into_db(self._current_session, url_description)
 
     def get_all_pages(self):
         return self._database.get_all_pages(self._current_session)
 
-    def get_url_description_to_hash(self, url_hash):
-        return self._database.get_url_description_from_db(self._current_session,url_hash)
+    def get_url_structure_to_hash(self, url_hash):
+        return self._database.get_url_structure_from_db(self._current_session,url_hash)
 
-    def insert_url_description_into_db(self, url_description):
-        self._database.insert_url_description_into_db(self._current_session, url_description)
+    def insert_url_structure_into_db(self, url_description):
+        self._database.insert_url_structure_into_db(self._current_session, url_description)
 
     def get_url_to_id(self, id):
         return self._database.get_url_to_id(self._current_session, id)
@@ -118,3 +118,6 @@ class PersistenceManager(object):
 
     def count_visited_url_per_hash(self, url_hash):
         return self._database.count_visited_urls_per_hash(self._current_session, url_hash)
+
+    def get_all_url_structures(self):
+        return  self._database.get_all_url_structures(self._current_session)

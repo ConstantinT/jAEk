@@ -35,19 +35,19 @@ class Clickable():
         if self.function_id is not None:
             msg += " - FunctionID: " + self.function_id
         if self.clickable_type is not None:
-            if self.clickable_type == ClickableType.Creates_new_navigatables:
+            if self.clickable_type == ClickableType.CreatesNewNavigatables:
                 msg += " - ClickableType: Create_new_navigatable"
             elif self.clickable_type == ClickableType.Link:
                 msg += " - ClickableType: Link"
             elif self.clickable_type == ClickableType.SendingAjax:
                 msg += " - ClickableType: SendingAjax"
-            elif self.clickable_type == ClickableType.UI_Change:
+            elif self.clickable_type == ClickableType.UIChange:
                 msg += " - ClickableType: UiChange"
             elif self.clickable_type == ClickableType.Error:
                 msg += " - ClickableType: Error"
-            elif self.clickable_type == ClickableType.Ignored_by_Crawler:
+            elif self.clickable_type == ClickableType.IgnoredByCrawler:
                 msg += " - ClickableType: IgnoredByCrawler"
-            elif self.clickable_type == ClickableType.Unsuported_Event:
+            elif self.clickable_type == ClickableType.UnsupportedEvent:
                 msg += " - ClickableType: UnsupportedEvent"
             else:
                 msg += " - ClickableType: Unknown"

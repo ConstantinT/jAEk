@@ -18,11 +18,12 @@ class Url():
         else:
             self.path = ""
         self.query = parsed_url.query
+        self.fragment = parsed_url.fragment
 
         self.parameters = {}
         self.depth_of_finding = depth_of_finding
-
-        self.url_description = None
+        self.url_structure = None
+        self.abstract_url = None
 
         if len(parsed_url.query) > 0:
             query_splitted = self.query.split("&")
@@ -53,7 +54,7 @@ class Url():
         return self.parameters[parameter_name]
 
     def get_url_description(self):
-        return self.url_description
+        return self.url_structure
 
     def get_path(self):
         result = self.scheme + "://" + self.domain
@@ -82,6 +83,11 @@ class Url():
         if not isinstance(other, self.___class__):
             return False
         return self.url_hash == other.url_hash
+
+    def equal_abstract_url(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.abstract_url == other.abstract_url
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):

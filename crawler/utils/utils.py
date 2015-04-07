@@ -4,12 +4,16 @@ Created on 12.11.2014
 @author: constantin
 '''
 import logging
+from Cython.Compiler.Options import normalise_encoding_name
+from PyQt5.QtCore import QUrl
+from PyQt5.QtNetwork import QNetworkCookie
 
 from models.deltapage import DeltaPage
 
 
 def form_to_dict(form, key_values = None):
     result = {}
+    QStr
     for elem in form.parameter:
         if elem.name == "redirect_to": 
             continue
@@ -19,9 +23,8 @@ def form_to_dict(form, key_values = None):
             result[elem.name] = key_values[elem.name]    
     return result
              
- 
 
-"""substract the page-parameters in the parent-class from the delta-class"""
+#substract the page-parameters in the parent-class from the delta-class
 def subtract_parent_from_delta_page(parent_page, delta_page):
     result = DeltaPage(delta_page.id, delta_page.url, delta_page.html, cookiesjar=delta_page.cookiejar, depth=delta_page.current_depth, generator=delta_page.generator, parent_id=delta_page.parent_id)
     result.delta_depth = delta_page.delta_depth
@@ -33,19 +36,19 @@ def subtract_parent_from_delta_page(parent_page, delta_page):
         clickable_is_already_in_main = False
         for m_clickable in parent_page.clickables:
             if d_clickable == m_clickable:
+                clickable_is_already_in_main = True
                 break
-                #clickable_is_already_in_main = True
-        #if clickable_is_already_in_main == False:
-            #result.clickables.append(d_clickable)
+        if clickable_is_already_in_main == False:
+                result.clickables.append(d_clickable)
     
     for d_form in delta_page.forms:
-        forms_is_already_in_main = False
+        form_is_already_in_main = False
         for m_form in parent_page.forms:
-            if d_form == m_form:
+            if two_forms_are_equal(d_form, m_form):
+                form_is_already_in_main = True
                 break
-                #forms_is_already_in_main = True
-        #if forms_is_already_in_main == False:
-            #result.forms.append(d_form)
+        if form_is_already_in_main == False:
+            result.forms.append(d_form)
 
     result.ajax_requests = delta_page.ajax_requests # They are just capturing the new one
     return result
@@ -71,7 +74,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         for p1_form in page1.forms:
             is_in_other = False
             for p2_form in page2.forms:
-                if p1_form.toString() == p2_form.toString():
+                if two_forms_are_equal(p1_form, p2_form):
                     is_in_other = True
                     break
             if is_in_other:
@@ -88,7 +91,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         for p1_link in page1.links:
             is_in_other = False
             for p2_link in page2.links:
-                if p1_link == p2_link:
+                if p1_link.url.abstract_url == p2_link.url.abstract_url:
                     is_in_other = True
                     break
             if is_in_other:
@@ -140,4 +143,16 @@ def two_clickables_are_equal(c1, c2):
     if c1.clickable_type is not None and c2.clickable_type is not None:
         tmp = tmp and c1.clickable_type == c2.clickable_type
     return tmp
+
+def two_forms_are_equal(form1, form2):
+    return form1.form_hash == form2.form_hash and form1.action.abstract_url == form2.action.abstract_url
+
+def count_cookies(networkaccess_manager, url):
+    try:
+        url = url.toString()
+    except AttributeError:
+        url = url
+    cookiejar = networkaccess_manager.cookieJar()
+    all_cookies = cookiejar.cookiesForUrl(QUrl(url))
+    return len(all_cookies)
 

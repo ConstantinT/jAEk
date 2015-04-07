@@ -10,7 +10,7 @@ from sklearn.neighbors import DistanceMetric
 
 __author__ = 'constantin'
 
-CLUSTER_THRESHOLD = .4
+CLUSTER_THRESHOLD = .2
 
 class ClusterManager():
     """
@@ -108,7 +108,7 @@ class ClusterManager():
         else:
             page_x = self._persistence_manager.get_web_page_to_id(x)
             page_y = self._persistence_manager.get_web_page_to_id(y)
-            result = calculate_similarity_between_pages(page_x, page_y)
+            result = calculate_similarity_between_pages(page_x, page_y, verbose=True)
             self._similarity_cache[name] = result
         return 1 - result
 

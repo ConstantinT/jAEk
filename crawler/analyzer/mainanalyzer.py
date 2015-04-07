@@ -109,7 +109,7 @@ class MainAnalyzer(InteractionCore):
             self._loading_complete = True
 
 
-    def jsWinObjClearedHandler(self):  # Adding here the js-scripts corresponding to the phases
+    def jsWinObjClearedHandler(self):  # Adding here the js-scripts I need
         if not self._analyzing_finished:
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
             self.mainFrame().evaluateJavaScript(self._md5)

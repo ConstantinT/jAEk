@@ -25,7 +25,7 @@ class Attacker(QObject):
 
     def attack(self, user):
 
-        abstract_urls = self.persistence_manager.get_all_url_descriptions()
+        abstract_urls = self.persistence_manager.get_all_url_structures()
         for url in abstract_urls:
             if len(url.parameters) > 0:
                 for i in range(len(url.parameters)):

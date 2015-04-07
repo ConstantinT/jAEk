@@ -15,7 +15,7 @@ class AjaxRequest():
         self.parameter = parameter
     
     def toString(self):
-        msg =  "[Ajax - Methode: " + self.method + " - Url: "+ self.url + " - Trigger: " + self.trigger.toString() + " \n"
+        msg =  "[Ajax - Methode: " + self.method + " - Url: "+ self.url.toString() + " - Trigger: " + self.trigger.toString() + " \n"
         for param_pair in self.parameter:
             msg += " - Parameter pair: " + str(param_pair)
         return msg

@@ -69,12 +69,12 @@ class DataBaseTests(unittest.TestCase):
         self.assertEqual(len(clickables), 1)
         self.assertEqual(clickable1, clickables[0])
         
-        self.database.set_clickable_clicked(SESSION, WEBPAGE_ID, clickable1.dom_address, clickable1.event, clickable_depth=243, clickable_type=ClickableType.Creates_new_navigatables)
+        self.database.set_clickable_clicked(SESSION, WEBPAGE_ID, clickable1.dom_address, clickable1.event, clickable_depth=243, clickable_type=ClickableType.CreatesNewNavigatables)
 
         clickables = self.database.get_all_clickables_to_page_id_from_db(SESSION,WEBPAGE_ID)
         self.assertEqual(len(clickables), 1)
         clickable1.clicked = True
-        clickable1.clickable_type = ClickableType.Creates_new_navigatables
+        clickable1.clickable_type = ClickableType.CreatesNewNavigatables
         self.assertEqual(clickable1, clickables[0])
 
     def test_webpage(self):

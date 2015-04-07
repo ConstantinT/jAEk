@@ -67,56 +67,67 @@ class Database():
 
         
     def insert_user_into_db(self, user):
-        doc = {}
         num_of_users = self.users.count()
         user_id = num_of_users + 1
+        doc = self._user_to_doc(user)
         doc['_id'] = user_id
-        doc['user_level'] = user.user_level
-        doc['username'] = user.username
-        doc['session'] = user.session
         if user.login_data is not None and user.url_with_login_form is not None:
             doc['url_with_login_form'] = user.url_with_login_form
             doc['login_data'] = user.login_data
         self.users.save(doc)
-    
+
+    def _user_to_doc(self, user):
+        doc = {}
+        doc['user_level'] = user.user_level
+        doc['username'] = user.username
+        doc['session'] = user.session
+        return doc
+
     def insert_url_into_db(self, current_session, url, is_redirected_url = False):
         if not is_redirected_url:
             if self.urls.find({"url":url.toString(), "session":current_session}).count() > 0 and self.urls.find({"redirected_to":url.toString(), "session":current_session}).count() > 0:
                 return
 
-        document = {}
-        document["url"] = url.toString()
-        document["url_hash"] = url.url_hash
+        document = self._url_to_doc(url)
         document['session'] = current_session
-        document["page_id"] = None
-        document["visited"] = False
-        document["response_code"] = None
-        document['redirected_to'] = None
         document["url_counter"] = self._per_session_url_counter
-        document['depth_of_finding'] = url.depth_of_finding
         self._per_session_url_counter += 1
         self.urls.save(document)
 
-    
+    def _url_to_doc(self, url):
+        doc = {}
+        doc["url"] = url.complete_url
+        doc["abstract_url"] = url.abstract_url
+        doc["url_hash"] = url.url_hash
+        doc["page_id"] = None
+        doc["visited"] = False
+        doc["response_code"] = None
+        doc['redirected_to'] = None
+        doc['depth_of_finding'] = url.depth_of_finding
+        return doc
+
     def get_next_url_for_crawling(self, current_session):
-        urls = self.urls.find({"session":current_session, "visited": False}).sort([('url_counter', pymongo.ASCENDING)]).limit(1)
+        urls = self.urls.find({"session": current_session, "visited": False}).sort([('url_counter', pymongo.ASCENDING)]).limit(1)
         if urls is None or urls.count() == 0:
             return None
         else:
             url = self._parse_url_from_db(urls[0])
-            url.url_description = self.get_url_description_from_db(current_session, url.url_hash)
+            url.url_structure = self.get_url_structure_from_db(current_session, url.url_hash)
             return url
     
     def _parse_url_from_db(self, url):
-        return Url(url['url'], url['depth_of_finding'])
+        result = Url(url['url'], url['depth_of_finding'])
+        result.abstract_url = url["abstract_url"]
+        return result
 
     def get_urls_from_db_to_hash(self, current_session, url_hash):
-        urls = self.urls.find({"session":current_session, "url_hash": url_hash})
+        urls = self.urls.find({"session": current_session, "url_hash": url_hash})
         result = []
-        url_description = self.get_url_description_from_db(current_session, url_hash)
+        url_description = self.get_url_structure_from_db(current_session, url_hash)
         for url in urls:
+            url = self._parse_url_from_db(url)
             url.url_description = url_description
-            result.append(self._parse_url_from_db(url))
+            result.append(url)
         return result
 
     def visit_url(self, current_session, url, webpage_id, response_code, redirected_to = None):
@@ -204,12 +215,16 @@ class Database():
         return c
     
     def _parse_timemimg_request_from_db_to_model(self, timemimg_request):
-        return TimemingRequest(timemimg_request['method'], timemimg_request['url'], timemimg_request['time'], timemimg_request['event'], timemimg_request['function_id'])
+        url = Url(timemimg_request['url']["url"])
+        url.abstract_url = timemimg_request['url']["abstract_url"]
+        return TimemingRequest(timemimg_request['method'], url, timemimg_request['time'], timemimg_request['event'], timemimg_request['function_id'])
     
     def _parse_ajax_request_from_db_to_model(self, ajax_request):
         tmp = self.clickables.find_one(ajax_request['trigger'])
         trigger = self._parse_clickable_from_db_to_model(tmp)
-        return AjaxRequest(ajax_request['method'], ajax_request['url'], trigger, ajax_request['parameters'])
+        url = Url(ajax_request['url']['url'])
+        url.abstract_url = ajax_request['url']['abstract_url']
+        return AjaxRequest(ajax_request['method'], url, trigger, ajax_request['parameters'])
         
     def _insert_clickable_into_db(self, current_session , web_page_id, clickable):
         document = {}
@@ -264,7 +279,7 @@ class Database():
         document = {}
         document["web_page_id"] = web_page.id
         document["url"] = web_page.url
-        document["html"] = ""#web_page.html
+        document["html"] = web_page.html
         document["links"] = []
         for link in web_page.links:
             document["links"].append(self._parse_link_to_db_doc(link))
@@ -277,7 +292,7 @@ class Database():
         return document
     
     def insert_form(self, current_session, form, page_id):
-        form_hash = form.form_hash
+        form_hash = form.get_hash()
         result = self.forms.find_one({"form_hash": form_hash, "session": current_session, "web_page_id": page_id})
         form_doc = {}
         
@@ -290,7 +305,8 @@ class Database():
             form_doc['_id'] = result["_id"]
         form_doc["web_page_id"] = page_id
         form_doc["method"] = form.method
-        form_doc["action"] = form.action
+        action_doc = {"url": form.action.complete_url, "abstract_url": form.action.abstract_url, "url_hash": form.action.url_hash}
+        form_doc["action"] = action_doc
         form_doc["dom_address"] = form.dom_address
         param_doc = []
         for parameter in form.parameter:
@@ -303,7 +319,8 @@ class Database():
     def _parse_timing_request_to_db_doc(self, request):
         res = {}
         res['method'] = request.method
-        res['url'] = request.url
+        url = {"url": request.url.complete_url, "abstract_url": request.url.abstract_url, "url_hash": request.url.url_hash}
+        res['url'] = url
         res['event'] = request.event
         res['function_id'] = request.function_id
         res['time'] = request.time
@@ -311,14 +328,17 @@ class Database():
         
     def _parse_link_to_db_doc(self, link):
         res = {}
-        res['url'] = link.url
+        url = {"url": link.url.complete_url, "abstract_url": link.url.abstract_url, "url_hash": link.url.url_hash}
+        res['url'] = url
         res['dom_address'] = link.dom_address
         res['html_id'] = link.html_id
         res['html_class'] = link.html_class
         return res
     
     def _parse_link_from_db(self, link):
-        result = Link(link['url'], link['dom_address'], link['html_id'], link['html_class'])
+        url = Url(link['url']['url'])
+        url.abstract_url = link['url']['abstract_url']
+        result = Link(url, link['dom_address'], link['html_id'], link['html_class'])
         return result
     
     def _parse_form_parameter_to_db_doc(self, form_parameter):
@@ -376,7 +396,8 @@ class Database():
     
     def _parse_ajax_request_to_db_doc(self, current_session, ajax_request, web_page_id):
         doc = {}
-        doc["url"] = ajax_request.url
+        url_doc = {"url": ajax_request.url.complete_url, "abstract_url": ajax_request.url.abstract_url, "url_hash": ajax_request.url.url_hash}
+        doc["url"] = ajax_request.url.complete_url
         doc["method"] = ajax_request.method
         trigger_id = self.clickables.find_one({"session": current_session, "dom_address" : ajax_request.trigger.dom_address, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
         trigger_id = trigger_id["_id"]
@@ -395,31 +416,31 @@ class Database():
         
         
     def _clickable_type_to_num(self, clickable_type):
-        if clickable_type == ClickableType.UI_Change:
+        if clickable_type == ClickableType.UIChange:
             return 0
         if clickable_type == ClickableType.Link:
             return 1
-        if clickable_type == ClickableType.Creates_new_navigatables:
+        if clickable_type == ClickableType.CreatesNewNavigatables:
             return 2
         if clickable_type == ClickableType.Error:
             return 3
         if clickable_type == ClickableType.SendingAjax:
             return 4
-        if clickable_type == ClickableType.Ignored_by_Crawler:
+        if clickable_type == ClickableType.IgnoredByCrawler:
             return 5
-        if clickable_type == ClickableType.Unsuported_Event:
+        if clickable_type == ClickableType.UnsupportedEvent:
             return 6
         
     def _num_to_clickable_type(self, num):
         if num is None:
             return None
-        clickable_types = { 0 : ClickableType.UI_Change,
+        clickable_types = { 0 : ClickableType.UIChange,
                            1: ClickableType.Link,
-                           2: ClickableType.Creates_new_navigatables,
+                           2: ClickableType.CreatesNewNavigatables,
                            3: ClickableType.Error,
                            4: ClickableType.SendingAjax,
-                           5: ClickableType.Ignored_by_Crawler,
-                           6: ClickableType.Unsuported_Event
+                           5: ClickableType.IgnoredByCrawler,
+                           6: ClickableType.UnsupportedEvent
                            }
         return clickable_types[num]
     
@@ -442,7 +463,9 @@ class Database():
             for p in form['parameters']:
                 form_input = FormInput(p['tag'], p['name'], p['input_type'], p['values'])
                 parameters.append(form_input)
-            f = HtmlForm(parameters, form['action'], form['method'], form["dom_address"])
+            action = Url(form['action']["url"])
+            action.abstract_url = form['action']["abstract_url"]
+            f = HtmlForm(parameters, action, form['method'], form["dom_address"])
             result.append(f)
         return result
     
@@ -456,7 +479,7 @@ class Database():
     def _parse_delta_page_from_db(self, current_session, page):
         clickables = self.get_all_clickables_to_page_id_from_db(current_session, page['web_page_id'])
         forms = self.get_all_forms_to_page_id_from_db(current_session, page['web_page_id'])
-        generator = self.clickables.find_one({"_id":page['generator']})
+        generator = self.clickables.find_one({"_id": page['generator']})
         generator = self._parse_clickable_from_db_to_model(generator)
         generator_requests = []
         for g in page['generator_requests']:
@@ -471,7 +494,7 @@ class Database():
         result.generator_requests = generator_requests
         return result
 
-    def insert_url_description_into_db(self, current_session, url_description):
+    def insert_url_structure_into_db(self, current_session, url_description):
         search_doc = {"hash": url_description.url_hash}
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_description.url_hash})
         document = {}
@@ -483,14 +506,18 @@ class Database():
         document["session"] = current_session
         result = self.url_descriptions.save(document)
 
-    def get_url_description_from_db(self, current_session, url_hash):
+    def get_url_structure_from_db(self, current_session, url_hash):
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})
         if result is None:
             return None
         return UrlStructure(result['path'], result["parameters"], result['url_hash'])
 
     def url_exists(self, current_session, url):
-        return self.urls.find({"url":url, "session":current_session}).count() > 0
+        try:
+            search_url = url.toString()
+        except AttributeError:
+            search_url = url
+        return self.urls.find({"url": search_url, "session":current_session}).count() > 0
 
     def write_cluster(self, current_session, url_hash, clusters):
         self.clusters.remove( {"session": current_session, "url_hash": url_hash})
@@ -502,3 +529,10 @@ class Database():
             return result["clusters"]
         except TypeError:
             return None
+
+    def get_all_url_structures(self, current_session):
+        raw_data = self.url_descriptions.find("session": current_session)
+        result = []
+        for url_structure in raw_data:
+            result.append(UrlStructure(url_structure['path'], url_structure["parameters"], url_structure['url_hash']))
+        return result

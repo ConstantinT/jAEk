@@ -149,6 +149,7 @@ class Crawler(QObject):
 
                 self.domain_handler.complete_urls_in_page(current_page)
                 self.domain_handler.analyze_urls(current_page)
+                self.domain_handler.set_url_depth(current_page, self.current_depth)
                 self.persistence_manager.store_web_page(current_page)
                 if response_code == 200:
                     self.persistence_manager.visit_url(url_to_request, current_page.id, response_code)
@@ -272,8 +273,7 @@ class Crawler(QObject):
                     clickable.clicked = True
                     clickable.links_to = delta_page.url
                     clickable.clickable_type = ClickableType.Link
-                    new_url = self.domain_handler.handle_url(delta_page.url,
-                                                             depth_of_finding=current_page.current_depth)
+                    new_url = self.domain_handler.handle_url(delta_page.url)
                     self.persistence_manager.insert_url_into_db(new_url)
                     clickables.append(clickable)
                     self.persistence_manager.update_clickable(current_page.id, clickable)
@@ -292,6 +292,7 @@ class Crawler(QObject):
                     delta_page.current_depth = self.current_depth
                     delta_page = self.domain_handler.complete_urls_in_page(delta_page)
                     delta_page = self.domain_handler.analyze_urls(delta_page)
+                    delta_page = self.domain_handler.set_url_depth(delta_page, self.current_depth)
 
                     if self.crawler_state == CrawlState.NormalPage:
                         delta_page = subtract_parent_from_delta_page(current_page, delta_page)

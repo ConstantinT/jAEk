@@ -44,7 +44,7 @@ class DomainHandler():
                 new_url = Url(new_url)
         if requested_url is not None:
             try:
-                requested_url = requested_url.toString() # if there is nor error we have already a Url Object
+                requested_url = requested_url.toString() # if there is nor error we have already a Url object
             except AttributeError:
                 requested_url = Url(requested_url) # else we must create one
 
@@ -103,7 +103,6 @@ class DomainHandler():
                 new_url.abstract_url = "[WEBPAGE_DOMAIN]" + new_url.path + "?" + new_url.query + "#" + new_url.fragment
         else:
             new_url.abstract_url = new_url.complete_url # If we have a url to an foreign target, we have no abstraction
-
         return new_url
     
 
@@ -141,6 +140,17 @@ class DomainHandler():
             form.action = self.handle_url(form.action, base_url)
         for ajax in web_page.ajax_requests:
             ajax.url = self.handle_url(ajax.url, base_url)
+        return web_page
+
+    def set_url_depth(self, web_page, depth_of_finding):
+        for link in web_page.links:
+            link.url.depth_of_finding = depth_of_finding
+        for request in web_page.timeming_requests:
+            request.url.depth_of_finding = depth_of_finding
+        for form in web_page.forms:
+            form.action.depth_of_finding = depth_of_finding
+        for ajax in web_page.ajax_requests:
+            ajax.url.depth_of_finding = depth_of_finding
         return web_page
 
     def _get_base_url(self, web_page):

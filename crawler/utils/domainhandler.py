@@ -165,7 +165,6 @@ class DomainHandler():
                 ajax.url = urljoin(base_url, ajax.url)
         except AttributeError:
             pass
-
         return web_page
 
     def extract_new_links_for_crawling(self, page, current_depth):

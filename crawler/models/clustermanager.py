@@ -117,9 +117,20 @@ class ClusterManager():
         name = sorted(name)
         return str(name[0])+"$"+str(name[1])
 
-    def calculate_url_per_cluster(self, url_hash):
+    def calculate_cluster_per_visited_urls(self, url_hash):
+        try:
+            return self.num_of_clusters(url_hash) / self.num_of_visited_urls(url_hash)
+        except ZeroDivisionError:
+            return 1.0
+
+    def num_of_clusters(self, url_hash):
         clusters = self._persistence_manager.get_clusters(url_hash)
-        num_of_clusters = len(clusters)
+        if clusters is not None:
+            return len(clusters)
+        return 1.0
+
+    def num_of_visited_urls(self, url_hash):
+        return self._persistence_manager.count_visited_url_per_hash(url_hash)
 
 
 

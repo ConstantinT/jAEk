@@ -68,6 +68,9 @@ class PersistenceManager(object):
     
     def get_next_url_for_crawling(self):
         return self._database.get_next_url_for_crawling(self._current_session)
+
+    def get_all_unvisited_urls_sorted_by_hash(self):
+        return self._database.get_all_unvisited_urls_sorted_by_hash(self._current_session)
     
     def insert_url_into_db(self, url):
         self._database.insert_url_into_db(self._current_session, url)

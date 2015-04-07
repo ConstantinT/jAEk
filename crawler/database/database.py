@@ -114,7 +114,19 @@ class Database():
             url = self._parse_url_from_db(urls[0])
             url.url_structure = self.get_url_structure_from_db(current_session, url.url_hash)
             return url
-    
+
+    def get_all_unvisited_urls_sorted_by_hash(self, current_session):
+        raw_data = self.urls.find({"session": current_session, "visited": False})
+        result = {}
+        for url in raw_data:
+            tmp = self._parse_url_from_db(url)
+            tmp.url_structure = self.get_url_structure_from_db(current_session, tmp.url_hash)
+            if tmp.url_hash in result:
+                result[tmp.url_hash].append(tmp)
+            else:
+                result[tmp.url_hash] = [tmp]
+        return result
+
     def _parse_url_from_db(self, url):
         result = Url(url['url'], url['depth_of_finding'])
         result.abstract_url = url["abstract_url"]
@@ -145,7 +157,13 @@ class Database():
         self.urls.update(search_doc, {"$set": update_doc})
 
     def count_visited_urls_per_hash(self, current_session, url_hash):
-        return self.urls.find({"session":current_session, "url_hash": url_hash, "visited": True}).count()
+        all_urls = self.urls.find({"session": current_session, "url_hash": url_hash, "visited": True})
+        counter = 0
+        for url in all_urls:
+            if url['response_code'] > 100:
+                counter += 1
+        return counter
+
 
     def get_url_to_id(self, current_session, id):
         result = self.urls.find_one({"session":current_session, "page_id": id})
@@ -531,7 +549,7 @@ class Database():
             return None
 
     def get_all_url_structures(self, current_session):
-        raw_data = self.url_descriptions.find("session": current_session)
+        raw_data = self.url_descriptions.find({"session": current_session})
         result = []
         for url_structure in raw_data:
             result.append(UrlStructure(url_structure['path'], url_structure["parameters"], url_structure['url_hash']))

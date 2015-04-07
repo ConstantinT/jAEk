@@ -1,5 +1,6 @@
 from asyncio.tasks import sleep
 import logging
+import random
 import sys
 from enum import Enum
 from copy import deepcopy
@@ -68,18 +69,14 @@ class Crawler(QObject):
             if not go_on:
                 raise LoginException("Initial login failed...")
 
-        necessary_clicks = []  # Saves the actions the crawler need to reach a delta page
-        parent_page = None  # Saves the parent of the delta-page (not other delta pages)
-        previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
-
         logging.debug("Crawl with userId: " + str(self.user.username))
 
         while True:
             logging.debug("=======================New Round=======================")
-            parent_page = None
             current_page = None
-            necessary_clicks = []
-            previous_pages = []
+            necessary_clicks = []  # Saves the actions the crawler need to reach a delta page
+            parent_page = None  # Saves the parent of the delta-page (not other delta pages)
+            previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
             delta_page = None
 
             if len(self.tmp_delta_page_storage) > 0:
@@ -101,9 +98,15 @@ class Crawler(QObject):
                 url_to_request = parent_page.url
 
             else:
-                url_to_request = self.domain_handler.get_next_url_for_crawling()
-                if url_to_request is not None:
+                possible_urls = self.persistence_manager.get_all_unvisited_urls_sorted_by_hash()
+                if len(possible_urls) == 0:
                     self.crawler_state = CrawlState.NormalPage
+                    cluster_per_urls = []
+                    for key in possible_urls:
+                        cluster_per_urls.append((key, self.cluster_manager.calculate_cluster_per_visited_urls(key)))
+                    next_url_hash = max(cluster_per_urls,key=lambda x: x[1])[0]
+                    possible_urls = possible_urls[next_url_hash]
+                    url_to_request = possible_urls.pop(random.randint(0, len(possible_urls) - 1))
                     if url_to_request.depth_of_finding is None:
                         self.current_depth = 0
                         url_to_request.depth_of_finding = 0
@@ -164,7 +167,7 @@ class Crawler(QObject):
             clickable_to_process = self.edit_clickables_for_execution(clickable_to_process)
             clickables = []
             counter = 1  # Just a counter for displaying progress
-            errors = 0  # Count the errors(Missing preclickable or target elements=
+            errors = 0  # Count the errors(Missing preclickable or target elements)
             login_retries = 0  # Count the login_retries
             max_retries_for_clicking = 5
             max_errors = 3
@@ -278,7 +281,7 @@ class Crawler(QObject):
                     """
                     Everything works fine and I get a normal DeltaPage, now I have to:
                         - Assign the current depth to it -> DeltaPages have the same depth as its ParentPages
-                        - Assign the cookies, just for output and debugging
+                        - Complete urls of the deltapage and analyze it
                         - Analyze the Deltapage without addEventlisteners and timemimg check. This is done during event execution
                         - Substract the ParentPage, optional Parent + all previous visited DeltaPages, from the DeltaPage to get
                           the real DeltaPage
@@ -405,11 +408,9 @@ class Crawler(QObject):
                         clickables.append(clickable)
 
             current_page.clickables = clickables
-            #self.print_to_file(current_page.toString(), str(current_page.id) + ".txt")4
             if self.crawler_state == CrawlState.NormalPage:
                 self.cluster_manager.add_webpage_to_cluster(current_page)
-        #self.cluster_manager.draw_clusters()
-        logging.debug("Crawling is ready...")
+        logging.debug("Crawling is done...")
 
     def handle_delta_page_has_only_new_links(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.id = self.get_next_page_id()
@@ -601,7 +602,6 @@ class Crawler(QObject):
             if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
                 login_form = form
         return login_form
-
 
     def convert_action_url_to_absolute(self, form, base):
         form.action = urljoin(base, form.action)

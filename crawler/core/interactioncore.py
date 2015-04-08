@@ -129,7 +129,7 @@ class InteractionCore(QWebPage):
 
     def add_eventlistener_to_element(self, msg):
         try:
-            if msg['id'] != ""
+            if msg['id'] != "":
                 id = msg['id']
             else:
                 id = None

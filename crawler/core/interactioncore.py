@@ -4,12 +4,9 @@ Created on 21.11.2014
 @author: constantin
 '''
 
-from PyQt5.Qt import QWebPage, pyqtSlot, QWebSettings
-from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkProxy, QNetworkCookie,\
-    QNetworkCookieJar
-from PyQt5.QtCore import QObject, QUrl, QSize
-
-import json
+from PyQt5.Qt import QWebPage, QWebSettings
+from PyQt5.QtNetwork import QNetworkProxy
+from PyQt5.QtCore import QSize
 
 from time import time, sleep
 from core.jsbridge import JsBridge
@@ -89,7 +86,7 @@ class InteractionCore(QWebPage):
         self.networkAccessManager().finished.connect(self.loadComplete)
 
     def analyze(self, html, requested_url, timeout = 20):
-        raise NotImplementedException()
+        raise NotImplemented()
     
     def userAgentForUrl(self, url):
         return "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36"
@@ -232,19 +229,9 @@ class InteractionCore(QWebPage):
         dom_address = None
 
         if current_element_in_dom == None:
-            #logging.debug("Current Elem is None")
             return None
         if current_element_in_dom.evaluateJavaScript("getXPath(this)") != check_dom_adress:
             logging.debug("Element not found: " + str(current_element_in_dom.evaluateJavaScript("getXPath(this)")) + " : " + str(check_dom_adress))
             return None
         else:
-            #logging.debug("Element: " + str(current_element_in_dom.evaluateJavaScript("getXPath(this)")) + " found...")
             return current_element_in_dom
-        
-class NotImplementedException(Exception):  
-    def __init__(self, value):
-        self.value = value     
-    def __str__(self):
-        return repr(self.value) 
-    
-

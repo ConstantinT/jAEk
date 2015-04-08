@@ -12,7 +12,7 @@ from core.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
 from core.formhandler import FormHandler
 from core.clustermanager import ClusterManager
 from models.url import Url
-from utils.execptions import PageNotFoundException, LoginException
+from utils.execptions import PageNotFound, LoginFailed
 from models.deltapage import DeltaPage
 from models.webpage import WebPage
 from models.clickabletype import ClickableType
@@ -66,7 +66,7 @@ class Crawler(QObject):
             self.crawl_with_login = True
             go_on = self.initial_login()
             if not go_on:
-                raise LoginException("Initial login failed...")
+                raise LoginFailed("Initial login failed...")
 
         logging.debug("Crawl with userId: " + str(self.user.username))
 
@@ -90,7 +90,7 @@ class Crawler(QObject):
                                             parent_page.generator)  # Insert as first element because of reverse order'
                     parent_page = self.persistence_manager.get_page_to_id(parent_page.parent_id)
                     if parent_page is None:
-                        raise PageNotFoundException("This exception should never be raised...")
+                        raise PageNotFound("This exception should never be raised...")
                     previous_pages.append(parent_page)
                 # Now I'm reaching a non delta-page
                 self.current_depth = parent_page.current_depth
@@ -131,7 +131,7 @@ class Crawler(QObject):
                             login_retries += 1
                             sleep(2000)
                         if count_cookies(self._network_access_manager) < self.cookie_num * .8:
-                            raise LoginException("Cannot login anymore")
+                            raise LoginFailed("Cannot login anymore")
                 elif self.crawl_with_login and  response_code != 200:
                     plain_url_to_request = url_to_request.toString()
                     if "redirect" in current_page.url and current_page.url != plain_url_to_request:
@@ -144,7 +144,7 @@ class Crawler(QObject):
                         if relogin_successfull:
                             response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                         else:
-                            raise LoginException("Cannot login anymore")
+                            raise LoginFailed("Cannot login anymore")
 
 
                 self.domain_handler.complete_urls_in_page(current_page)
@@ -245,7 +245,6 @@ class Crawler(QObject):
                     if error_ratio > .2 and self.crawl_with_login:
                         go_on = self.handle_possible_logout()
                         if not go_on:
-                            # raise LoginException("Cannot login anymore")
                             continue
                         else:
                             login_retries += 1
@@ -683,7 +682,7 @@ class Crawler(QObject):
         f.close()
         login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_loginform_logged_in) < 0.5
         if login_successfull:
-            num_cookies_after_login = count_cookies(self._network_access_manager, url_with_loginform)
+            num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_loginform)
             if num_cookies_after_login > num_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
             return True

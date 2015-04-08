@@ -79,4 +79,3 @@ class InputField():
         self.html_id = html_id
         self.html_class = html_class
         self.value = value  # Predifiend value, if available...
-        

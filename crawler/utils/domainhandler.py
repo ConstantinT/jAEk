@@ -177,19 +177,15 @@ class DomainHandler():
             pass
         return web_page
 
-    def extract_new_links_for_crawling(self, page, current_depth):
+    def extract_new_links_for_crawling(self, page):
         for link in page.links:
-            link.url.depth_of_finding = current_depth
             self.persistence_manager.insert_url_into_db(link.url)
         if page.ajax_requests is not None:
             for ajax in page.ajax_requests:
-                ajax.url.depth_of_finding = current_depth
                 self.persistence_manager.insert_url_into_db(ajax.url)
         for ajax in page.timeming_requests:
-            ajax.url.depth_of_finding = current_depth
             self.persistence_manager.insert_url_into_db(ajax.url)
         for form in page.forms:
-            form.action.depth_of_finding = current_depth
             self.persistence_manager.insert_url_into_db(form.action)
 
     def calculate_new_url_type(self, current_type, value):

@@ -122,6 +122,7 @@ class Crawler(QObject):
                     continue
 
                 response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
+                current_page.current_depth = self.current_depth
                 if self.crawl_with_login and self.cookie_num > 0:
                     num_cookies = count_cookies(self._network_access_manager, url_to_request)
                     if num_cookies < self.cookie_num * .8:
@@ -154,7 +155,7 @@ class Crawler(QObject):
                     self.persistence_manager.visit_url(url_to_request, current_page.id, response_code)
                 else:
                     self.persistence_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
-                self.domain_handler.extract_new_links_for_crawling(current_page, current_page.current_depth)
+                self.domain_handler.extract_new_links_for_crawling(current_page)
                 #logging.debug(page.toString())
 
             if self.crawler_state == CrawlState.DeltaPage:

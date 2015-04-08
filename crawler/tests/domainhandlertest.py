@@ -1,4 +1,4 @@
-from database.persistentmanager import PersistenceManager
+from database.databasemanager import PersistenceManager
 from models.urlstructure import ParameterType
 from utils.domainhandler import DomainHandler
 from utils.user import User

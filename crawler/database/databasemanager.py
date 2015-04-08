@@ -124,3 +124,6 @@ class PersistenceManager(object):
 
     def get_all_url_structures(self):
         return  self._database.get_all_url_structures(self._current_session)
+
+    def get_all_visited_urls(self):
+        return self._database.get_all_visited_urls(self._current_session)

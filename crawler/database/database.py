@@ -346,7 +346,7 @@ class Database():
         
     def _parse_link_to_db_doc(self, link):
         res = {}
-        url = {"url": link.url.complete_url, "abstract_url": link.url.abstract_url, "url_hash": link.url.url_hash}
+        url = {"url": link.url.complete_url, "abstract_url": link.url.abstract_url, "url_hash": link.url.url_hash, "depth_of_finding": link.url.depth_of_finding}
         res['url'] = url
         res['dom_address'] = link.dom_address
         res['html_id'] = link.html_id
@@ -356,6 +356,7 @@ class Database():
     def _parse_link_from_db(self, link):
         url = Url(link['url']['url'])
         url.abstract_url = link['url']['abstract_url']
+        url.depth_of_finding = link['url']['depth_of_finding']
         result = Link(url, link['dom_address'], link['html_id'], link['html_class'])
         return result
     
@@ -553,4 +554,12 @@ class Database():
         result = []
         for url_structure in raw_data:
             result.append(UrlStructure(url_structure['path'], url_structure["parameters"], url_structure['url_hash']))
+        return result
+
+    def get_all_visited_urls(self, current_session):
+        raw_data = self.urls.find({"session": current_session, "visited": True})
+        result = []
+        for url in raw_data:
+            if url["response_code"] == 200:
+                result.append(self._parse_url_from_db(url))
         return result

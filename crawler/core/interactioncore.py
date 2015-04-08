@@ -127,7 +127,7 @@ class InteractionCore(QWebPage):
     def loadComplete(self, reply):
         pass
 
-     def add_eventlistener_to_element(self, msg):
+    def add_eventlistener_to_element(self, msg):
         try:
             if msg['id'] != ""
                 id = msg['id']

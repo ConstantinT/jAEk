@@ -35,6 +35,7 @@ class Database():
         self.users = self.database.users
         self.clusters = self.database.clusters
         self._per_session_url_counter = 0
+        self.attack = self.database.attack
 
         if drop_dbs:
             self.pages.drop() #Clear database
@@ -45,6 +46,7 @@ class Database():
             self.forms.drop()
             self.users.drop()
             self.clusters.drop()
+            self.attack.drop()
             self.urls.ensure_index("url", pymongo.ASCENDING, unique=True)
             #self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
 
@@ -563,3 +565,21 @@ class Database():
             if url["response_code"] == 200:
                 result.append(self._parse_url_from_db(url))
         return result
+
+    def get_one_visited_url_per_structure(self, current_session):
+        raw_data = self.urls.find({"session": current_session, "visited": True})
+        result = []
+        seen_structures = []
+        for url in raw_data:
+            if url["response_code"] == 200:
+                tmp = self._parse_url_from_db(url)
+                if tmp.url_hash not in seen_structures:
+                    result.append(tmp)
+                    seen_structures.append(tmp.url_hash)
+        return result
+
+    def insert_attack_result(self, current_session, result, attack_url):
+        doc = {"session": current_session, "attack_url": attack_url, "result": result.value}
+        self.attack.save(doc)
+
+

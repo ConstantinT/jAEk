@@ -37,14 +37,14 @@ if __name__ == '__main__':
 max_click_depth=3, crawl_speed=CrawlSpeed.Fast)
     attack_config = AttackConfig()
 
-    user = User("AtackTest", 0, session="ABC")
+    user = User("AttackTest", 0, session="ABC")
     persistence_manager = PersistenceManager(user)
     crawler = Crawler(crawl_config=crawler_config, persistence_manager=persistence_manager)#, proxy="localhost", port=8081)
     crawler.crawl(user)
     # TODO: It seems to be that, there is an error if we instanciate crawler and attacker and then call the crawl function. Maybe use one global app!
 
     attacker = Attacker(attack_config, database_manager=persistence_manager)
-    logging.debug(attacker.attack(user))
+    attacker.attack(user)
 
     logging.info("Crawler finished")
 

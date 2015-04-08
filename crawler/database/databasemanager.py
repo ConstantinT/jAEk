@@ -127,3 +127,9 @@ class PersistenceManager(object):
 
     def get_all_visited_urls(self):
         return self._database.get_all_visited_urls(self._current_session)
+
+    def get_one_visited_url_per_structure(self):
+        return self._database.get_one_visited_url_per_structure(self._current_session)
+
+    def insert_attack_result(self, result, attack_url):
+        self._database.insert_attack_result(self._current_session, result, attack_url)

@@ -27,16 +27,20 @@ class Attacker(QObject):
 
     def attack(self, user):
 
-        all_urls = self.database_manager.get_all_visited_urls()
+        all_urls = self.database_manager.get_one_visited_url_per_structure()
         for url in all_urls:
             if len(url.parameters) > 0:
-                for i in url.parameters:
-                    for j in url.parameters:
-                        for vector in self._xss_vector.attack_vectors:
-                            attack_string = url.scheme + "://" + url.domain + url.path + "?"
-                            if i == j:
-                                attack_string += j + "=" + vector.replace("XSS", self._xss_vector.random_string_generator(12)) + "&"
+                for vector in self._xss_vector.attack_vectors:
+                    for parameter_to_attack in url.parameters:
+                        attack_string = url.scheme + "://" + url.domain + url.path + "?"
+                        random_val  = self._xss_vector.random_string_generator(12)
+                        for other_parameters in url.parameters:
+                            if parameter_to_attack == other_parameters:
+                                attack_string += other_parameters + "=" + vector.replace("XSS", random_val) + "&"
                             else:
-                                attack_string += j + "=" + url.paramters[j][1] + "&"
-                            logging.debug("Attack with: {}".format(attack_string[:-1]))
-                            logging.debug(self._xss.attack(attack_string[:-1]))
+                                attack_string += other_parameters + "=" + url.parameters[other_parameters][0] + "&"
+                        attack_string = attack_string[:-1] # Removing the last "&
+                        logging.debug("Attack with: {}".format(attack_string))
+                        result = self._xss.attack(attack_string, random_val)
+                        logging.debug("Result: {}" .format(result))
+                        self.database_manager.insert_attack_result(result, attack_string)

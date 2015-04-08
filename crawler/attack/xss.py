@@ -14,12 +14,14 @@ class XSSAttacker(InteractionCore):
         self._analyzing_finished = False
         self._loading_complete = False
         self._attack_successfull = False
+        self._random_value = None
 
 
-    def attack(self, url, timeout = 10):
+    def attack(self, url, random_value, timeout = 10):
         self._analyzing_finished = False
         self._loading_complete = False
         self._attack_successfull = False
+        self._random_value = random_value
         self.mainFrame().load(QUrl(url))
 
         t = 0
@@ -32,6 +34,9 @@ class XSSAttacker(InteractionCore):
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)
             return AttackResult.Error_Timeout
+
+        self._analyzing_finished = True
+        self.mainFrame().setHtml(None)
 
         if self._attack_successfull:
             return AttackResult.Attack_Successfull
@@ -46,7 +51,8 @@ class XSSAttacker(InteractionCore):
 
     def javaScriptAlert(self, frame, msg):
         logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))
-        self._attack_successfull = True
+        if self._random_value in msg:
+            self._attack_successfull = True
 
 
 class AttackResult(Enum):

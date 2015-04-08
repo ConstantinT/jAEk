@@ -22,6 +22,7 @@ from models.utils import CrawlSpeed
 
 
 class EventExecutor(InteractionCore):
+
     def __init__(self, parent, proxy="", port=0, crawl_speed=CrawlSpeed.Medium, network_access_manager=None):
         super(EventExecutor, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._url_changed = False  # Inidicates if a event changes a location => treat it as link!
@@ -53,7 +54,7 @@ class EventExecutor(InteractionCore):
         target_tag = element_to_click.dom_address.split("/")
         target_tag = target_tag[-1]
         if target_tag in ['video']:
-            return Event_Result.Unsupported_Tag, None
+            return EventResult.UnsupportedTag, None
 
         t = 0.0
         while (not self._loading_complete and t < timeout ):  # Waiting for finish processing
@@ -61,7 +62,7 @@ class EventExecutor(InteractionCore):
             t += 0.1
         if not self._loading_complete:
             logging.debug("Timeout occurs while initial page loading...")
-            return Event_Result.Error_While_Initial_Loading, None
+            return EventResult.ErrorWhileInitialLoading, None
         # Prepare Page for clicking...
         self._wait(0.5)
         for click in pre_clicks:
@@ -76,7 +77,7 @@ class EventExecutor(InteractionCore):
 
             if pre_click_elem is None:
                 logging.debug("Preclicking element not found")
-                return Event_Result.Previous_Click_Not_Found, None
+                return EventResult.PreviousClickNotFound, None
 
             js_code = click.event
             if js_code[0:2] == "on":
@@ -112,11 +113,11 @@ class EventExecutor(InteractionCore):
 
         if real_clickable is None:
             logging.debug("Target Clickable not found")
-            return Event_Result.Target_Element_Not_Found, None
+            return EventResult.TargetElementNotFound, None
 
-        real_clickable.evaluateJavaScript(js_code)
         self._capturing_ajax = True
-        self._wait(0.5)
+        real_clickable.evaluateJavaScript(js_code)
+        #self._wait(0.5)
         self._capturing_ajax = False
         links, clickables = extract_links(self.mainFrame(), webpage.url)
         forms = extract_forms(self.mainFrame())
@@ -133,7 +134,7 @@ class EventExecutor(InteractionCore):
                                    cookiesjar=webpage.cookiejar)
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)
-            return Event_Result.URL_Changed, delta_page
+            return EventResult.URLChanged, delta_page
         else:
             delta_page = DeltaPage(-1, webpage.url, html, generator=generator, parent_id=webpage.id,
                                    cookiesjar=webpage.cookiejar)
@@ -145,7 +146,7 @@ class EventExecutor(InteractionCore):
             delta_page.ajax_requests = self.ajax_requests
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)
-            return Event_Result.Ok, delta_page
+            return EventResult.Ok, delta_page
 
     def javaScriptAlert(self, frame, msg):
         logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))
@@ -163,20 +164,20 @@ class EventExecutor(InteractionCore):
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._md5)
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
-            if self.xhr_options == XHR_Behavior.observe_xhr:
+            if self.xhr_options == XHR_Behavior.ObserveXHR:
                 self.mainFrame().evaluateJavaScript(self._xhr_observe_js)
-            if self.xhr_options == XHR_Behavior.intercept_xhr:
+            if self.xhr_options == XHR_Behavior.InterceptXHR:
                 self.mainFrame().evaluateJavaScript(self._xhr_interception_js)
 
     def createWindow(self, win_type):
         logging.debug("Creating new window...{}".format(win_type))
 
-
     def capturing_requests(self, request):
         if self._capturing_ajax:
             logging.debug("Ajax to: {} captured...".format(request['url']))
-            ajax_request = AjaxRequest(request['method'], request['url'], self.element_to_click, request['parameter'])
-            self.ajax_requests.append(ajax_request)
+            ajax_request = AjaxRequest(request['method'], request['url'], self.element_to_click, request['parameters'])
+            if ajax_request not in self.ajax_requests:
+                self.ajax_requests.append(ajax_request)
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
         logging.debug("Console(EventExecutor): " + message + " at: " + str(lineNumber))
@@ -202,16 +203,16 @@ class EventExecutor(InteractionCore):
         self._url_changed = True
         self._new_url = url
 
-class Event_Result(Enum):
+class EventResult(Enum):
     Ok = 0
-    Previous_Click_Not_Found = 1
-    Target_Element_Not_Found = 2
-    Error_While_Initial_Loading = 3
-    URL_Changed = 4
-    Unsupported_Tag = 5
+    PreviousClickNotFound = 1
+    TargetElementNotFound = 2
+    ErrorWhileInitialLoading = 3
+    URLChanged = 4
+    UnsupportedTag = 5
 
 
 class XHR_Behavior(Enum):
-    ignore_xhr = 0
-    observe_xhr = 1
-    intercept_xhr = 2 
+    IgnoreXHR = 0
+    ObserveXHR = 1
+    InterceptXHR = 2

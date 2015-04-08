@@ -58,7 +58,7 @@ class DomainHandler():
                         new_parameter = {}
                         current_parameter_type = None
                         new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
-                        for value in new_url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                        for value in new_url.parameters[key]: #This is for the case that a url has the same parameters multiple times
                             current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
                         new_parameter['parameter_type'] = current_parameter_type.value
                         new_parameter['generating'] = False
@@ -68,7 +68,7 @@ class DomainHandler():
                 else:
                     for key in new_url.parameters:
                         current_parameter_type = ParameterType(url_description.parameters[key]["parameter_type"])
-                        for value in new_url.parameters[key]: #This is for the case that a url has the same parameter multiple times
+                        for value in new_url.parameters[key]: #This is for the case that a url has the same parameters multiple times
                             current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
                         url_description.parameters[key]["parameter_type"] = current_parameter_type.value
                     self.persistence_manager.insert_url_structure_into_db(url_description)

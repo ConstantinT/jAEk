@@ -1,9 +1,9 @@
+import json
 from PyQt5.QtCore import QObject, pyqtSlot
 
 __author__ = 'constantin'
 
 class JsBridge(QObject):
-
 
     def __init__(self, analyzer):
         QObject.__init__(self)
@@ -24,7 +24,7 @@ class JsBridge(QObject):
     def xmlHTTPRequestSend(self, msg):
         msg = json.loads(msg)
         according_open = self._ajax_request.pop(0)
-        according_open['parameter'] = msg['parameter']
+        according_open['parameters'] = msg['parameters'][0]
         self.analyzer.capturing_requests(according_open)
 
     @pyqtSlot(str)

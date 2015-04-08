@@ -20,7 +20,7 @@ class DeltaPage(WebPage):
         msg = "[ Page: " + str(self.url) + " - ID: " + str(self.id) + " - Depth:" + str(self.current_depth) +" \n"
         msg += "Parent-ID: " + str(self.parent_id) + " - Generator: " + self.generator.toString() + " - Delta Depth: " + str(self.delta_depth) + " \n"
         if len(self.generator_requests) > 0:
-            msg += "Generator Requests: \n"
+            msg += "Generator AsyncRequests: \n"
             for r in self.generator_requests:
                 msg += " - " + r.toString() + " \n"
         if self.cookiejar is not None:

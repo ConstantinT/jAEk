@@ -13,8 +13,9 @@ from analyzer.helper.propertyhelper import property_helper
 from core.interactioncore import InteractionCore
 from analyzer.helper.formhelper import extract_forms
 from analyzer.helper.linkhelper import extract_links
+from models.timingrequest import TimingRequest
 from models.utils import CrawlSpeed
-from models.timemimngrequest import TimemingRequest
+
 from models.clickable import Clickable
 from models.webpage import WebPage
 
@@ -119,16 +120,15 @@ class MainAnalyzer(InteractionCore):
     def capturing_requests(self, request):
         # logging.debug("Event captured..." + str(request))
         try:
-            params = request["parameter"]
+            params = request["parameters"]
         except KeyError:
             params = None
         try:
-            timeming_request = TimemingRequest(request['method'], request['url'], self._current_timeming_event["time"],
-                                               self._current_timeming_event["event_type"],
-                                               self._current_timeming_event["event_id"], params)
+            timeming_request = TimingRequest(request['method'], request['url'], self._current_timeming_event["time"],
+                                             self._current_timeming_event["event_type"], params)
             self._timemimg_requests.append(timeming_request)
         except TypeError:
-            timeming_request = TimemingRequest(request['method'], request['url'], None, None, None, params)
+            timeming_request = TimingRequest(request['method'], request['url'], None, None, params)
             self._timemimg_requests.append(timeming_request)
 
     def capture_timeout_call(self, timingevent):

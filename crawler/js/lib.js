@@ -206,7 +206,7 @@ function XMLHTTPObserverSend(elem, args) {
 		elems.push(args[i])
 	}
 	resp = {
-		"parameter" : elems
+		"parameters" : elems
 	};
 	resp = JSON.stringify(resp)
 	jswrapper.xmlHTTPRequestSend(resp)
@@ -343,7 +343,7 @@ function addEventListenerWrapper(elem, args) {
 }
 
 function bodyAddEventListenerWrapper(elem, args) {
-	tag = elem.tagName
+	tag = "body"
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;

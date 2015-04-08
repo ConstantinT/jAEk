@@ -47,7 +47,7 @@ class WebPage:
             for elem in self.forms:
                 msg += elem.toString() + " \n"
         if len(self.ajax_requests) > 0: 
-            msg += "Ajax-Requests: \n"
+            msg += "Ajax-AsyncRequests: \n"
             for elem in self.ajax_requests:
                 msg += elem.toString() + " \n"
         return msg + "]"

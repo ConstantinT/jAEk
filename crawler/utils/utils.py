@@ -4,11 +4,13 @@ Created on 12.11.2014
 @author: constantin
 '''
 import logging
+import string
 from Cython.Compiler.Options import normalise_encoding_name
 from PyQt5.QtCore import QUrl
 from PyQt5.QtNetwork import QNetworkCookie
 
 from models.deltapage import DeltaPage
+from models.parametertype import ParameterType
 
 
 def form_to_dict(form, key_values = None):
@@ -156,3 +158,105 @@ def count_cookies(networkaccess_manager, url):
     all_cookies = cookiejar.cookiesForUrl(QUrl(url))
     return len(all_cookies)
 
+
+
+def calculate_new_parameter_type(current_type, value):
+        if current_type is None: # When we see it the first time, then we just set this param to None
+            if len(value) == 1:
+                if value in string.ascii_lowercase + string.ascii_uppercase + "/":
+                    return ParameterType.Char
+                elif _is_int(value):
+                    return ParameterType.Digit
+                elif _is_float(value):
+                    return ParameterType.Float
+                else:
+                    raise ValueError("Len is one but I have not specified a case for: {}".format(value))
+            else:
+                if _is_int(value):
+                    return ParameterType.Integer
+                elif _is_float(value):
+                    return ParameterType.Float
+                elif isinstance(value, str):
+                    if _has_number(value):
+                        return ParameterType.AlphaNumerical
+                    else:
+                        return ParameterType.String
+                else:
+                    raise ValueError("Is ling but not specified...")
+
+        else:
+            if current_type == ParameterType.Digit:
+                return _handle_digit(value)
+            elif current_type == ParameterType.Float:
+                return _handle_float(value)
+            elif current_type == ParameterType.Char:
+                return _handle_char(value)
+            elif current_type == ParameterType.Integer:
+                return _handle_integer(value)
+            elif current_type == ParameterType.String:
+                return _handle_string(value)
+            else:
+                return ParameterType.AlphaNumerical # One time alphanumerical erverytime alphanumerical
+
+
+def _is_int(value):
+    try:
+        int(value)
+        return True
+    except ValueError:
+        return False
+
+def _is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+def _has_number(input):
+    return any(_is_int(char) or _is_float(char) for char in input)
+
+def _handle_digit(value):
+    if len(value) == 1:
+        if _is_int(value):
+            return ParameterType.Digit
+        if _is_float(value):
+            return ParameterType.Float
+        if value in string.ascii_uppercase + string.ascii_lowercase:
+            return ParameterType.Char
+    else:
+        if _is_int(value):
+            return ParameterType.Integer
+        if _is_float(value):
+            return ParameterType.Float
+        else:
+            return ParameterType.AlphaNumerical
+
+def _handle_float(value):
+    if _is_float(value) or _is_int(value):
+            return ParameterType.Float
+    if isinstance(value, str):
+        return ParameterType.AlphaNumerical
+    else:
+        raise  ValueError("{}".format(value))
+
+
+def _handle_char(value):
+    if len(value) == 1:
+        return ParameterType.Char
+    else:
+        return ParameterType.AlphaNumerical
+
+def _handle_integer(value):
+    if _is_int(value):
+        return ParameterType.Integer
+    elif _is_float(value):
+        return ParameterType.Float
+    else:
+        return ParameterType.AlphaNumerical
+
+def _handle_string(value):
+    if _has_number(value):
+        return ParameterType.AlphaNumerical
+    else:
+        return ParameterType.String

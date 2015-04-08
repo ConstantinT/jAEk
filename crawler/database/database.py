@@ -1,13 +1,14 @@
 import logging
 from pymongo.connection import Connection
 import pymongo
+from models.asyncrequeststructure import AsyncRequestStructure
+from models.timingrequest import TimingRequest
 from models.urlstructure import UrlStructure
 
 from utils.user import User
 from models.url import Url
 from models.webpage import WebPage
 from models.clickable import Clickable
-from models.timemimngrequest import TimemingRequest
 from models.ajaxrequest import AjaxRequest
 from models.link import Link
 from models.clickabletype import ClickableType
@@ -28,14 +29,16 @@ class Database():
         #self.pages.ensure_index( "id", pymongo.ASCENDING, unique=True)
         self.urls = self.database.urls
         self.url_descriptions = self.database.url_describtion
-
         self.clickables = self.database.clickables
         self.delta_pages = self.database.delta_pages
         self.forms = self.database.forms
         self.users = self.database.users
         self.clusters = self.database.clusters
-        self._per_session_url_counter = 0
         self.attack = self.database.attack
+        self.async_requests = self.database.asyncrequests
+        self.async_request_structure = self.database.asyncrequeststructure
+
+        self._per_session_url_counter = 0
 
         if drop_dbs:
             self.pages.drop() #Clear database
@@ -47,6 +50,8 @@ class Database():
             self.users.drop()
             self.clusters.drop()
             self.attack.drop()
+            self.async_requests.drop()
+            self.async_request_structure.drop()
             self.urls.ensure_index("url", pymongo.ASCENDING, unique=True)
             #self.url_descriptions.ensure_index("hash", pymongo.ASCENDING, unique=True)
 
@@ -218,13 +223,61 @@ class Database():
         result.links = links
         timemimg_requests = []
         for request in page['timeming_requests']:
-            timemimg_requests.append(self._parse_timemimg_request_from_db_to_model(request))
+            timemimg_requests.append(self.get_asyncrequest_to_id(current_session, request))
         result.timeming_requests = timemimg_requests
         ajax = []
         for request in page['ajax_requests']:
-            ajax.append(self._parse_ajax_request_from_db_to_model(request))
+            ajax.append(self.self.get_asyncrequest_to_id(current_session, request))
         result.ajax_requests = ajax
-        return result  
+        return result
+
+    def insert_asyncrequest(self, current_session, ajax_request, web_page_id):
+
+        url_doc = {"url": ajax_request.url.complete_url, "abstract_url": ajax_request.url.abstract_url, "url_hash": ajax_request.url.url_hash}
+        structure_doc = {}
+        structure_doc['request_hash'] = ajax_request.request_hash
+        structure_doc["session"] = current_session
+        structure_doc['parameters'] = ajax_request.request_structure.parameters
+        previous_doc = self.async_request_structure.find_one({"session": current_session, "request_hash": ajax_request.request_hash})
+        if previous_doc is not None:
+            structure_doc["_id"] = previous_doc['_id']
+        res = self.async_request_structure.save(structure_doc)
+
+        doc = {}
+        doc["request_hash"] = ajax_request.request_hash
+        doc["url"] = url_doc
+        doc["method"] = ajax_request.method
+        doc["session"] = current_session
+        try:
+            trigger_id = self.clickables.find_one({"session": current_session, "dom_address" : ajax_request.trigger.dom_address, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
+            trigger_id = trigger_id["_id"]
+            doc["trigger"] = trigger_id
+        except AttributeError:
+            try:
+                doc['event'] = ajax_request.event
+            except AttributeError:
+                logging.debug("This should never happen...")
+        doc['parameters'] = ajax_request.parameters
+        return self.async_requests.save(doc)
+
+    def get_asyncrequest_to_id(self, current_session, async_id):
+        raw_data = self.async_requests.find_one({"session": current_session, "_id": async_id})
+        if raw_data is None:
+            return None
+        raw_structure = self.async_request_structure.find_one({"session": current_session, "request_hash": raw_data['request_hash']})
+        structure = AsyncRequestStructure(raw_structure['request_hash'], raw_structure['parameters'])
+        url = Url(raw_data['url'])
+        url.abstract_url = raw_data['abstract_url']
+        if "event" in raw_data:
+            tmp = TimingRequest(raw_data['method'], url, None, raw_data['event'], parameters=raw_data['parameters'])
+            tmp.request_structure = structure
+        else:
+            trigger = self.clickables.find_one({"_id": raw_data['trigger']})
+            trigger = self._parse_clickable_from_db_to_model(trigger)
+            tmp = AjaxRequest(raw_data['method'], url, trigger, parameters=raw_data['parameters'])
+            tmp.request_structure = structure
+        return tmp
+
     
     def _parse_clickable_from_db_to_model(self, clickable):
         c = Clickable(clickable['event'], clickable['tag'], clickable['dom_address'], clickable['html_id'], clickable['html_class'], clickable['clickable_depth'], clickable['function_id'])
@@ -233,18 +286,6 @@ class Database():
         c.links_to = clickable['links_to']
         c.clickable_depth = clickable['clickable_depth']
         return c
-    
-    def _parse_timemimg_request_from_db_to_model(self, timemimg_request):
-        url = Url(timemimg_request['url']["url"])
-        url.abstract_url = timemimg_request['url']["abstract_url"]
-        return TimemingRequest(timemimg_request['method'], url, timemimg_request['time'], timemimg_request['event'], timemimg_request['function_id'])
-    
-    def _parse_ajax_request_from_db_to_model(self, ajax_request):
-        tmp = self.clickables.find_one(ajax_request['trigger'])
-        trigger = self._parse_clickable_from_db_to_model(tmp)
-        url = Url(ajax_request['url']['url'])
-        url.abstract_url = ajax_request['url']['abstract_url']
-        return AjaxRequest(ajax_request['method'], url, trigger, ajax_request['parameters'])
         
     def _insert_clickable_into_db(self, current_session , web_page_id, clickable):
         document = {}
@@ -276,14 +317,14 @@ class Database():
         document['generator'] = clickable_id
         generator_request_doc = []
         for r in delta_page.generator_requests:
-            generator_request_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, delta_page.parent_id))
+            generator_request_doc.append(self.insert_asyncrequest(current_session, r))
         document["generator_requests"] = generator_request_doc
         
         document['delta_depth'] = delta_page.delta_depth
         document['parent_id'] = delta_page.parent_id
         ajax_request_docs = []
         for ajax in delta_page.ajax_requests:
-            ajax_request_docs.append(self._parse_ajax_request_to_db_doc(current_session, ajax, delta_page.id))
+            ajax_request_docs.append(self.insert_asyncrequest(current_session, ajax))
         document["ajax_requests"] = ajax_request_docs
         document['session'] = current_session
         self.delta_pages.save(document)
@@ -305,7 +346,7 @@ class Database():
             document["links"].append(self._parse_link_to_db_doc(link))
         timeming_requests_doc = []
         for timing_request in web_page.timeming_requests:
-            timeming_requests_doc.append(self._parse_timing_request_to_db_doc(timing_request))
+            timeming_requests_doc.append(self.insert_asyncrequest(timing_request))
         document['timeming_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
         document['base_url'] = web_page.base_url
@@ -335,17 +376,7 @@ class Database():
         form_doc['session'] = current_session
         form_doc['form_hash'] = form_hash
         self.forms.save(form_doc)
-    
-    def _parse_timing_request_to_db_doc(self, request):
-        res = {}
-        res['method'] = request.method
-        url = {"url": request.url.complete_url, "abstract_url": request.url.abstract_url, "url_hash": request.url.url_hash}
-        res['url'] = url
-        res['event'] = request.event
-        res['function_id'] = request.function_id
-        res['time'] = request.time
-        return res
-        
+
     def _parse_link_to_db_doc(self, link):
         res = {}
         url = {"url": link.url.complete_url, "abstract_url": link.url.abstract_url, "url_hash": link.url.url_hash, "depth_of_finding": link.url.depth_of_finding}
@@ -415,25 +446,14 @@ class Database():
         result = self.clickables.update(search_doc, set_doc)
         return result
     
-    def _parse_ajax_request_to_db_doc(self, current_session, ajax_request, web_page_id):
-        doc = {}
-        url_doc = {"url": ajax_request.url.complete_url, "abstract_url": ajax_request.url.abstract_url, "url_hash": ajax_request.url.url_hash}
-        doc["url"] = ajax_request.url.complete_url
-        doc["method"] = ajax_request.method
-        trigger_id = self.clickables.find_one({"session": current_session, "dom_address" : ajax_request.trigger.dom_address, "web_page_id": web_page_id, "event": ajax_request.trigger.event})
-        trigger_id = trigger_id["_id"]
-        doc['parameters'] = ajax_request.parameter
-        doc["trigger"] = trigger_id
-        return doc
-    
     def extend_ajax_requests_to_webpage(self, current_session, webpage, ajax_requests):
         ajax_requests_doc = []
         for r in ajax_requests:
-            ajax_requests_doc.append(self._parse_ajax_request_to_db_doc(current_session, r, web_page_id=webpage.id))
+            ajax_requests_doc.append(self.insert_asyncrequest(current_session, r, webpage.id))
         if not hasattr(webpage, 'parent_id'):
-            result = self.pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_requests_doc}}})
+            result = self.pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each": ajax_requests_doc}}})
         else:
-            result = self.delta_pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each" :ajax_requests_doc}}})
+            result = self.delta_pages.update({"web_page_id": webpage.id, "session":current_session}, { "$addToSet" : {"ajax_requests": {"$each": ajax_requests_doc}}})
         
         
     def _clickable_type_to_num(self, clickable_type):
@@ -582,4 +602,13 @@ class Database():
         doc = {"session": current_session, "attack_url": attack_url, "result": result.value}
         self.attack.save(doc)
 
+    def get_asyncrequest_structure(self, current_session, structure_hash= None):
+        if structure_hash is not None:
+            raw_data = self.async_request_structure.find_one({"current_session": current_session, "structure_hash": structure_hash})
+            if raw_data is None:
+                return None
+            return AsyncRequestStructure(raw_data['structure_hash'], raw_data['parameters'])
+        else:
+            return None
+            #TODO: Implement if I need all
 

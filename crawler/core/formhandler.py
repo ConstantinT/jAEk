@@ -3,7 +3,7 @@ import logging
 from PyQt5.Qt import QUrl
 
 from core.interactioncore import InteractionCore
-from core.eventexecutor import Event_Result
+from core.eventexecutor import EventResult
 from analyzer.helper.formhelper import extract_forms
 from analyzer.helper.linkhelper import extract_links
 from models.clickable import Clickable
@@ -37,7 +37,7 @@ class FormHandler(InteractionCore):
             t += 0.1
         if not self._loading_complete:
             logging.debug("Timeout occurs while initial page loading...")
-            return Event_Result.Error_While_Initial_Loading, None
+            return EventResult.ErrorWhileInitialLoading, None
 
         target_form = None
         p_forms = self.mainFrame().findAllElements("form")
@@ -47,7 +47,7 @@ class FormHandler(InteractionCore):
                 target_form = tmp_form
                 break
         if target_form is None:
-            return Event_Result.Target_Element_Not_Found, None
+            return EventResult.TargetElementNotFound, None
 
         for elem in form.parameter: #Iterate through abstract form representation
             if elem.name in data: #Check if we have the data we must set
@@ -59,7 +59,7 @@ class FormHandler(InteractionCore):
                         elem_found = True
                         break
                 if not elem_found:
-                    return Event_Result.Target_Element_Not_Found, None
+                    return EventResult.TargetElementNotFound, None
         # Now we should have set all known parameters, next click the submit button
 
 
@@ -101,7 +101,7 @@ class FormHandler(InteractionCore):
         f.close()
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
-        return Event_Result.Ok, html, self._new_clickables, forms, links, []
+        return EventResult.Ok, html, self._new_clickables, forms, links, []
 
     def jsWinObjClearedHandler(self): #Adding here the js-scripts corresponding to the phases
         if not self._analyzing_finished:

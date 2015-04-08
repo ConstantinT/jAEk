@@ -19,7 +19,7 @@ TEST_URL2 = "http://example.com/exmaple.php"
 TEST_HTML = "<html><head></head><body></body></html>"
 CLICKABLE = Clickable("click", "a", "body/div/div/a", id = "Test1", html_class = "Test2", clickable_depth = 243, function_id = "Test3")
 WEBPAGE = WebPage(1, url= TEST_URL1, html= TEST_HTML, cookiesjar= None, depth= 24, base_url= TEST_URL2)
-AJAXREQUEST = AjaxRequest("GET", TEST_URL1, CLICKABLE, parameter= ["test=Test"])
+AJAXREQUEST = AjaxRequest("GET", TEST_URL1, CLICKABLE, parameters=["test=Test"])
 
 
 class DataBaseTests(unittest.TestCase):

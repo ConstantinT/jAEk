@@ -133,3 +133,6 @@ class PersistenceManager(object):
 
     def insert_attack_result(self, result, attack_url):
         self._database.insert_attack_result(self._current_session, result, attack_url)
+
+    def get_asyncrequest_structure(self, structure_hash=None):
+        return self._database.get_asyncrequest_structure(self._current_session, structure_hash)

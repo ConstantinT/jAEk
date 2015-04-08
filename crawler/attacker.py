@@ -32,15 +32,15 @@ class Attacker(QObject):
             if len(url.parameters) > 0:
                 for vector in self._xss_vector.attack_vectors:
                     for parameter_to_attack in url.parameters:
-                        attack_string = url.scheme + "://" + url.domain + url.path + "?"
+                        attack_url = url.scheme + "://" + url.domain + url.path + "?"
                         random_val  = self._xss_vector.random_string_generator(12)
                         for other_parameters in url.parameters:
                             if parameter_to_attack == other_parameters:
-                                attack_string += other_parameters + "=" + vector.replace("XSS", random_val) + "&"
+                                attack_url += other_parameters + "=" + vector.replace("XSS", random_val) + "&"
                             else:
-                                attack_string += other_parameters + "=" + url.parameters[other_parameters][0] + "&"
-                        attack_string = attack_string[:-1] # Removing the last "&
-                        logging.debug("Attack with: {}".format(attack_string))
-                        result = self._xss.attack(attack_string, random_val)
+                                attack_url += other_parameters + "=" + url.parameters[other_parameters][0] + "&"
+                        attack_url = attack_url[:-1] # Removing the last "&
+                        logging.debug("Attack with: {}".format(attack_url))
+                        result = self._xss.attack(attack_url, random_val)
                         logging.debug("Result: {}" .format(result))
-                        self.database_manager.insert_attack_result(result, attack_string)
+                        self.database_manager.insert_attack_result(result, attack_url)

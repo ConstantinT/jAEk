@@ -31,13 +31,13 @@ if __name__ == '__main__':
     #user = User("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
     #user = User("owncloudArthur4", 0, "http://localhost:8080/", login_data = {"user" : "arthur dent", "password" : "arthur"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
-    url = "http://localhost/attack/"
+    url = "http://localhost/buttons_test4.php"
 
-    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=100,
+    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=1,
 max_click_depth=3, crawl_speed=CrawlSpeed.Fast)
     attack_config = AttackConfig()
 
-    user = User("AttackTest", 0, session="ABC")
+    user = User("Test", 0, session="ABC")
     persistence_manager = PersistenceManager(user)
     crawler = Crawler(crawl_config=crawler_config, persistence_manager=persistence_manager)#, proxy="localhost", port=8081)
     crawler.crawl(user)

@@ -3,7 +3,7 @@ import logging
 from PyQt5.Qt import QUrl
 
 from core.interactioncore import InteractionCore
-from analyzer.eventexecutor import Event_Result
+from core.eventexecutor import Event_Result
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
 from models.clickable import Clickable
@@ -111,7 +111,7 @@ class FormHandler(InteractionCore):
         if not self._analyzing_finished:
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._md5)
-            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
+            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
         logging.debug("Console(FormHandler): " + message + " at: " + str(lineNumber))

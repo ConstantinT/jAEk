@@ -8,8 +8,8 @@ from urllib.parse import urljoin
 
 from PyQt5.Qt import QApplication, QObject
 
-from analyzer.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
-from analyzer.formhandler import FormHandler
+from core.eventexecutor import EventExecutor, XHR_Behavior, Event_Result
+from core.formhandler import FormHandler
 from core.clustermanager import ClusterManager
 from models.url import Url
 from utils.execptions import PageNotFoundException, LoginException

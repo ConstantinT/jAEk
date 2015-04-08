@@ -233,25 +233,20 @@ function intervallWrapper(elem, args) {
 }
 
 function getXPath(element) {
-	//console.log("====Start====")
 	try {
 		var xpath = '';
 		for (; element && element.nodeType == 1; element = element.parentNode) {
 			var sibblings = element.parentNode.childNodes;
-			//console.log("Beginn: " + element.tagName + " - " + element.className + " - " + element.id + " - " + sibblings.length + " - Parent: " + element.parentNode.tagName)
 			var same_tags = []
 			for (var i = 0; i < sibblings.length; i++) { // collecting same
-				//console.log(sibblings[i].tagName + " - " + sibblings[i].className + " - " + sibblings[i].id)// tags
 				if (element.tagName === sibblings[i].tagName) {
 					same_tags[same_tags.length] = sibblings[i]
 				}
 			}
 			var id = same_tags.indexOf(element) + 1
-			//console.log("End: " + element.tagName + " - " + element.className + " - " + element.id+ " - " + same_tags.length + " - " + id)
 			id > 1 ? (id = '[' + id + ']') : (id = '');
 			xpath = '/' + element.tagName.toLowerCase() + id + xpath;
 		}
-		//console.log("XPATH: " + xpath)
 		return xpath;
 	} catch (e) {
 		console.log("Error: " + e)
@@ -260,13 +255,10 @@ function getXPath(element) {
 }
 
 function addEventListenerWrapper(elem, args) {
-	//console.log("Add Event")
 	tag = elem.tagName
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
-	//console.log("New Addevent:" + tag + ":" + id + ":" + html_class + ":"
-	//		+ args[0])
 	dom_adress = getXPath(elem);
 	if (dom_adress.indexOf("/html/body") == -1) {
 		console.log("Domadress is not valid: " + dom_adress)
@@ -284,7 +276,7 @@ function addEventListenerWrapper(elem, args) {
 	}
 	//console.log(resp)
 	resp = JSON.stringify(resp)
-	jswrapper.add_EventListener_to_Element(resp)
+	jswrapper.add_eventListener_to_element(resp)
 	if (args[0] == "change") {
 		inputs = elem.querySelectorAll("input");
 		selects = elem.querySelectorAll("select");
@@ -308,7 +300,7 @@ function addEventListenerWrapper(elem, args) {
 					"class" : html_class
 				}
 				resp = JSON.stringify(resp)
-				jswrapper.add_EventListener_to_Element(resp)
+				jswrapper.add_eventListener_to_element(resp)
 			}
 		}
 		for (i = 0; i < selects.length; i++) {
@@ -327,7 +319,7 @@ function addEventListenerWrapper(elem, args) {
 				"class" : html_class
 			}
 			resp = JSON.stringify(resp)
-			jswrapper.add_EventListener_to_Element(resp)
+			jswrapper.add_eventListener_to_element(resp)
 		}
 		for (xx = 0; xx < options.length; xx++) {
 			o = options[i]
@@ -345,19 +337,16 @@ function addEventListenerWrapper(elem, args) {
 				"class" : html_class
 			}
 			resp = JSON.stringify(resp)
-			jswrapper.add_EventListener_to_Element(resp)
+			jswrapper.add_eventListener_to_element(resp)
 		}
 	}
 }
 
 function bodyAddEventListenerWrapper(elem, args) {
-	//console.log("Add event to body")
 	tag = elem.tagName
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
-	//console.log("New Addevent(Body):" + tag + ":" + id + ":" + html_class + ":"
-	//		+ args[0])
 	function_id = MD5(args[1].toString())
 	dom_adress = "/html/body"
 	resp = {
@@ -369,8 +358,7 @@ function bodyAddEventListenerWrapper(elem, args) {
 		"class" : html_class
 	}
 	resp = JSON.stringify(resp)
-	jswrapper.add_EventListener_to_Element(resp)
+	jswrapper.add_eventListener_to_element(resp)
 
 }
 
-// console.log("Lib loading finisFFd")

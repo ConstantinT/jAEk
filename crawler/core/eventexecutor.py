@@ -12,6 +12,7 @@ from PyQt5.Qt import QUrl
 
 from analyzer.helper.formhelper import FormHelper
 from analyzer.helper.linkhelper import LinkHelper
+from analyzer.helper.propertyhelper import property_helper
 from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
 from models.deltapage import DeltaPage
@@ -123,8 +124,7 @@ class EventExecutor(InteractionCore):
         self._preclicking_ready = False
         links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
         forms = self._form_helper.extract_forms(self.mainFrame())
-        self.mainFrame().evaluateJavaScript(self._property_obs_js)
-        self._wait(0.5)
+        elements_with_event_properties = property_helper(self.mainFrame())
 
         html = self.mainFrame().toHtml()
 
@@ -143,6 +143,7 @@ class EventExecutor(InteractionCore):
                                    cookiesjar=webpage.cookiejar)
             delta_page.clickables = self._new_clickables  # Set by add eventlistener code
             delta_page.clickables.extend(clickables)
+            delta_page.clickables.extend(elements_with_event_properties)
             delta_page.links = links
             delta_page.forms = forms
             delta_page.ajax_requests = self.ajax_requests
@@ -165,7 +166,7 @@ class EventExecutor(InteractionCore):
         if not self._analyzing_finished:
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._md5)
-            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
+            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
             if self.xhr_options == XHR_Behavior.observe_xhr:
                 self.mainFrame().evaluateJavaScript(self._xhr_observe_js)
             if self.xhr_options == XHR_Behavior.intercept_xhr:

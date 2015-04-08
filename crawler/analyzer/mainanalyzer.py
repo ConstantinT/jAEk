@@ -8,6 +8,7 @@ import logging
 from PyQt5.QtCore import QByteArray
 from PyQt5.QtNetwork import QNetworkRequest, QNetworkAccessManager
 from PyQt5.Qt import QUrl
+from analyzer.helper.propertyhelper import property_helper
 
 from core.interactioncore import InteractionCore
 from analyzer.helper.formhelper import FormHelper
@@ -76,10 +77,11 @@ class MainAnalyzer(InteractionCore):
             overall_waiting_time += waiting_time_in_milliseconds
         if overall_waiting_time < 1:
             self._wait((1-overall_waiting_time))
-        self.mainFrame().evaluateJavaScript(self._property_obs_js)
+
         links, clickables = self._link_helper.extract_links(self.mainFrame(), url_to_request)
         forms = self._form_helper.extract_forms(self.mainFrame())
-        self._wait(0.5)
+        elements_with_event_properties = property_helper(self.mainFrame())
+
 
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()
@@ -89,6 +91,7 @@ class MainAnalyzer(InteractionCore):
         f.write(html_after_timeouts)
         f.close()
         self._new_clickables.extend(clickables)
+        self._new_clickables.extend(elements_with_event_properties)
         response_code = None
         try:
             response_code = self.response_code[url_to_request]
@@ -111,7 +114,7 @@ class MainAnalyzer(InteractionCore):
 
     def jsWinObjClearedHandler(self):  # Adding here the js-scripts I need
         if not self._analyzing_finished:
-            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._jsbridge)
+            self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
             self.mainFrame().evaluateJavaScript(self._md5)
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._timeming_wrapper_js)

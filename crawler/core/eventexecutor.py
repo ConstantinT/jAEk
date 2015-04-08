@@ -27,11 +27,11 @@ class EventExecutor(InteractionCore):
         self._url_changed = False  # Inidicates if a event changes a location => treat it as link!
         self._new_url = None
         self.timeming_events = None
-        self.supported_events = ['click', 'focus', 'blur', 'dblclick', 'input', 'change',
+        self.none_key_events = ['click', 'focus', 'blur', 'dblclick', 'input', 'change',
                                  'mousedown', 'mousemove', 'mouseout', 'mouseover', 'mouseup',
-                                 'resize', 'scroll', 'select', 'submit', 'load', 'unload', 'mouseleave', 'keyup',
-                                 'keydown', 'keypress']
+                                 'resize', 'scroll', 'select', 'submit', 'load', 'unload', 'mouseleave']
         self.key_events = ['keyup', 'keydown', 'keypress']
+        self.supported_events = self.none_key_events + self.key_events
 
         self.seen_timeouts = {}
         self.mainFrame().urlChanged.connect(self._url_changes)
@@ -46,7 +46,7 @@ class EventExecutor(InteractionCore):
         self.ajax_requests = []
         self._new_url = None
         self.timeming_events = None
-        self._preclicking_ready = False
+        self._capturing_ajax = False
         self._new_clickables = []
         self.element_to_click = element_to_click
         self.mainFrame().setHtml(webpage.html, QUrl(webpage.url))
@@ -115,9 +115,9 @@ class EventExecutor(InteractionCore):
             return Event_Result.Target_Element_Not_Found, None
 
         real_clickable.evaluateJavaScript(js_code)
-        self._preclicking_ready = True
+        self._capturing_ajax = True
         self._wait(0.5)
-        self._preclicking_ready = False
+        self._capturing_ajax = False
         links, clickables = extract_links(self.mainFrame(), webpage.url)
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
@@ -173,7 +173,7 @@ class EventExecutor(InteractionCore):
 
 
     def capturing_requests(self, request):
-        if self._preclicking_ready:
+        if self._capturing_ajax:
             logging.debug("Ajax to: {} captured...".format(request['url']))
             ajax_request = AjaxRequest(request['method'], request['url'], self.element_to_click, request['parameter'])
             self.ajax_requests.append(ajax_request)
@@ -195,42 +195,12 @@ class EventExecutor(InteractionCore):
                 else:
                     self.timeming_events = (time, event_type, event_id)
         except KeyError as err:
-            logging.debug("Key error occured in Events " + str(err))
+            logging.debug("Key error occurred in Events " + str(err))
 
 
     def _url_changes(self, url):
         self._url_changed = True
         self._new_url = url
-
-    def add_eventlistener_to_element(self, msg):
-        try:
-            # logging.debug(msg)
-            if "id" in msg:
-                if msg != "":
-                    id = msg['id']
-                else:
-                    id = None
-            domadress = msg['addr']
-            event = msg['event']
-            if event == "":
-                event = None
-            if "tag" in msg:
-                tag = msg['tag']
-            else:
-                tag = None
-            if "class" in msg:
-                if msg['class'] != "":
-                    html_class = msg['class']
-                else:
-                    html_class = None
-            function_id = msg['function_id']
-            if tag is not None and domadress != "":
-                tmp = Clickable(event, tag, domadress, id, html_class, function_id=function_id)
-                self._new_clickables.append(tmp)
-        except KeyError as err:
-            # logging.debug(err)
-            pass
-
 
 class Event_Result(Enum):
     Ok = 0

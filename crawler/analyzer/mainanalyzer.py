@@ -174,35 +174,5 @@ class MainAnalyzer(InteractionCore):
         post_params.remove(post_params.length() - 1, 1)
         return post_params
 
-    def add_eventlistener_to_element(self, msg):
-        try:
-            # logging.debug(msg)
-            if "id" in msg:
-                if msg != "":
-                    id = msg['id']
-                else:
-                    id = None
-            dom_address = msg['addr']
-            event = msg['event']
-            if event == "":
-                event = None
-            if "tag" in msg:
-                tag = msg['tag']
-            else:
-                tag = None
-            if "class" in msg:
-                if msg['class'] != "":
-                    html_class = msg['class']
-                else:
-                    html_class = None
-            function_id = msg['function_id']
-            if tag is not None and dom_address != "":
-                tmp = Clickable(event, tag, dom_address, id, html_class, function_id=function_id)
-                if tmp not in self._new_clickables:
-                    self._new_clickables.append(tmp)
-        except KeyError as err:
-            # logging.debug(err)
-            pass
-
     def javaScriptAlert(self, frame, msg):
         logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))

@@ -11,8 +11,8 @@ from PyQt5.Qt import QUrl
 from analyzer.helper.propertyhelper import property_helper
 
 from core.interactioncore import InteractionCore
-from analyzer.helper.formhelper import FormHelper
-from analyzer.helper.linkhelper import LinkHelper
+from analyzer.helper.formhelper import extract_forms
+from analyzer.helper.linkhelper import extract_links
 from models.utils import CrawlSpeed
 from models.timemimngrequest import TimemingRequest
 from models.clickable import Clickable
@@ -24,8 +24,6 @@ class MainAnalyzer(InteractionCore):
         super(MainAnalyzer, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._loading_complete = False
         self._analyzing_finished = False
-        self._link_helper = LinkHelper()
-        self._form_helper = FormHelper()
         self._timemimg_requests = []
         self._new_clickables = []
         self._timeming_events = []
@@ -78,8 +76,8 @@ class MainAnalyzer(InteractionCore):
         if overall_waiting_time < 1:
             self._wait((1-overall_waiting_time))
 
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), url_to_request)
-        forms = self._form_helper.extract_forms(self.mainFrame())
+        links, clickables = extract_links(self.mainFrame(), url_to_request)
+        forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
 
 
@@ -87,9 +85,6 @@ class MainAnalyzer(InteractionCore):
         html_after_timeouts = self.mainFrame().toHtml()
         response_url = self.mainFrame().url().toString()
         self.mainFrame().setHtml(None)
-        f = open("main.txt", "w")
-        f.write(html_after_timeouts)
-        f.close()
         self._new_clickables.extend(clickables)
         self._new_clickables.extend(elements_with_event_properties)
         response_code = None

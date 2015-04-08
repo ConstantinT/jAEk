@@ -9,9 +9,9 @@ import string
 from enum import Enum
 
 from PyQt5.Qt import QUrl
+from analyzer.helper.formhelper import extract_forms
+from analyzer.helper.linkhelper import extract_links
 
-from analyzer.helper.formhelper import FormHelper
-from analyzer.helper.linkhelper import LinkHelper
 from analyzer.helper.propertyhelper import property_helper
 from models.ajaxrequest import AjaxRequest
 from models.clickable import Clickable
@@ -35,10 +35,6 @@ class EventExecutor(InteractionCore):
 
         self.seen_timeouts = {}
         self.mainFrame().urlChanged.connect(self._url_changes)
-
-        self._link_helper = LinkHelper()
-        self._form_helper = FormHelper()
-
 
     def execute(self, webpage, timeout=5, element_to_click=None, xhr_options=None, pre_clicks=None):
         logging.debug(
@@ -122,8 +118,8 @@ class EventExecutor(InteractionCore):
         self._preclicking_ready = True
         self._wait(0.5)
         self._preclicking_ready = False
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), webpage.url)
-        forms = self._form_helper.extract_forms(self.mainFrame())
+        links, clickables = extract_links(self.mainFrame(), webpage.url)
+        forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
 
         html = self.mainFrame().toHtml()

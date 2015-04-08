@@ -20,5 +20,4 @@ def property_helper(frame):
         for prop in properties:
             if element.hasAttribute(prop):
                 result.append(Clickable(prop, element.tagName(), element_dom_address, element_id, element_class, function_id="None"))
-    logging.debug("{} elemnts with event properties found".format(len(result)))
     return result

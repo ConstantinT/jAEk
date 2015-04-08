@@ -4,8 +4,8 @@ from PyQt5.Qt import QUrl
 
 from core.interactioncore import InteractionCore
 from core.eventexecutor import Event_Result
-from analyzer.helper.formhelper import FormHelper
-from analyzer.helper.linkhelper import LinkHelper
+from analyzer.helper.formhelper import extract_forms
+from analyzer.helper.linkhelper import extract_links
 from models.clickable import Clickable
 from models.utils import CrawlSpeed
 
@@ -19,10 +19,6 @@ class FormHandler(InteractionCore):
     def __init__(self, parent, proxy = "", port = 0, crawl_speed = CrawlSpeed.Medium, network_access_manager = None):
         super(FormHandler, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         #self.mainFrame().urlChanged.connect(self._url_changes)
-        self._link_helper = LinkHelper()
-        self._form_helper = FormHelper()
-
-
 
     def submit_form(self, form, webpage, data=dict(), timeout=5):
         logging.debug("FormHandler on Page: {} started...".format(webpage.url))
@@ -83,7 +79,7 @@ class FormHandler(InteractionCore):
             js_code_snippets = method.split(";")
             for snippet in js_code_snippets:
                 if "return" in snippet or snippet == "":
-                    logging.debug("Ignoreing snippet: {}".format(snippet))
+                    logging.debug("Ignoring snippet: {}".format(snippet))
                     continue
                 logging.debug("Eval: {}".format(snippet+";"))
                 self.mainFrame().evaluateJavaScript(snippet+";")
@@ -97,8 +93,8 @@ class FormHandler(InteractionCore):
             q_submit_button.evaluateJavaScript("Simulate.click(this);")
             self._wait(5)
 
-        links, clickables = self._link_helper.extract_links(self.mainFrame(), url)
-        forms = self._form_helper.extract_forms(self.mainFrame())
+        links, clickables = extract_links(self.mainFrame(), url)
+        forms = extract_forms(self.mainFrame())
         html = self.mainFrame().toHtml()
         f = open("html.txt", "w")
         f.write(html)

@@ -17,11 +17,11 @@ class TimingRequest(AsyncRequests):
         self.time = time
 
     def toString(self):
-        return "[Timeming - Methode: " + str(self.method) + " - Url: "+ str(self.url.toString()) + " - Trigger: " + str(self.event) +" - FunctionID: " + str(self.function_id) + "]"
+        return "[Timing - Method: " + str(self.method) + " - Url: "+ str(self.url.toString()) + " - Trigger: " + str(self.event) + "]"
 
     def get_hash(self):
         s_to_hash = self.url.abstract_url + "+" + self.method
-        s_to_hash += ";" + self.event + ";"
+        s_to_hash += ";" + str(self.event) + ";"
         for k in self.parameters:
             s_to_hash += "++" + k
         b_to_hash = s_to_hash.encode("utf-8")

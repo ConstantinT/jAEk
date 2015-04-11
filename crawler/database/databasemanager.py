@@ -7,7 +7,7 @@ from database.database import Database
 from models.clickabletype import ClickableType
 
 
-class PersistenceManager(object):
+class DatabaseManager(object):
     
     def __init__(self, user):
         self._database = Database(user.username)

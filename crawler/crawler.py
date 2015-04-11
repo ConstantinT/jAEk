@@ -124,34 +124,24 @@ class Crawler(QObject):
                     continue
 
                 response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
-                current_page.current_depth = self.current_depth
                 if self.crawl_with_login and self.cookie_num > 0:
                     num_cookies = count_cookies(self._network_access_manager, url_to_request)
-                    if num_cookies < self.cookie_num * .8:
-                        login_retries = 0
-                        while not self.handle_possible_logout() and login_retries < 3:
-                            login_retries += 1
-                            sleep(2000)
-                        if count_cookies(self._network_access_manager) < self.cookie_num * .8:
-                            raise LoginFailed("Cannot login anymore")
+                    logging.debug("Having {} cookies...".format(num_cookies))
+                    if num_cookies < self.cookie_num:
+                        logging.debug("Too less cookies... possible logout!")
+                        self.handle_possible_logout()
+                        response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                 elif self.crawl_with_login and  response_code != 200:
                     plain_url_to_request = url_to_request.toString()
                     if "redirect" in current_page.url and current_page.url != plain_url_to_request:
-                        login_retries = 0
-                        relogin_successfull = False
-                        while not relogin_successfull and login_retries < 3:
-                            relogin_successfull = self.handle_possible_logout()
-                            login_retries += 1
-                            sleep(2000)
-                        if relogin_successfull:
-                            response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
-                        else:
-                            raise LoginFailed("Cannot login anymore")
+                        self.handle_possible_logout()
+                        response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
-
+                current_page.current_depth = self.current_depth
                 self.domain_handler.complete_urls_in_page(current_page)
                 self.domain_handler.analyze_urls(current_page)
                 self.domain_handler.set_url_depth(current_page, self.current_depth)
+                self.async_request_handler.handle_requests(current_page)
                 self.persistence_manager.store_web_page(current_page)
                 if response_code == 200:
                     self.persistence_manager.visit_url(url_to_request, current_page.id, response_code)
@@ -274,7 +264,7 @@ class Crawler(QObject):
                     clickable.clicked = True
                     clickable.links_to = delta_page.url
                     clickable.clickable_type = ClickableType.Link
-                    new_url = self.domain_handler.handle_url(delta_page.url)
+                    new_url = Url(delta_page.url)
                     self.persistence_manager.insert_url_into_db(new_url)
                     clickables.append(clickable)
                     self.persistence_manager.update_clickable(current_page.id, clickable)
@@ -295,6 +285,7 @@ class Crawler(QObject):
                     delta_page = self.domain_handler.analyze_urls(delta_page)
                     delta_page = self.domain_handler.set_url_depth(delta_page, self.current_depth)
                     delta_page = self.async_request_handler.handle_requests(delta_page)
+
 
                     if self.crawler_state == CrawlState.NormalPage:
                         delta_page = subtract_parent_from_delta_page(current_page, delta_page)
@@ -670,22 +661,23 @@ class Crawler(QObject):
 
     def initial_login(self):
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
+        self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
+        self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
+        #self.domain_handler.set_url_depth(current_page, self.current_depth)
+        self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
         num_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
         self._login_form = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
 
+
         page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data)
-
-        self.page_with_loginform_logged_in = page_with_loginform_logged_in
-        f = open("test1.txt", "w")
-        f.write(self._page_with_loginform_logged_out.toString())
-        f.close()
-
-        f = open("test2.txt", "w")
-        f.write(page_with_loginform_logged_in.toString())
-        f.close()
+        page_with_loginform_logged_in = page_with_loginform_logged_in
+        self.domain_handler.complete_urls_in_page(page_with_loginform_logged_in)
+        self.domain_handler.analyze_urls(page_with_loginform_logged_in)
+        #self.domain_handler.set_url_depth(page_with_loginform_logged_in, self.current_depth)
+        self.async_request_handler.handle_requests(page_with_loginform_logged_in)
         login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_loginform_logged_in) < 0.5
         if login_successfull:
-            num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_loginform)
+            num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
             if num_cookies_after_login > num_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
             return True
@@ -701,25 +693,37 @@ class Crawler(QObject):
         landing_page_logged_in = WebPage(-1, page_with_login_form.url, html_after_timeouts)
         landing_page_logged_in.clickables = new_clickables
         landing_page_logged_in.links = links
-        landing_page_logged_in.timeming_requests = timemimg_requests
+        landing_page_logged_in.timing_requests = timemimg_requests
         landing_page_logged_in.forms = forms
 
         return landing_page_logged_in
 
     def handle_possible_logout(self):
-        page_with_login_form = self._get_webpage(self.user.url_with_login_form)
-        login_form = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
-        if login_form is not None: #So login_form is visible, we are logged out
-            logging.debug("Logout detected, visible login form...")
-            page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data)
-            if calculate_similarity_between_pages(page, page_with_login_form) < 0.5:
-                logging.debug("Relogin successfull...continue")
-                return True
+        retries = 0
+        max_retries = 3
+        while retries < max_retries:
+            page_with_login_form = self._get_webpage(self.user.url_with_login_form)
+            self.domain_handler.complete_urls_in_page(page_with_login_form)
+            self.domain_handler.analyze_urls(page_with_login_form)
+            self.async_request_handler.handle_requests(page_with_login_form)
+            login_form = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
+            if login_form is not None: #So login_form is visible, we are logged out
+                logging.debug("Logout detected, visible login form...")
+                page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data)
+                self.domain_handler.complete_urls_in_page(page)
+                self.domain_handler.analyze_urls(page)
+                self.async_request_handler.handle_requests(page)
+                retries += 1
+                if calculate_similarity_between_pages(page, page_with_login_form) < 0.5:
+                    logging.debug("Relogin successfull...continue")
+                    return
+                else:
+                    logging.debug("Relogin attempt number {} failed".format(retries))
+                    sleep(2000)
             else:
-                logging.debug("Relogin failed...stop")
-                return False
-        else:
-            logging.debug("Login Form is not there... we can continue (I hope)")
+                logging.debug("Login Form is not there... we can continue (I hope)")
+                return
+        raise LoginFailed("We cannot login anymore... stop crawling here")
 
     def _get_webpage(self, url):
         response_code, result = self._dynamic_analyzer.analyze(url, timeout=10)

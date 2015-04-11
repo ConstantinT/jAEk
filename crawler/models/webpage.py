@@ -11,7 +11,7 @@ class WebPage:
         self.url = url
         self.html = html
         self.clickables = []
-        self.timeming_requests = []
+        self.timing_requests = []
         self.links = []
         self.forms = []
         self.current_depth = depth
@@ -33,9 +33,9 @@ class WebPage:
             msg += "Clickable: \n"
             for elem in self.clickables:
                 msg += elem.toString() + " \n"
-        if len(self.timeming_requests) > 0:
+        if len(self.timing_requests) > 0:
             msg += "Timingrequests: \n"
-            for elem in self.timeming_requests:
+            for elem in self.timing_requests:
                 msg += elem.toString() + " \n"
         if len(self.links) > 0: 
             msg += "Static Links: \n"

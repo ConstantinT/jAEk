@@ -24,7 +24,10 @@ class JsBridge(QObject):
     def xmlHTTPRequestSend(self, msg):
         msg = json.loads(msg)
         according_open = self._ajax_request.pop(0)
-        according_open['parameters'] = msg['parameters'][0]
+        try:
+            according_open['parameters'] = msg['parameters'][0]
+        except IndexError:
+            according_open['parameters'] = ""
         self.analyzer.capturing_requests(according_open)
 
     @pyqtSlot(str)

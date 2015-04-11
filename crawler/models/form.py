@@ -12,16 +12,11 @@ class HtmlForm():
         self.parameter = sorted(self.parameter, key=lambda parameter: parameter.name)
         self.action = action
         self.method = method
-        self.form_hash = None
         self.dom_address = dom_address
 
     @property
-    def get_form_hash(self):
-        if self.form_hash is not None:
-            return self.form_hash
-        else:
-            self.form_hash = self.get_hash()
-            return self.form_hash
+    def form_hash(self):
+        return self.get_hash()
 
     def toString(self):
         msg = "[Form: Action: '" + self.action.abstract_url + "' Method:' " + self.method + " - Formhash: " + self.get_hash() + " \n"

@@ -184,7 +184,7 @@ class Database():
         for form in web_page.forms:
             self.insert_form(current_session, form, web_page.id)
         
-        document = self._create_webpage_doc(web_page)
+        document = self._create_webpage_doc(web_page, current_session)
         document['ajax_requests'] = []
         document['session'] = current_session
         self.pages.save(document)
@@ -222,17 +222,16 @@ class Database():
             links.append(self._parse_link_from_db(link))
         result.links = links
         timemimg_requests = []
-        for request in page['timeming_requests']:
+        for request in page['timing_requests']:
             timemimg_requests.append(self.get_asyncrequest_to_id(current_session, request))
-        result.timeming_requests = timemimg_requests
+        result.timing_requests = timemimg_requests
         ajax = []
         for request in page['ajax_requests']:
-            ajax.append(self.self.get_asyncrequest_to_id(current_session, request))
+            ajax.append(self.get_asyncrequest_to_id(current_session, request))
         result.ajax_requests = ajax
         return result
 
     def insert_asyncrequest(self, current_session, ajax_request, web_page_id):
-
         url_doc = {"url": ajax_request.url.complete_url, "abstract_url": ajax_request.url.abstract_url, "url_hash": ajax_request.url.url_hash}
         structure_doc = {}
         structure_doc['request_hash'] = ajax_request.request_hash
@@ -266,8 +265,8 @@ class Database():
             return None
         raw_structure = self.async_request_structure.find_one({"session": current_session, "request_hash": raw_data['request_hash']})
         structure = AsyncRequestStructure(raw_structure['request_hash'], raw_structure['parameters'])
-        url = Url(raw_data['url'])
-        url.abstract_url = raw_data['abstract_url']
+        url = Url(raw_data['url']['url'])
+        url.abstract_url = raw_data['url']['abstract_url']
         if "event" in raw_data:
             tmp = TimingRequest(raw_data['method'], url, None, raw_data['event'], parameters=raw_data['parameters'])
             tmp.request_structure = structure
@@ -311,7 +310,7 @@ class Database():
         for form in delta_page.forms:
             self.insert_form(current_session, form, delta_page.id)
             
-        document = self._create_webpage_doc(delta_page)
+        document = self._create_webpage_doc(delta_page, current_session)
         clickable_id = self.clickables.find_one({"session" : current_session, "web_page_id":delta_page.parent_id, "dom_address":delta_page.generator.dom_address, "event":delta_page.generator.event})
         clickable_id = clickable_id["_id"]
         document['generator'] = clickable_id
@@ -336,7 +335,7 @@ class Database():
         result = self._parse_delta_page_from_db(current_session, page)
         return result
         
-    def _create_webpage_doc(self, web_page):
+    def _create_webpage_doc(self, web_page, current_session):
         document = {}
         document["web_page_id"] = web_page.id
         document["url"] = web_page.url
@@ -345,9 +344,9 @@ class Database():
         for link in web_page.links:
             document["links"].append(self._parse_link_to_db_doc(link))
         timeming_requests_doc = []
-        for timing_request in web_page.timeming_requests:
-            timeming_requests_doc.append(self.insert_asyncrequest(timing_request))
-        document['timeming_requests'] = timeming_requests_doc
+        for timing_request in web_page.timing_requests:
+            timeming_requests_doc.append(self.insert_asyncrequest(current_session, timing_request, web_page.id))
+        document['timing_requests'] = timeming_requests_doc
         document["current_depth"] = web_page.current_depth
         document['base_url'] = web_page.base_url
         return document
@@ -604,10 +603,10 @@ class Database():
 
     def get_asyncrequest_structure(self, current_session, structure_hash= None):
         if structure_hash is not None:
-            raw_data = self.async_request_structure.find_one({"current_session": current_session, "structure_hash": structure_hash})
+            raw_data = self.async_request_structure.find_one({"session": current_session, "request_hash": structure_hash})
             if raw_data is None:
                 return None
-            return AsyncRequestStructure(raw_data['structure_hash'], raw_data['parameters'])
+            return AsyncRequestStructure(raw_data['request_hash'], raw_data['parameters'])
         else:
             return None
             #TODO: Implement if I need all

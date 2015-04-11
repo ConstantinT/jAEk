@@ -25,7 +25,7 @@ class MainAnalyzer(InteractionCore):
         super(MainAnalyzer, self).__init__(parent, proxy, port, crawl_speed, network_access_manager)
         self._loading_complete = False
         self._analyzing_finished = False
-        self._timemimg_requests = []
+        self._timing_requests = []
         self._new_clickables = []
         self._timeming_events = []
         self._current_timeming_event = None
@@ -38,7 +38,7 @@ class MainAnalyzer(InteractionCore):
             url_to_request = url_to_request
 
         logging.debug("Start analyzing of {}...".format(url_to_request))
-        self._timemimg_requests = []
+        self._timing_requests = []
         self._new_clickables = []
         self._timeming_events = []
         self._current_timeming_event = None
@@ -70,8 +70,6 @@ class MainAnalyzer(InteractionCore):
             waiting_time_in_milliseconds = ((waiting_time_in_milliseconds + buffer) / 1000.0)
             if waiting_time_in_milliseconds < 0.0:
                 waiting_time_in_milliseconds = 0
-            logging.debug(
-                "Now waiting for: {} seconds for {}".format(str(waiting_time_in_milliseconds), self._waiting_for))
             self._wait(waiting_time_in_milliseconds)  # Waiting for 100 millisecond before expected event
             overall_waiting_time += waiting_time_in_milliseconds
         if overall_waiting_time < 1:
@@ -80,7 +78,6 @@ class MainAnalyzer(InteractionCore):
         links, clickables = extract_links(self.mainFrame(), url_to_request)
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
-
 
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()
@@ -96,7 +93,7 @@ class MainAnalyzer(InteractionCore):
 
 
         current_page = WebPage(self.parent().get_next_page_id(), response_url, html_after_timeouts)
-        current_page.timeming_requests = self._timemimg_requests
+        current_page.timing_requests = self._timing_requests
         current_page.clickables = self._new_clickables
         current_page.links = links
         current_page.forms = forms
@@ -126,10 +123,10 @@ class MainAnalyzer(InteractionCore):
         try:
             timeming_request = TimingRequest(request['method'], request['url'], self._current_timeming_event["time"],
                                              self._current_timeming_event["event_type"], params)
-            self._timemimg_requests.append(timeming_request)
+            self._timing_requests.append(timeming_request)
         except TypeError:
             timeming_request = TimingRequest(request['method'], request['url'], None, None, params)
-            self._timemimg_requests.append(timeming_request)
+            self._timing_requests.append(timeming_request)
 
     def capture_timeout_call(self, timingevent):
         try:

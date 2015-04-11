@@ -1,4 +1,4 @@
-from database.databasemanager import PersistenceManager
+from database.databasemanager import DatabaseManager
 from models.urlstructure import ParameterType
 from utils.domainhandler import DomainHandler
 from utils.user import User
@@ -11,7 +11,7 @@ import unittest
 class DomainHandlerTest(unittest.TestCase):
 
     def setUp(self):
-        self.persistence_manager = PersistenceManager(User("DummyUser", 0))
+        self.persistence_manager = DatabaseManager(User("DummyUser", 0))
         self.domain_handler = DomainHandler("example.com", self.persistence_manager)
 
     def test_a_parameter_calculation(self):

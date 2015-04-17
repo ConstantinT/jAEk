@@ -9,7 +9,7 @@ from urllib.parse import urljoin
 from PyQt5.Qt import QApplication, QObject
 from PyQt5.QtNetwork import QNetworkAccessManager
 
-from core.eventexecutor import EventExecutor, XHR_Behavior, EventResult
+from core.eventexecutor import EventExecutor, XHRBehavior, EventResult
 from core.formhandler import FormHandler
 from core.clustermanager import ClusterManager
 from models.url import Url
@@ -20,7 +20,6 @@ from models.webpage import WebPage
 from models.clickabletype import ClickableType
 from utils.domainhandler import DomainHandler
 from analyzer.mainanalyzer import MainAnalyzer
-from network.network import NetWorkAccessManager
 from utils.utils import calculate_similarity_between_pages, subtract_parent_from_delta_page, count_cookies
 
 
@@ -226,7 +225,7 @@ class Crawler(QObject):
                     """
                     The clickable was executed in the past, and has triggered an backend request. Know execute it again and let that request pass
                     """
-                    xhr_behavior = XHR_Behavior.ObserveXHR
+                    xhr_behavior = XHRBehavior.ObserveXHR
                     event_state, delta_page = self._event_executor.execute(current_page, element_to_click=clickable,
                                                                            pre_clicks=necessary_clicks,
                                                                            xhr_options=xhr_behavior)
@@ -234,7 +233,7 @@ class Crawler(QObject):
                     """
                     The clickable was never executed, so execute it with intercepting all backend requests.
                     """
-                    xhr_behavior = XHR_Behavior.InterceptXHR
+                    xhr_behavior = XHRBehavior.InterceptXHR
                     event_state, delta_page = self._event_executor.execute(current_page, element_to_click=clickable,
                                                                            pre_clicks=necessary_clicks,
                                                                            xhr_options=xhr_behavior)
@@ -473,7 +472,7 @@ class Crawler(QObject):
     def handle_delta_page_has_only_ajax_requests(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         clickable.clickable_type = ClickableType.SendingAjax
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             self.persistence_manager.extend_ajax_requests_to_webpage(parent_page, delta_page.ajax_requests)
         else:
             return clickable
@@ -496,7 +495,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_and_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                           xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -518,7 +517,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_clickables_and_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                                xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -533,7 +532,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_forms_and_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                           xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -559,7 +558,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_forms_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                             xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -574,7 +573,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_clickables_forms_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                                  xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
@@ -599,7 +598,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_ajax_requests__clickables(self, clickable, delta_page, parent_page=None,
                                                                   xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -614,7 +613,7 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_clickables_forms_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                                        xhr_behavior=None):
-        if xhr_behavior == XHR_Behavior.ObserveXHR:
+        if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
             delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -628,15 +627,26 @@ class Crawler(QObject):
             return clickable
 
 
-    def find_form_with_special_parameters(self, page, login_data):
-        login_form = None
+    def find_form_with_special_parameters(self, page, login_data, interactive_search=True):
         keys = list(login_data.keys())
         data1 = keys[0]
         data2 = keys[1]
         for form in page.forms:
             if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
-                login_form = form
-        return login_form
+                logging.debug("Login form found, without clicking...")
+                return form, None
+        if interactive_search:
+            for clickable in page.clickables:
+                tmp_page = deepcopy(page)
+                event_state, delta_page = self._event_executor.execute(tmp_page, element_to_click=clickable)
+                delta_page = self.domain_handler.complete_urls_in_page(delta_page)
+                delta_page = self.domain_handler.analyze_urls(delta_page)
+                if event_state == EventResult.Ok:
+                    for form in delta_page.forms:
+                        if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
+                            logging.debug("Login form found, after clicking {}".format(clickable.toString()))
+                            return form, clickable
+        return None, None
 
     def convert_action_url_to_absolute(self, form, base):
         form.action = urljoin(base, form.action)
@@ -701,17 +711,19 @@ class Crawler(QObject):
         return True
 
     def initial_login(self):
+        logging.debug("Initial Login...")
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
         self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
         self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
         #self.domain_handler.set_url_depth(current_page, self.current_depth)
         self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
         num_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
-        self._login_form = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
+        #logging.debug(self._page_with_loginform_logged_out.toString())
+        self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
+        if self._login_form is None:
+            raise LoginFailed("Cannot find Login form, please check the parameters...")
 
-
-        page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data)
-        page_with_loginform_logged_in = page_with_loginform_logged_in
+        page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
         self.domain_handler.complete_urls_in_page(page_with_loginform_logged_in)
         self.domain_handler.analyze_urls(page_with_loginform_logged_in)
         #self.domain_handler.set_url_depth(page_with_loginform_logged_in, self.current_depth)
@@ -721,13 +733,19 @@ class Crawler(QObject):
             num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
             if num_cookies_after_login > num_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
+            logging.debug("Initial login successfull!")
             return True
         return False
 
-    def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None):
+    def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None, login_clickable= None):
         if page_with_login_form is None:
             page_with_login_form = self._page_with_loginform_logged_out
         try:
+            if login_clickable is not None:
+                tmp_page = deepcopy(page_with_login_form)
+                event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
+                self.domain_handler.complete_urls_in_page(page_with_login_form)
+                self.domain_handler.analyze_urls(page_with_login_form)
             response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
         except ValueError:
             return None
@@ -747,10 +765,10 @@ class Crawler(QObject):
             self.domain_handler.complete_urls_in_page(page_with_login_form)
             self.domain_handler.analyze_urls(page_with_login_form)
             self.async_request_handler.handle_requests(page_with_login_form)
-            login_form = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
+            login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
             if login_form is not None: #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
-                page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data)
+                page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)
                 self.domain_handler.complete_urls_in_page(page)
                 self.domain_handler.analyze_urls(page)
                 self.async_request_handler.handle_requests(page)

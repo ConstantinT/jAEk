@@ -14,8 +14,8 @@ from analyzer.helper.linkhelper import extract_links
 
 from analyzer.helper.propertyhelper import property_helper
 from models.ajaxrequest import AjaxRequest
-from models.clickable import Clickable
 from models.deltapage import DeltaPage
+from models.enumerations import XHRBehavior
 from models.keyclickable import KeyClickable
 from core.interactioncore import InteractionCore
 from models.utils import CrawlSpeed
@@ -37,7 +37,7 @@ class EventExecutor(InteractionCore):
         self.seen_timeouts = {}
         self.mainFrame().urlChanged.connect(self._url_changes)
 
-    def execute(self, webpage, timeout=5, element_to_click=None, xhr_options=None, pre_clicks=None):
+    def execute(self, webpage, timeout=5, element_to_click=None, xhr_options=XHRBehavior.ObserveXHR, pre_clicks=[]):
         logging.debug(
             "EventExecutor test started on {}...".format(webpage.url) + " with " + element_to_click.toString())
         self._analyzing_finished = False
@@ -64,7 +64,7 @@ class EventExecutor(InteractionCore):
             logging.debug("Timeout occurs while initial page loading...")
             return EventResult.ErrorWhileInitialLoading, None
         # Prepare Page for clicking...
-        self._wait(0.5)
+        self._wait(0.1)
         for click in pre_clicks:
             pre_click_elem = None
             logging.debug("Click on: " + click.toString())
@@ -117,13 +117,16 @@ class EventExecutor(InteractionCore):
 
         self._capturing_ajax = True
         real_clickable.evaluateJavaScript(js_code)
-        #self._wait(0.5)
+        self._wait(0.5)
         self._capturing_ajax = False
         links, clickables = extract_links(self.mainFrame(), webpage.url)
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
 
         html = self.mainFrame().toHtml()
+        f = open("test.txt", "w")
+        f.write(html)
+        f.close()
 
         if is_key_event:
             generator = KeyClickable(element_to_click, random_char)
@@ -164,9 +167,9 @@ class EventExecutor(InteractionCore):
             self.mainFrame().evaluateJavaScript(self._lib_js)
             self.mainFrame().evaluateJavaScript(self._md5)
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
-            if self.xhr_options == XHR_Behavior.ObserveXHR:
+            if self.xhr_options == XHRBehavior.ObserveXHR:
                 self.mainFrame().evaluateJavaScript(self._xhr_observe_js)
-            if self.xhr_options == XHR_Behavior.InterceptXHR:
+            if self.xhr_options == XHRBehavior.InterceptXHR:
                 self.mainFrame().evaluateJavaScript(self._xhr_interception_js)
 
     def createWindow(self, win_type):
@@ -203,6 +206,7 @@ class EventExecutor(InteractionCore):
         self._url_changed = True
         self._new_url = url
 
+
 class EventResult(Enum):
     Ok = 0
     PreviousClickNotFound = 1
@@ -210,9 +214,3 @@ class EventResult(Enum):
     ErrorWhileInitialLoading = 3
     URLChanged = 4
     UnsupportedTag = 5
-
-
-class XHR_Behavior(Enum):
-    IgnoreXHR = 0
-    ObserveXHR = 1
-    InterceptXHR = 2

@@ -17,7 +17,7 @@ class AjaxRequest(AsyncRequests):
 
     def toString(self):
         msg =  "[Ajax - Methode: " + self.method + " - Url: "+ self.url.toString() + " - Trigger: " + self.trigger.toString() + " \n"
-        for param_pair in self.parameters:
+        for param_pair in self.parameters if self.parameters is not None else []:
             msg += " - Parameter pair: " + str(param_pair)
         return msg
 

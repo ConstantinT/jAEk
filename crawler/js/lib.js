@@ -259,6 +259,7 @@ function addEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
+    //console.log("AddEventLIstenerWrapper")
 	dom_adress = getXPath(elem);
 	if (dom_adress.indexOf("/html/body") == -1) {
 		console.log("Domadress is not valid: " + dom_adress)

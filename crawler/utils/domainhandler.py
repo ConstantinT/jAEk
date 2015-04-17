@@ -59,7 +59,6 @@ class DomainHandler():
         return new_url
 
     def calculate_url_structure(self, url):
-        logging.debug("Calculate url-structure for: {}".format(url.complete_url))
         url_structure = self.database_manager.get_url_structure_to_hash(url.url_hash)
         if url_structure is None: # We have not seen a url of that structure
             url_path = url.get_path()

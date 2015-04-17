@@ -43,7 +43,7 @@ class FormHandler(InteractionCore):
         p_forms = self.mainFrame().findAllElements("form")
         for tmp_form in p_forms:
             path = tmp_form.evaluateJavaScript("getXPath(this)")
-            if  path == form.dom_address:
+            if path == form.dom_address:
                 target_form = tmp_form
                 break
         if target_form is None:

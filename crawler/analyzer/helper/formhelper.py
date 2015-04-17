@@ -1,3 +1,4 @@
+import logging
 from models.form import HtmlForm, FormInput
 
 def extract_forms(frame):

@@ -530,7 +530,7 @@ class Database():
         generator = self._parse_clickable_from_db_to_model(generator)
         generator_requests = []
         for g in page['generator_requests']:
-            generator_requests.append(self._parse_ajax_request_from_db_to_model(g))
+            generator_requests.append(self.get_asyncrequest_to_id(current_session, g))
         result = DeltaPage(page['web_page_id'], page['url'], page['html'], None, page['current_depth'], generator, page['parent_id'], page['delta_depth'])
         links = []
         for link in page['links']:

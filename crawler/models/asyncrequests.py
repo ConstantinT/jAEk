@@ -6,10 +6,11 @@ class AsyncRequests():
     def __init__(self, method, url, parameters=None):
         self.method = method
         self.url = url
-        self.parameters = parameters
         self.request_structure = None
         self.structure = None
-        if isinstance(parameters, dict):
+
+        self.parameters = parameters
+        if not isinstance(self.parameters, dict) and self.parameters is not None:
             self.handle_parameters()
 
     def get_hash(self):

@@ -60,6 +60,12 @@ class MainAnalyzer(InteractionCore):
             self._wait(self.wait_for_processing)
             t += self.wait_for_processing
 
+        videos = self.mainFrame().findAllElements("video")
+        if len(videos) > 0:
+            logging.debug("{} videos found... removing them")
+            for video in videos:
+                video.removeFromDocument()
+
         overall_waiting_time = t
         buffer = 250
         while len(self._timeming_events) > 0 and overall_waiting_time < timeout:
@@ -72,8 +78,8 @@ class MainAnalyzer(InteractionCore):
                 waiting_time_in_milliseconds = 0
             self._wait(waiting_time_in_milliseconds)  # Waiting for 100 millisecond before expected event
             overall_waiting_time += waiting_time_in_milliseconds
-        if overall_waiting_time < 1:
-            self._wait((1-overall_waiting_time))
+        if overall_waiting_time < 0.5:
+            self._wait((0.5 - overall_waiting_time))
 
         links, clickables = extract_links(self.mainFrame(), url_to_request)
         forms = extract_forms(self.mainFrame())
@@ -89,8 +95,9 @@ class MainAnalyzer(InteractionCore):
         try:
             response_code = self.response_code[url_to_request]
         except KeyError:
-            pass
-
+            response_code = 200
+        if response_code is None:
+            response_code = 200
 
         current_page = WebPage(self.parent().get_next_page_id(), response_url, html_after_timeouts)
         current_page.timing_requests = self._timing_requests

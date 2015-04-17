@@ -26,10 +26,10 @@ class AsyncRequestHandler():
                     async_request.request_structure = AsyncRequestStructure(request_hash, None)
             else:
                 new_parameters = {}
-                parameters = async_request.parameters
-                for key, value in parameters.items():
-                    param_type = calculate_new_parameter_type(ParameterType(ajax_structure.parameters[key]['parameter_type']), value)
-                    new_parameters[key] = {"parameter_type": param_type.value}
+                if async_request.parameters is not None:
+                    for key, value in async_request.parameters.items():
+                        param_type = calculate_new_parameter_type(ParameterType(ajax_structure.parameters[key]['parameter_type']), value)
+                        new_parameters[key] = {"parameter_type": param_type.value}
                 async_request.request_structure = AsyncRequestStructure(request_hash, new_parameters)
         return web_page
 

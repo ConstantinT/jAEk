@@ -7,6 +7,7 @@ from copy import deepcopy
 from urllib.parse import urljoin
 
 from PyQt5.Qt import QApplication, QObject
+from PyQt5.QtNetwork import QNetworkAccessManager
 
 from core.eventexecutor import EventExecutor, XHR_Behavior, EventResult
 from core.formhandler import FormHandler
@@ -30,13 +31,16 @@ class Crawler(QObject):
     def __init__(self, crawl_config, proxy="", port=0, persistence_manager=None):
         QObject.__init__(self)
         self.app = QApplication(sys.argv)
-        self._network_access_manager = NetWorkAccessManager(self)
+        self._network_access_manager = QNetworkAccessManager(self)
+        #self._network_access_manager = None
         self._event_executor = EventExecutor(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                              network_access_manager=self._network_access_manager)
         self._dynamic_analyzer = MainAnalyzer(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                           network_access_manager=self._network_access_manager)
         self._form_handler = FormHandler(self, proxy, port, crawl_speed=crawl_config.crawl_speed,
                                              network_access_manager=self._network_access_manager)
+
+        #self._network_access_manager = self._dynamic_analyzer.networkAccessManager()
 
         self.domain_handler = None
         self.current_depth = 0
@@ -71,7 +75,7 @@ class Crawler(QObject):
                 raise LoginFailed("Initial login failed...")
 
         logging.debug("Crawl with userId: " + str(self.user.username))
-
+        round_counter = 0
         while True:
             logging.debug("=======================New Round=======================")
             current_page = None
@@ -79,6 +83,24 @@ class Crawler(QObject):
             parent_page = None  # Saves the parent of the delta-page (not other delta pages)
             previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
             delta_page = None
+
+            if round_counter < 10:
+                round_counter += 1
+            else:
+                logging.debug("10 rounds over, renew critical classes...")
+                round_counter = 0
+                self._network_access_manager = None
+                self._event_executor = None
+                self._form_handler = None
+                self._event_executor = None
+                self._network_access_manager = QNetworkAccessManager(self)
+                self._event_executor = EventExecutor(self, self.proxy, self.port, crawl_speed=self.crawl_config.crawl_speed,
+                                             network_access_manager=self._network_access_manager)
+                self._dynamic_analyzer = MainAnalyzer(self, self.proxy, self.port, crawl_speed=self.crawl_config.crawl_speed,
+                                          network_access_manager=self._network_access_manager)
+                self._form_handler = FormHandler(self, self.proxy, self.port, crawl_speed=self.crawl_config.crawl_speed,
+                                             network_access_manager=self._network_access_manager)
+
 
             if len(self.tmp_delta_page_storage) > 0:
                 self.crawler_state = CrawlState.DeltaPage
@@ -164,6 +186,7 @@ class Crawler(QObject):
             login_retries = 0  # Count the login_retries
             max_retries_for_clicking = 5
             max_errors = 3
+            timeout_counter = 0
 
             while len(clickable_to_process) > 0 and login_retries < max_retries_for_clicking:
                 clickable = clickable_to_process.pop(0)
@@ -223,26 +246,43 @@ class Crawler(QObject):
                     self.persistence_manager.update_clickable(current_page.id, clickable)
                     continue
 
-                if event_state == EventResult.TargetElementNotFound or event_state == EventResult.ErrorWhileInitialLoading:
+                if event_state == EventResult.TargetElementNotFound:
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.Error
                     clickables.append(clickable)
                     self.persistence_manager.update_clickable(current_page.id, clickable)
                     continue
 
-                if event_state == EventResult.PreviousClickNotFound:
-                    errors += 1
+                if event_state == EventResult.ErrorWhileInitialLoading:
+                    if timeout_counter < 10:
+                        clickable.clicked = True
+                        clickable.clickable_type = ClickableType.Error
+                        clickables.append(clickable)
+                        self.persistence_manager.update_clickable(current_page.id, clickable)
+                        timeout_counter += 1
+                        continue
+                    else:
+                        timeout_counter = 0
+                        logging.debug("Too many loading errors... mark all clickables as error and continue")
+                        while len(clickable_to_process) > 0:
+                            clickable = clickable_to_process.pop(0)
+                            clickable.clicked = True
+                            clickable.clickable_type = ClickableType.Error
+                            clickables.append(clickable)
+                            self.persistence_manager.update_clickable(current_page.id, clickable)
+                        break
+
+                #Event execution error handling...
+                if event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
                     clickable.clicked = False
-                    error_ratio = errors / len(current_page.clickables)
-                    if error_ratio > .2 and self.crawl_with_login:
-                        go_on = self.handle_possible_logout()
-                        if not go_on:
-                            continue
-                        else:
-                            login_retries += 1
+                    if self.crawl_with_login:
+                        errors += 1
+                        error_ratio = errors / len(current_page.clickables)
+                        if error_ratio > .2:
+                            self.handle_possible_logout()
                             errors = 0
-                            clickable_to_process.append(clickable)
-                            continue
+                        clickable_to_process.append(0, clickable)
+                        continue
                     else:
                         if errors < max_errors:
                             clickable_to_process.insert(0, clickable)
@@ -250,6 +290,7 @@ class Crawler(QObject):
                             continue
                         else:
                             errors = 0
+                            clickable.clickable_type = ClickableType.Error
                             self.persistence_manager.update_clickable(current_page.id, clickable)
                             clickables.append(clickable)
                             continue

@@ -28,7 +28,7 @@ def _extracting_information(elem):
                 if input_el.hasAttribute("value"):
                     value = [input_el.attribute("value")]
                 else:
-                    value = None
+                    value = [""]
                 result.append(FormInput(tag_name, name, input_type, value))
             else: # input is radiobutton
                 name = input_el.attribute("name")

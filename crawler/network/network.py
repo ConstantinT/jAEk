@@ -12,11 +12,9 @@ class NetWorkAccessManager(QNetworkAccessManager):
         cache.setCacheDirectory(cache_dir)
         cache.setMaximumCacheSize(cache_size * 1024 * 1024) # need to convert cache value to bytes
         self.setCache(cache)
-        self.reply = None
         
     def _finished(self, reply):
-        #logging.debug("NetworkAccessManager: Reply from {} {}".format(reply.url().toString(), reply.isFinished()))
-        #self.reply.deleteLater()
+        reply.deleteLater()
         pass
 
         
@@ -36,7 +34,9 @@ class NetWorkAccessManager(QNetworkAccessManager):
         else:
             logging.debug("NetworkAccessManager: Request created - Operation: {}, Url: {}".format("CUSTOM",req.url().toString()))
         """
-        self.reply = QNetworkAccessManager.createRequest(self, op, req, device)
+        reply = QNetworkAccessManager.createRequest(self, op, req, device)
         #reply = NetworkReply(self, reply)
-        return self.reply
+        return reply
 
+    def __del__(self):
+        self = None

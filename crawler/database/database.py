@@ -95,16 +95,16 @@ class Database():
             if self.urls.find({"url":url.toString(), "session":current_session}).count() > 0 and self.urls.find({"redirected_to":url.toString(), "session":current_session}).count() > 0:
                 return
 
-        document = self._url_to_doc(url)
+        document = self._url_to_doc_without_abstract_url(url)
         document['session'] = current_session
         document["url_counter"] = self._per_session_url_counter
         self._per_session_url_counter += 1
         self.urls.save(document)
 
-    def _url_to_doc(self, url):
+    def _url_to_doc_without_abstract_url(self, url):
         doc = {}
         doc["url"] = url.complete_url
-        doc["abstract_url"] = url.abstract_url
+        #doc["abstract_url"] = url.abstract_url
         doc["url_hash"] = url.url_hash
         doc["page_id"] = None
         doc["visited"] = False
@@ -126,12 +126,16 @@ class Database():
         raw_data = self.urls.find({"session": current_session, "visited": False})
         result = {}
         for url in raw_data:
-            tmp = self._parse_url_from_db(url)
+            tmp = self._parse_url_from_db_withou_abstract_url(url)
             tmp.url_structure = self.get_url_structure_from_db(current_session, tmp.url_hash)
             if tmp.url_hash in result:
                 result[tmp.url_hash].append(tmp)
             else:
                 result[tmp.url_hash] = [tmp]
+        return result
+
+    def _parse_url_from_db_withou_abstract_url(self, url):
+        result = Url(url['url'], url['depth_of_finding'])
         return result
 
     def _parse_url_from_db(self, url):
@@ -256,6 +260,9 @@ class Database():
                 doc['event'] = ajax_request.event
             except AttributeError:
                 logging.debug("This should never happen...")
+        except TypeError:
+            find_string = "session: "+ str(current_session) + " - dom_address: " + str(ajax_request.trigger.dom_address) + " - web_page_id: "+ str(web_page_id) + " - event: "+ (ajax_request.trigger.event)
+            logging.debug("Try to find: {}".format(find_string))
         doc['parameters'] = ajax_request.parameters
         return self.async_requests.save(doc)
 
@@ -311,19 +318,19 @@ class Database():
             self.insert_form(current_session, form, delta_page.id)
             
         document = self._create_webpage_doc(delta_page, current_session)
-        clickable_id = self.clickables.find_one({"session" : current_session, "web_page_id":delta_page.parent_id, "dom_address":delta_page.generator.dom_address, "event":delta_page.generator.event})
+        clickable_id = self.clickables.find_one({"session" : current_session, "web_page_id": delta_page.parent_id, "dom_address":delta_page.generator.dom_address, "event":delta_page.generator.event})
         clickable_id = clickable_id["_id"]
         document['generator'] = clickable_id
         generator_request_doc = []
         for r in delta_page.generator_requests:
-            generator_request_doc.append(self.insert_asyncrequest(current_session, r))
+            generator_request_doc.append(self.insert_asyncrequest(current_session, r, delta_page.parent_id))
         document["generator_requests"] = generator_request_doc
         
         document['delta_depth'] = delta_page.delta_depth
         document['parent_id'] = delta_page.parent_id
         ajax_request_docs = []
         for ajax in delta_page.ajax_requests:
-            ajax_request_docs.append(self.insert_asyncrequest(current_session, ajax))
+            ajax_request_docs.append(self.insert_asyncrequest(current_session, ajax, delta_page.id))
         document["ajax_requests"] = ajax_request_docs
         document['session'] = current_session
         self.delta_pages.save(document)

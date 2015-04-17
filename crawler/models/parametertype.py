@@ -19,3 +19,4 @@ class ParameterType(Enum):
     Integer = 3
     String = 4
     AlphaNumerical = 5
+    NoParameter = 6

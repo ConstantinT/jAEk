@@ -3,13 +3,16 @@ Created on 23.02.2015
 
 @author: constantin
 '''
+import logging
 import string
 from urllib.parse import urlparse, urljoin
+
 from models.url import Url
 from models.urlstructure import ParameterType, ParameterOrigin, UrlStructure
 
 
 class DomainHandler():
+
     def __init__(self, domain, database_manager):
         o = urlparse(domain)
         self.domain = o.netloc
@@ -56,6 +59,7 @@ class DomainHandler():
         return new_url
 
     def calculate_url_structure(self, url):
+        logging.debug("Calculate url-structure for: {}".format(url.complete_url))
         url_structure = self.database_manager.get_url_structure_to_hash(url.url_hash)
         if url_structure is None: # We have not seen a url of that structure
             url_path = url.get_path()
@@ -65,18 +69,26 @@ class DomainHandler():
                 current_parameter_type = None
                 new_parameter['origin'] = ParameterOrigin.ServerGenerated.value
                 for value in url.parameters[key]: #This is for the case that a url has the same parameters multiple times
-                    current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                new_parameter['parameter_type'] = current_parameter_type.value
-                new_parameter['generating'] = False
-                url_description_parameters[key] = new_parameter
+                    if value is not None:
+                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                    else:
+                        current_parameter_type = ParameterType.NoParameter
+                if current_parameter_type is not None:
+                    new_parameter['parameter_type'] = current_parameter_type.value
+                    new_parameter['generating'] = False
+                    url_description_parameters[key] = new_parameter
             url_structure = UrlStructure(url_path, url_description_parameters, url.url_hash)
             self.database_manager.insert_url_structure_into_db(url_structure)
         else:
             for key in url.parameters:
-                current_parameter_type = ParameterType(url_structure.parameters[key]["parameter_type"])
+                try:
+                    current_parameter_type = ParameterType(url_structure.parameters[key]["parameter_type"])
+                except KeyError:
+                    logging.debug("Could not find parameter {} in url-structure with hash: {}".format(key, url_structure.url_hash))
                 for value in url.parameters[key]: #This is for the case that a url has the same parameters multiple times
-                    current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
-                url_structure.parameters[key]["parameter_type"] = current_parameter_type.value
+                    if value is not None:
+                        current_parameter_type = self.calculate_new_url_type(current_parameter_type, value)
+                        url_structure.parameters[key]["parameter_type"] = current_parameter_type.value
             self.database_manager.insert_url_structure_into_db(url_structure)
         return url_structure
 

@@ -1,12 +1,9 @@
 import itertools
 import logging
 from copy import deepcopy
-import matplotlib.pyplot as plt
-import networkx
 from models.url import Url
 from utils.utils import calculate_similarity_between_pages
-from sklearn.neighbors import NearestNeighbors
-from sklearn.neighbors import DistanceMetric
+
 
 __author__ = 'constantin'
 

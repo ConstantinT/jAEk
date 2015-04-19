@@ -38,14 +38,3 @@ class AjaxRequest(AsyncRequests):
     def __neg__(self):
         return not  self.__eq__()
 
-    def get_hash(self):
-        s_to_hash = self.url.abstract_url + "+" + self.method
-        try:
-            for k in [x[0] for x in self.parameters]:
-                s_to_hash += "++" + k
-        except TypeError:
-            pass
-        b_to_hash = s_to_hash.encode("utf-8")
-        d = hashlib.md5()
-        d.update(b_to_hash)
-        return d.hexdigest()

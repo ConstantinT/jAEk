@@ -1,6 +1,6 @@
 __author__ = 'constantin'
 
-
+import hashlib
 class AsyncRequests():
 
     def __init__(self, method, url, parameters=None):
@@ -12,9 +12,6 @@ class AsyncRequests():
         self.parameters = parameters
         if not isinstance(self.parameters, dict) and self.parameters is not None:
             self.handle_parameters()
-
-    def get_hash(self):
-        raise NotImplemented()
 
     @property
     def request_hash(self):
@@ -40,3 +37,15 @@ class AsyncRequests():
                 self.parameters[key] = val
         except AttributeError:
             self.parameters = None
+
+    def get_hash(self):
+        s_to_hash = self.url.abstract_url + "+" + self.method
+        try:
+            for k in [x[0] for x in self.parameters]:
+                s_to_hash += "++" + k
+        except TypeError:
+            pass
+        b_to_hash = s_to_hash.encode("utf-8")
+        d = hashlib.md5()
+        d.update(b_to_hash)
+        return d.hexdigest()

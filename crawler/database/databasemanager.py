@@ -9,8 +9,8 @@ from models.clickabletype import ClickableType
 
 class DatabaseManager(object):
     
-    def __init__(self, user):
-        self._database = Database(user.username)
+    def __init__(self, user, dropping=True):
+        self._database = Database(user.username, dropping)
         self._database.insert_user_into_db(user)
         self._web_page_cache = []
         self._deltapage_cache = []

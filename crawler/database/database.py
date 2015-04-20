@@ -22,7 +22,7 @@ DOM_ADDRESS = "dom_address"
 
 class Database():
     
-    def __init__(self, db_name, drop_dbs = True):
+    def __init__(self, db_name, drop_dbs=True):
         self.connection=Connection()
         self.database = self.connection[db_name]
         self.pages = self.database.pages
@@ -137,12 +137,12 @@ class Database():
     def _parse_url_from_db_withou_abstract_url(self, url):
         result = Url(url['url'], url['depth_of_finding'])
         return result
-
+    """
     def _parse_url_from_db(self, url):
         result = Url(url['url'], url['depth_of_finding'])
         result.abstract_url = url["abstract_url"]
         return result
-
+    """
     def get_urls_from_db_to_hash(self, current_session, url_hash):
         urls = self.urls.find({"session": current_session, "url_hash": url_hash})
         result = []
@@ -598,7 +598,7 @@ class Database():
         seen_structures = []
         for url in raw_data:
             if url["response_code"] == 200:
-                tmp = self._parse_url_from_db(url)
+                tmp = self._parse_url_from_db_withou_abstract_url(url)
                 if tmp.url_hash not in seen_structures:
                     result.append(tmp)
                     seen_structures.append(tmp.url_hash)

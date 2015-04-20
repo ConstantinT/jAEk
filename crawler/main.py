@@ -7,8 +7,6 @@ import logging
 
 from attacker import Attacker
 from crawler import Crawler
-from database.database import Database
-from database.databaselegacy import DatabaseLegacy
 from database.databasemanager import DatabaseManager
 from utils.config import CrawlConfig, AttackConfig
 from models.utils import CrawlSpeed
@@ -40,15 +38,15 @@ if __name__ == '__main__':
 
     crawler_config = CrawlConfig("Was weiß ich", url, max_depth=5,
 max_click_depth=3, crawl_speed=CrawlSpeed.Fast)
-    attack_config = AttackConfig()
+    attack_config = AttackConfig(url)
 
-    persistence_manager = DatabaseManager(user)
-    crawler = Crawler(crawl_config=crawler_config, persistence_manager=persistence_manager)#, proxy="localhost", port=8081)
-    crawler.crawl(user)
+    database_manager = DatabaseManager(user, dropping=False)
+    #crawler = Crawler(crawl_config=crawler_config, database_manager=database_manager)#, proxy="localhost", port=8081)
+    #crawler.crawl(user)
     # TODO: It seems to be that, there is an error if we instanciate crawler and attacker and then call the crawl function. Maybe use one global app!
 
-    #attacker = Attacker(attack_config, database_manager=database_manager)
-    #attacker.attack(user)
+    attacker = Attacker(attack_config, database_manager=database_manager)
+    attacker.attack(user)
 
     logging.info("Crawler finished")
 

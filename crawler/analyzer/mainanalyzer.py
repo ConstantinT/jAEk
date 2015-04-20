@@ -98,8 +98,10 @@ class MainAnalyzer(InteractionCore):
             response_code = 200
         if response_code is None:
             response_code = 200
-
-        current_page = WebPage(self.parent().get_next_page_id(), response_url, html_after_timeouts)
+        try:
+            current_page = WebPage(self.parent().get_next_page_id(), response_url, html_after_timeouts)
+        except AttributeError: #Attacker don't need this function...
+            current_page = WebPage(42, response_url, html_after_timeouts)
         current_page.timing_requests = self._timing_requests
         current_page.clickables = self._new_clickables
         current_page.links = links

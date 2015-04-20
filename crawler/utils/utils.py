@@ -260,3 +260,8 @@ def _handle_string(value):
         return ParameterType.AlphaNumerical
     else:
         return ParameterType.String
+
+def print_to_file(self, item, filename):
+    f = open("result/"+filename, "w")
+    f.write(item)
+    f.close()

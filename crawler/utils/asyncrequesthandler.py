@@ -1,3 +1,4 @@
+import logging
 from models.asyncrequeststructure import AsyncRequestStructure
 from models.parametertype import ParameterType
 from utils.utils import calculate_new_parameter_type
@@ -27,10 +28,13 @@ class AsyncRequestHandler():
             else:
                 new_parameters = {}
                 if async_request.parameters is not None:
-                    for key, value in async_request.parameters.items():
-                        param_type = calculate_new_parameter_type(ParameterType(ajax_structure.parameters[key]['parameter_type']), value)
-                        new_parameters[key] = {"parameter_type": param_type.value}
-                async_request.request_structure = AsyncRequestStructure(request_hash, new_parameters)
+                   try:
+                        for key, value in async_request.parameters.items():
+                            param_type = calculate_new_parameter_type(ParameterType(ajax_structure.parameters[key]['parameter_type']), value)
+                            new_parameters[key] = {"parameter_type": param_type.value}
+                        async_request.request_structure = AsyncRequestStructure(request_hash, new_parameters)
+                   except AttributeError:
+                       logging.error("AttributeError with request: {}, Key: {}, Value: {}".format(request_hash, key, value))
         return web_page
 
 

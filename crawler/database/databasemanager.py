@@ -136,3 +136,9 @@ class DatabaseManager(object):
 
     def get_asyncrequest_structure(self, structure_hash=None):
         return self._database.get_asyncrequest_structure(self._current_session, structure_hash)
+
+    def get_all_get_forms(self):
+        return self._database.get_all_get_forms(self._current_session)
+
+    def get_one_form_per_destination(self):
+        return self._database.get_one_form_per_destination(self._current_session)

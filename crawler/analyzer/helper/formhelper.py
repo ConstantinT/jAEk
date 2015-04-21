@@ -6,10 +6,10 @@ def extract_forms(frame):
     forms = frame.findAllElements("form")
     for form in forms:
         action = form.attribute("action")
-        method = form.attribute("method")
-        dom_adress = form.evaluateJavaScript("getXPath(this)")
+        method = form.attribute("method") if form.attribute("method") == "post" else "get"
+        dom_address = form.evaluateJavaScript("getXPath(this)")
         form_params = _extracting_information(form)
-        result.append(HtmlForm(form_params, action, method, dom_adress))
+        result.append(HtmlForm(form_params, action, method, dom_address))
     return result
 
 def _extracting_information(elem):
@@ -22,14 +22,14 @@ def _extracting_information(elem):
         if input_el.hasAttribute("type"):
             input_type = input_el.attribute("type")
             if input_type != "radio": #no radio button
-                if input_el.hasAttribute("name"):
+                if input_el.hasAttribute("name") or input_type == "submit":
                     name = input_el.attribute("name")
                 else:
-                    name = ""
+                    continue #A input-element without name has no impact, why waste memory? Ok jaek you are alright, if it is a submit element we need it...
                 if input_el.hasAttribute("value"):
                     value = [input_el.attribute("value")]
                 else:
-                    value = [""]
+                    value = [None]
                 result.append(FormInput(tag_name, name, input_type, value))
             else: # input is radiobutton
                 name = input_el.attribute("name")

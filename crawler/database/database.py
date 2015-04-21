@@ -503,18 +503,20 @@ class Database():
         return result
     
     def get_all_forms_to_page_id_from_db(self, current_session, page_id):
-        forms = self.forms.find({"web_page_id" : page_id, "session" : current_session})
+        forms = self.forms.find({"web_page_id" : page_id, "session": current_session})
         result = []
         for form in forms:
-            parameters = []
-            for p in form['parameters']:
-                form_input = FormInput(p['tag'], p['name'], p['input_type'], p['values'])
-                parameters.append(form_input)
-            action = Url(form['action']["url"])
-            action.abstract_url = form['action']["abstract_url"]
-            f = HtmlForm(parameters, action, form['method'], form["dom_address"])
-            result.append(f)
+            result.append(self._parse_form_from_db(form))
         return result
+
+    def _parse_form_from_db(self, form):
+        parameters = []
+        for p in form['parameters']:
+            form_input = FormInput(p['tag'], p['name'], p['input_type'], p['values'])
+            parameters.append(form_input)
+        action = Url(form['action']["url"])
+        action.abstract_url = form['action']["abstract_url"]
+        return HtmlForm(parameters, action, form['method'], form["dom_address"])
     
     def get_all_crawled_deltapages_to_url_from_db(self, current_session, url):
         pages = self.delta_pages.find({"url":url, "session":current_session})
@@ -567,7 +569,7 @@ class Database():
         return self.urls.find({"url": search_url, "session":current_session}).count() > 0
 
     def write_cluster(self, current_session, url_hash, clusters):
-        self.clusters.remove( {"session": current_session, "url_hash": url_hash})
+        self.clusters.remove({"session": current_session, "url_hash": url_hash})
         self.clusters.save({"session": current_session, "url_hash": url_hash, "clusters": clusters})
 
     def get_clusters(self, current_session, url_hash):
@@ -617,4 +619,41 @@ class Database():
         else:
             return None
             #TODO: Implement if I need all
+
+    def get_all_get_forms(self, current_session):
+        raw_data = self.forms.find({"session": current_session, "method": "get"})
+        result = []
+        for form in raw_data:
+            tmp = self._parse_form_from_db(form)
+            if tmp not in result:
+                result.append(tmp)
+        return result
+
+    def _exclude_dupplicates_forms(self, forms):
+        result = []
+        for form in forms:
+            already_in = False
+            for res in result:
+                if self._form_paramters_equal(form.parameter, res.parameter ) and form.action.complete_url == res.action.complete_url:
+                    already_in = True
+                    break
+            if not already_in:
+                result.append(form)
+        return result
+
+    def get_one_form_per_destination(self, current_session):
+        all_forms = self.get_all_get_forms(current_session)
+        all_forms = self._exclude_dupplicates_forms(all_forms)
+        return all_forms
+
+    def _form_paramters_equal(self, p1, p2):
+        for param in p1:
+            is_in = False
+            for param2 in p2:
+                if param.input_type == param2.input_type and param.name == param2.name and param.tag == param2.tag:
+                    is_in = True
+                    break
+            if not is_in:
+                return False
+        return True
 

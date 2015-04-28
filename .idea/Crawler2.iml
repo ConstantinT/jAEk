@@ -8,7 +8,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="W3afLogAnalyzer" />
     <orderEntry type="module" module-name="BenchmarkProject" />
-    <orderEntry type="module" module-name="w3af-master" />
     <orderEntry type="module" module-name="Graphy" />
+    <orderEntry type="module" module-name="CrawlerDBAnalyzer" />
   </component>
 </module>

@@ -1,3 +1,4 @@
+from asyncio.tasks import sleep
 import logging
 import sys
 
@@ -56,6 +57,12 @@ class Attacker(Jaek):
                         attack_url = attack_url[:-1] # Removing the last "&
                         logging.debug("Attack with: {}".format(attack_url))
                         result, response_code = self._xss.attack(attack_url, random_val)
+                        if not self.check_login_status():
+                            sleep(2000)
+                            self.initial_login()
+                            result, response_code = self._xss.attack(attack_url, random_val)
+                        if response_code > 400 or result == AttackResult.JSON:
+                            empty_counter = 42
                         logging.debug("Result: {} - Response Code: {}" .format(result, response_code))
                         if result in (AttackResult.AttackSuccessfull, AttackResult.AttackFailed):
                             self.database_manager.insert_attack_result(result, attack_url)
@@ -80,17 +87,26 @@ class Attacker(Jaek):
                         else:
                             if other_parameter.input_type == "submit":
                                 continue
-                            attack_url += other_parameter.name + "=" + other_parameter.values[0] + "&"
-                        attack_url = attack_url[:-1]
-                        logging.debug("Attack with: {}".format(attack_url))
+                            if other_parameter.values[0] is not None:
+                                attack_url += other_parameter.name + "=" + other_parameter.values[0] + "&"
+                            else:
+                                attack_url += other_parameter.name + "=" + self._xss_vector.random_string_generator(6) + "&"
+                    attack_url = attack_url[:-1]
+                    logging.debug("Attack with: {}".format(attack_url))
+                    result, response_code = self._xss.attack(attack_url, random_val)
+                    if not self.check_login_status():
+                        sleep(2000)
+                        self.initial_login()
                         result, response_code = self._xss.attack(attack_url, random_val)
-                        logging.debug("Result: {} - Response Code: {}" .format(result, response_code))
-                        if result in (AttackResult.AttackSuccessfull, AttackResult.AttackFailed):
-                            self.database_manager.insert_attack_result(result, attack_url)
-                        else:
-                            empty_counter += 1
-                        if empty_counter > EMPTY_LIMIT:
-                            break
+                    if response_code > 400 or result == AttackResult.JSON:
+                        empty_counter = 42
+                    logging.debug("Result: {} - Response Code: {}" .format(result, response_code))
+                    if result in (AttackResult.AttackSuccessfull, AttackResult.AttackFailed):
+                        self.database_manager.insert_attack_result(result, attack_url)
+                    else:
+                        empty_counter += 1
+                    if empty_counter > EMPTY_LIMIT:
+                        break
 
 
 

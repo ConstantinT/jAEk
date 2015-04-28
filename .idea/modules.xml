@@ -4,9 +4,9 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/../BenchmarkProject/.idea/BenchmarkProject.iml" filepath="$PROJECT_DIR$/../BenchmarkProject/.idea/BenchmarkProject.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Crawler2.iml" filepath="$PROJECT_DIR$/.idea/Crawler2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../CrawlerDBAnalyzer/.idea/CrawlerDBAnalyzer.iml" filepath="$PROJECT_DIR$/../CrawlerDBAnalyzer/.idea/CrawlerDBAnalyzer.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Graphy/.idea/Graphy.iml" filepath="$PROJECT_DIR$/../Graphy/.idea/Graphy.iml" />
       <module fileurl="file://$PROJECT_DIR$/../W3afLogAnalyzer/.idea/W3afLogAnalyzer.iml" filepath="$PROJECT_DIR$/../W3afLogAnalyzer/.idea/W3afLogAnalyzer.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../w3af-master/.idea/w3af-master.iml" filepath="$PROJECT_DIR$/../w3af-master/.idea/w3af-master.iml" />
     </modules>
   </component>
 </project>

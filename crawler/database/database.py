@@ -261,7 +261,7 @@ class Database():
             except AttributeError:
                 logging.debug("This should never happen...")
         except TypeError:
-            find_string = "session: "+ str(current_session) + " - dom_address: " + str(ajax_request.trigger.dom_address) + " - web_page_id: "+ str(web_page_id) + " - event: "+ (ajax_request.trigger.event)
+            find_string = "session: " + str(current_session) + " - dom_address: " + str(ajax_request.trigger.dom_address) + " - web_page_id: " + str(web_page_id) + " - event: "+ (ajax_request.trigger.event)
             logging.debug("Try to find: {}".format(find_string))
         doc['parameters'] = ajax_request.parameters
         return self.async_requests.save(doc)
@@ -634,7 +634,7 @@ class Database():
         for form in forms:
             already_in = False
             for res in result:
-                if self._form_paramters_equal(form.parameter, res.parameter ) and form.action.complete_url == res.action.complete_url:
+                if self._form_paramters_equal(form.parameter, res.parameter) and form.action.complete_url == res.action.complete_url:
                     already_in = True
                     break
             if not already_in:

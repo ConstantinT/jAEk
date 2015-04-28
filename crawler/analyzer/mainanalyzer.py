@@ -84,6 +84,8 @@ class MainAnalyzer(InteractionCore):
         links, clickables = extract_links(self.mainFrame(), url_to_request)
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
+        self.mainFrame().evaluateJavaScript(self._property_obs_js)
+        self._wait(0.1)
 
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()

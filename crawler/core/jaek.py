@@ -138,3 +138,10 @@ class Jaek(QObject):
     def _get_webpage(self, url):
         response_code, result = self._dynamic_analyzer.analyze(url, timeout=10)
         return result
+
+    def check_login_status(self):
+        #logging.debug("We have {} from {} cookies".format(count_cookies(self._network_access_manager, self.user.url_with_login_form), self.cookie_num))
+        if self.cookie_num > 0:
+            current_cookie_num = count_cookies(self._network_access_manager, self.user.url_with_login_form)
+            return current_cookie_num >= self.cookie_num
+        return True

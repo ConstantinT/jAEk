@@ -65,6 +65,10 @@ class InteractionCore(QWebPage):
         self._md5 = f.read()
         f.close()
 
+        f = open("js/property_obs.js")
+        self._property_obs_js = f.read()
+        f.close()
+
         enablePlugins = False
         loadImages = False
         self.settings().setAttribute(QWebSettings.PluginsEnabled, enablePlugins)
@@ -194,13 +198,13 @@ class InteractionCore(QWebPage):
                     tmp_element = current_element_in_dom.findFirst(target_tag_name) # takes first child
                     if tmp_element.tagName() == target_tag_name: # if firstchild is from type of target_tag_name, subtrakt 1 from index
                         index -= 1;
-                    counter = 100 #Sometimes comparing with last child went wrong, therefore we have an backup counter
+                    counter = 100 #Sometimes comparing with last child went wrong, therefore we have an backup fragment_counter
                     while index > 0 and tmp_element != last_child: # take next sibbling until index is 0, if target_tag_name is equal subtrakt one
                         tmp_element = tmp_element.nextSibling() #
                         if tmp_element.tagName() == target_tag_name:
                             index -= 1
                         counter -= 1
-                        if counter == 0: #If counter 0 then break, we wont find it anymore
+                        if counter == 0: #If fragment_counter 0 then break, we wont find it anymore
                             current_element_in_dom = None
                             break
                     if index == 0 and tmp_element.tagName() == target_tag_name:

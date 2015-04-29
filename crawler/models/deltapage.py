@@ -13,7 +13,6 @@ class DeltaPage(WebPage):
         self.generator = generator
         self.generator_requests = []
         self.parent_id = parent_id
-        self.ajax_requests = []
         self.delta_depth = delta_depth
         
     def toString(self):
@@ -23,12 +22,6 @@ class DeltaPage(WebPage):
             msg += "Generator AsyncRequests: \n"
             for r in self.generator_requests:
                 msg += " - " + r.toString() + " \n"
-        if self.cookiejar is not None:
-            c = dict_from_cookiejar(self.cookiejar)
-            if len(c) > 0:
-                msg += "Cookies: \n"
-                for k in c: 
-                    msg += str(k) + " - " + str(c[k]) + " \n" 
         if len(self.clickables) > 0: 
             msg += "Clickable: \n"
             for elem in self.clickables:

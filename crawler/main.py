@@ -17,8 +17,8 @@ from utils.utils import calculate_similarity_between_pages
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s: %(levelname)s - %(message)s',
                     datefmt='%d.%m.%Y %H:%M:%S',
-                    #filename='Crawler.log',
-                    #filemode='w'
+                    filename='Crawler.log',
+                    filemode='w'
                     )
 
 if __name__ == '__main__':

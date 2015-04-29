@@ -129,6 +129,9 @@ class ClusterManager():
     def num_of_visited_urls(self, url_hash):
         return self._persistence_manager.count_visited_url_per_hash(url_hash)
 
+    def need_more_urls_of_this_type(self, url_hash):
+        return self.calculate_cluster_per_visited_urls(url_hash) > CLUSTER_THRESHOLD
+
 
 
 

@@ -24,11 +24,6 @@ class WebPage:
         except AttributeError:
             url = self.url
         msg = "[ Page: " + url + " - ID: " + str(self.id) + " - Depth:" + str(self.current_depth) + " \n"
-        if self.cookiejar is not None:
-            msg += "Cookies: \n"
-            c = dict_from_cookiejar(self.cookiejar)
-            for k in c: 
-                msg += str(k) + " - " + str(c[k]) + " \n" 
         if len(self.clickables) > 0: 
             msg += "Clickable: \n"
             for elem in self.clickables:

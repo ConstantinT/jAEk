@@ -123,6 +123,10 @@ class Database():
             return url
 
     def get_all_unvisited_urls_sorted_by_hash(self, current_session):
+        """
+
+        @:returns dict(url_hash) = list(urls)
+        """
         raw_data = self.urls.find({"session": current_session, "visited": False})
         result = {}
         for url in raw_data:
@@ -656,4 +660,7 @@ class Database():
             if not is_in:
                 return False
         return True
+
+    def num_of_ignored_urls(self, current_session, url_hash):
+        return self.urls.find({"url_hash": url_hash, "session": current_session, "response_code": 0}).count()
 

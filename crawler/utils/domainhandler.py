@@ -13,11 +13,12 @@ from models.urlstructure import ParameterType, ParameterOrigin, UrlStructure
 
 class DomainHandler():
 
-    def __init__(self, domain, database_manager):
+    def __init__(self, domain, database_manager, cluster_manager):
         o = urlparse(domain)
         self.domain = o.netloc
         self.scheme = o.scheme
         self.database_manager = database_manager
+        self.cluster_manager = cluster_manager
         
     def get_next_url_for_crawling(self):
         url = self.database_manager.get_next_url_for_crawling()
@@ -130,7 +131,8 @@ class DomainHandler():
     def append_http_to_domain(domain):
         return "http://" + domain
 
-    def has_urls_same_structure(self, url1, url2):
+    @staticmethod
+    def has_urls_same_structure(url1, url2):
         if url1.__class__ != url2.__class__:
             raise ValueError("Both must be Url...")
 
@@ -198,14 +200,20 @@ class DomainHandler():
 
     def extract_new_links_for_crawling(self, page):
         for link in page.links:
-            self.database_manager.insert_url_into_db(link.url)
-        if page.ajax_requests is not None:
-            for ajax in page.ajax_requests:
+            if self.cluster_manager.need_more_urls_of_this_type(link.url.url_hash) \
+                    and self.database_manager.num_of_ignored_urls(link.url.url_hash) < 10 \
+                    and self.database_manager.count_visited_url_per_hash(link.url.url_hash) < 50:
+                self.database_manager.insert_url_into_db(link.url)
+        for ajax in page.ajax_requests + page.timing_requests:
+            if self.cluster_manager.need_more_urls_of_this_type(ajax.url.url_hash) \
+                    and self.database_manager.num_of_ignored_urls(ajax.url.url_hash) < 10 \
+                    and self.database_manager.count_visited_url_per_hash(ajax.url.url_hash) < 50:
                 self.database_manager.insert_url_into_db(ajax.url)
-        for ajax in page.timing_requests:
-            self.database_manager.insert_url_into_db(ajax.url)
         for form in page.forms:
-            self.database_manager.insert_url_into_db(form.action)
+            if self.cluster_manager.need_more_urls_of_this_type(form.action.url_hash) \
+                    and self.database_manager.num_of_ignored_urls(form.action.url_hash) < 10 \
+                    and self.database_manager.count_visited_url_per_hash(form.action.url_hash) < 50:
+                self.database_manager.insert_url_into_db(form.action)
 
     def calculate_new_url_type(self, current_type, value):
         if current_type is None: # When we see it the first time, then we just set this param to None

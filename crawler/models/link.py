@@ -14,7 +14,7 @@ class Link():
         
     def toString(self):
         res = "["
-        res += "A-HREF: " + self.url.abstract_url
+        res += "A-HREF: " + self.url.abstract_url + " - {}".format(self.url.url_hash)
         res += " - Domadress: " + self.dom_address
         if self.html_id != "":
             res += " - ID: " + self.html_id

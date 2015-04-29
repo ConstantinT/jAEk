@@ -96,9 +96,9 @@ class FormHandler(InteractionCore):
         links, clickables = extract_links(self.mainFrame(), url)
         forms = extract_forms(self.mainFrame())
         html = self.mainFrame().toHtml()
-        f = open("html.txt", "w")
-        f.write(html)
-        f.close()
+        #f = open("html.txt", "w")
+        #f.write(html)
+        #f.close()
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
         return EventResult.Ok, html, self._new_clickables, forms, links, []

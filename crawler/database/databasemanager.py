@@ -142,3 +142,6 @@ class DatabaseManager(object):
 
     def get_one_form_per_destination(self):
         return self._database.get_one_form_per_destination(self._current_session)
+
+    def num_of_ignored_urls(self, url_hash):
+        return self._database.num_of_ignored_urls(self._current_session, url_hash)

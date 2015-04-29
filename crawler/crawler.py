@@ -59,21 +59,19 @@ class Crawler(QObject):
 
         self.cluster_manager = ClusterManager(self.database_manager) # dict with url_hash and
 
-
     def crawl(self, user):
+        logging.debug("Crawl with userId: {}".format(user.username))
         self.user = user
-        self.domain_handler = DomainHandler(self.crawl_config.start_page_url, self.database_manager)
+        self.domain_handler = DomainHandler(self.crawl_config.start_page_url, self.database_manager, self.cluster_manager)
         self.async_request_handler = AsyncRequestHandler(self.database_manager)
         self.start_page_url = Url(self.crawl_config.start_page_url)
         self.database_manager.insert_url_into_db(self.start_page_url)
 
         if self.user.login_data is not None:
             self.crawl_with_login = True
-            go_on = self.initial_login()
-            if not go_on:
-                raise LoginFailed("Initial login failed...")
+            successfull = self.initial_login()
 
-        logging.debug("Crawl with userId: " + str(self.user.username))
+
         round_counter = 0
         while True:
             logging.debug("=======================New Round=======================")
@@ -163,7 +161,7 @@ class Crawler(QObject):
                         self.handle_possible_logout()
                         response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                 elif self.crawl_with_login and response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
-                    logging.debug("Redirect - Response code is: {} and new url is: {}...".format(response_code, plain_url_to_request))
+                    logging.debug("Redirect - Response code is: {} and new url is: {} and \n old was {}...".format(response_code, plain_url_to_request, current_page.url))
                     self.handle_possible_logout()
                     response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
@@ -657,7 +655,8 @@ class Crawler(QObject):
                             return form, clickable
         return None, None
 
-    def convert_action_url_to_absolute(self, form, base):
+    @staticmethod
+    def convert_action_url_to_absolute(form, base):
         form.action = urljoin(base, form.action)
         return form
 
@@ -724,27 +723,23 @@ class Crawler(QObject):
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
         self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
         self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
-        #self.domain_handler.set_url_depth(current_page, self.current_depth)
         self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
-        num_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
-        #logging.debug(self._page_with_loginform_logged_out.toString())
+        num_of_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
         self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:
             raise LoginFailed("Cannot find Login form, please check the parameters...")
 
-        page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
-        self.domain_handler.complete_urls_in_page(page_with_loginform_logged_in)
-        self.domain_handler.analyze_urls(page_with_loginform_logged_in)
-        #self.domain_handler.set_url_depth(page_with_loginform_logged_in, self.current_depth)
-        self.async_request_handler.handle_requests(page_with_loginform_logged_in)
-        login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_loginform_logged_in) < 0.5
+        page_after_login = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
+        if page_after_login is None:
+            raise LoginFailed("Cannot load loginpage anymore...stop...")
+        login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_after_login) < 0.5
         if login_successfull:
             num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
-            if num_cookies_after_login > num_cookies_before_login:
+            if num_cookies_after_login > num_of_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
             logging.debug("Initial login successfull!")
             return True
-        return False
+        raise LoginFailed("Cannot find Login form, please check the parameters...")
 
     def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None, login_clickable= None):
         if page_with_login_form is None:
@@ -753,27 +748,34 @@ class Crawler(QObject):
             if login_clickable is not None:
                 tmp_page = deepcopy(page_with_login_form)
                 event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
+                if event_state == EventResult.ErrorWhileInitialLoading:
+                    sleep(2000)
+                    event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
+                    if event_state == EventResult.ErrorWhileInitialLoading:
+                        logging.debug("Two time executing fails.. stop crawling")
+                        return None
                 self.domain_handler.complete_urls_in_page(page_with_login_form)
                 self.domain_handler.analyze_urls(page_with_login_form)
+                self.async_request_handler.handle_requests(page_with_login_form)
             response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
         except ValueError:
             return None
-        landing_page_logged_in = WebPage(-1, page_with_login_form.url, html_after_timeouts)
-        landing_page_logged_in.clickables = new_clickables
-        landing_page_logged_in.links = links
-        landing_page_logged_in.timing_requests = timemimg_requests
-        landing_page_logged_in.forms = forms
-
-        return landing_page_logged_in
+        #TODO: Put building of Webpage inside submit function
+        page_after_login = WebPage(-1, page_with_login_form.url, html_after_timeouts)
+        page_after_login.clickables = new_clickables
+        page_after_login.links = links
+        page_after_login.timing_requests = timemimg_requests
+        page_after_login.forms = forms
+        self.domain_handler.complete_urls_in_page(page_after_login)
+        self.domain_handler.analyze_urls(page_after_login)
+        self.async_request_handler.handle_requests(page_after_login)
+        return page_after_login
 
     def handle_possible_logout(self):
         retries = 0
         max_retries = 3
         while retries < max_retries:
             page_with_login_form = self._get_webpage(self.user.url_with_login_form)
-            self.domain_handler.complete_urls_in_page(page_with_login_form)
-            self.domain_handler.analyze_urls(page_with_login_form)
-            self.async_request_handler.handle_requests(page_with_login_form)
             if calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_login_form) < 0.5:
                 logging.debug("Page with loginform and page with loginform logged out are not similar enough... continue")
                 return
@@ -781,16 +783,18 @@ class Crawler(QObject):
             if login_form is not None: #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
                 hopefully_reloggedin_page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)
-                self.domain_handler.complete_urls_in_page(hopefully_reloggedin_page)
-                self.domain_handler.analyze_urls(hopefully_reloggedin_page)
-                self.async_request_handler.handle_requests(hopefully_reloggedin_page)
-                retries += 1
-                if calculate_similarity_between_pages(hopefully_reloggedin_page, page_with_login_form) < 0.5:
-                    logging.debug("Relogin successfull...continue")
-                    return
-                else:
+                if hopefully_reloggedin_page is None:
+                    retries += 1
                     logging.debug("Relogin attempt number {} failed".format(retries))
                     sleep(2000)
+                else:
+                    if calculate_similarity_between_pages(hopefully_reloggedin_page, page_with_login_form) < 0.5:
+                        logging.debug("Relogin successfull...continue")
+                        return
+                    else:
+                        logging.debug("Relogin fails, pages to similar...")
+                        retries += 1
+                        sleep(2000)
             else:
                 logging.debug("Login Form is not there... we can continue (I hope)")
                 return
@@ -798,6 +802,9 @@ class Crawler(QObject):
 
     def _get_webpage(self, url):
         response_code, result = self._dynamic_analyzer.analyze(url, timeout=10)
+        self.domain_handler.complete_urls_in_page(result)
+        self.domain_handler.analyze_urls(result)
+        self.async_request_handler.handle_requests(result)
         return result
 
 class CrawlState(Enum):

@@ -90,13 +90,21 @@ class Database():
         return doc
 
     def insert_url_into_db(self, current_session, url, is_redirected_url = False):
+        """
+        :param current_session:
+        :param url:
+        :param is_redirected_url:
+        :return: True if url is insert, if url exists False
+        """
+
         if self.urls.find({"url": url.toString(), "session": current_session}).count() > 0 or self.urls.find({"redirected_to": url.toString(), "session": current_session}).count() > 0:
-            return
+            return False
         document = self._url_to_doc_without_abstract_url(url)
         document['session'] = current_session
         document["url_counter"] = self._per_session_url_counter
         self._per_session_url_counter += 1
         self.urls.save(document)
+        return True
 
     def _url_to_doc_without_abstract_url(self, url):
         doc = {}

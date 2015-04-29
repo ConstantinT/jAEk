@@ -73,10 +73,10 @@ class DatabaseManager(object):
         return self._database.get_all_unvisited_urls_sorted_by_hash(self._current_session)
     
     def insert_url_into_db(self, url):
-        self._database.insert_url_into_db(self._current_session, url)
+        return self._database.insert_url_into_db(self._current_session, url)
     
     def insert_redirected_url(self, url):
-        self._database.insert_url_into_db(self._current_session, url, is_redirected_url=True)
+        return self._database.insert_url_into_db(self._current_session, url, is_redirected_url=True)
         
     def visit_url(self, url, webpage_id, response_code, redirected_to = None):
         self._database.visit_url(self._current_session, url, webpage_id, response_code, redirected_to)

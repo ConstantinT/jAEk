@@ -253,14 +253,14 @@ class Crawler(QObject):
                     self.database_manager.update_clickable(current_page.id, clickable)
                     continue
 
-                if event_state == EventResult.TargetElementNotFound:
+                elif event_state == EventResult.TargetElementNotFound:
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.Error
                     clickables.append(clickable)
                     self.database_manager.update_clickable(current_page.id, clickable)
                     continue
 
-                if event_state == EventResult.ErrorWhileInitialLoading:
+                elif event_state == EventResult.ErrorWhileInitialLoading:
                     if timeout_counter < 10:
                         clickable.clicked = True
                         clickable.clickable_type = ClickableType.Error
@@ -277,10 +277,11 @@ class Crawler(QObject):
                             clickable.clickable_type = ClickableType.Error
                             clickables.append(clickable)
                             self.database_manager.update_clickable(current_page.id, clickable)
-                        break
+                            break
+                        continue
 
                 #Event execution error handling...
-                if event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
+                elif event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
                     clickable.clicked = False
                     if self.crawl_with_login:
                         errors += 1
@@ -313,10 +314,14 @@ class Crawler(QObject):
                         clickable.links_to = delta_page.url
                         clickable.clickable_type = ClickableType.Link
                         new_url = Url(delta_page.url)
-                        self.database_manager.insert_url_into_db(new_url)
-                        self.database_manager.visit_url(new_url, delta_page.id, 1000) #1000 is the code for a redirected url
                         clickables.append(clickable)
                         self.database_manager.update_clickable(current_page.id, clickable)
+                        if self.database_manager.insert_url_into_db(new_url): # Page does not exist
+                            delta_page.id = self.get_next_page_id()
+                            self.database_manager.visit_url(new_url, delta_page.id, 1000) #1000 is the code for a redirected url
+                            delta_page.url = new_url.toString()
+                        else:
+                            continue
                     """
                     Everything works fine and I get a normal DeltaPage, now I have to:
                         - Assign the current depth to it -> DeltaPages have the same depth as its ParentPages
@@ -455,7 +460,8 @@ class Crawler(QObject):
         logging.debug("Crawling is done...")
 
     def handle_delta_page_has_only_new_links(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.store_delta_page(delta_page)
@@ -464,14 +470,16 @@ class Crawler(QObject):
 
     def handle_delta_page_has_only_new_clickables(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.database_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
 
     def handle_delta_page_has_only_new_forms(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.database_manager.store_delta_page(delta_page)
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
@@ -487,7 +495,8 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_and_clickables(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
@@ -495,7 +504,8 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_links_and_forms(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.store_delta_page(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
@@ -505,7 +515,8 @@ class Crawler(QObject):
                                                           xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+               delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
@@ -518,7 +529,8 @@ class Crawler(QObject):
 
     def handle_delta_page_has_new_clickable_and_forms(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.database_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
@@ -527,7 +539,8 @@ class Crawler(QObject):
                                                                xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
@@ -542,7 +555,8 @@ class Crawler(QObject):
                                                           xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
@@ -556,7 +570,8 @@ class Crawler(QObject):
     def handle_delta_page_has_new_links_clickables_forms(self, clickable, delta_page, parent_page=None,
                                                          xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         delta_page.generator_requests.extend(delta_page.ajax_requests)
         delta_page.ajax_requests = []
@@ -568,7 +583,8 @@ class Crawler(QObject):
                                                             xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
@@ -586,7 +602,8 @@ class Crawler(QObject):
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.database_manager.update_clickable(parent_page.id, clickable)
             if self.should_delta_page_be_stored_for_crawling(delta_page):
                 self._store_delta_page_for_crawling(delta_page)
@@ -599,7 +616,8 @@ class Crawler(QObject):
                                                           xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
         self.domain_handler.extract_new_links_for_crawling(delta_page)
-        delta_page.id = self.get_next_page_id()
+        if delta_page.id == -1:
+            delta_page.id = self.get_next_page_id()
         self.database_manager.update_clickable(parent_page.id, clickable)
         if self.should_delta_page_be_stored_for_crawling(delta_page):
             self._store_delta_page_for_crawling(delta_page)
@@ -608,7 +626,8 @@ class Crawler(QObject):
                                                                   xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []
@@ -623,7 +642,8 @@ class Crawler(QObject):
                                                                        xhr_behavior=None):
         if xhr_behavior == XHRBehavior.ObserveXHR:
             delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
-            delta_page.id = self.get_next_page_id()
+            if delta_page.id == -1:
+                delta_page.id = self.get_next_page_id()
             self.domain_handler.extract_new_links_for_crawling(delta_page)
             delta_page.generator_requests.extend(delta_page.ajax_requests)
             delta_page.ajax_requests = []

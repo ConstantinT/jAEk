@@ -18,7 +18,7 @@ class XSSAttacker(InteractionCore):
         self._random_value = None
         self.response_code = {}
         self.content_type = {}
-
+        self.attack_counter = 0
 
     def attack(self, url, random_value, timeout = 10):
         self._analyzing_finished = False
@@ -40,7 +40,7 @@ class XSSAttacker(InteractionCore):
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)
             return AttackResult.ErrorTimeout, None
-
+        self.attack_counter += 1
         response_url = self.mainFrame().url().toString()
         try:
             response_code = self.response_code[response_url]
@@ -54,15 +54,21 @@ class XSSAttacker(InteractionCore):
 
 
         self._analyzing_finished = True
-        f = open("xss.txt", "w")
+        f = open("attackresult/" + str(self.attack_counter), "w")
+        f.write("Url: " + url + " \n")
+        f.write("================================================== \n")
         f.write(response_html)
-        f.close()
+        f.write(" \n =============================================== \n")
         self.networkAccessManager().finished.disconnect(self.load_complete)
         self.mainFrame().setHtml(None)
 
         if self._attack_successfull:
+            f.write(" \n Success!!!! \n")
+            f.close()
             return AttackResult.AttackSuccessfull, response_code
         else:
+            f.write(" \n Fail... \n")
+            f.close()
             if random_value not in response_html and "javascript" in content_type:
                 return AttackResult.JSON, response_code
             elif random_value not in response_html and "html" in content_type:

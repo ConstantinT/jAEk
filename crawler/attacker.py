@@ -29,7 +29,7 @@ class Attacker(Jaek):
         self._xss_vector = XSSVectors()
 
     def attack(self, user):
-        self.domain_handler = DomainHandler(self.config.start_page_url, self.database_manager)
+        self.domain_handler = DomainHandler(self.config.start_page_url, self.database_manager, cluster_manager=None)
         self.user = user
         if user.login_data is not None:
             self.process_with_login = True

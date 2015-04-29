@@ -747,6 +747,7 @@ class Crawler(QObject):
         try:
             if login_clickable is not None:
                 tmp_page = deepcopy(page_with_login_form)
+                logging.debug("Start with Login procedure using event...")
                 event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
                 if event_state == EventResult.ErrorWhileInitialLoading:
                     sleep(2000)
@@ -757,6 +758,9 @@ class Crawler(QObject):
                 self.domain_handler.complete_urls_in_page(page_with_login_form)
                 self.domain_handler.analyze_urls(page_with_login_form)
                 self.async_request_handler.handle_requests(page_with_login_form)
+            else:
+                logging.debug("Start with logging procedure withou event...")
+            logging.debug("Start submitting login form...")
             response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
         except ValueError:
             return None

@@ -161,7 +161,7 @@ class Crawler(QObject):
                         self.handle_possible_logout()
                         response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                 elif self.crawl_with_login and response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
-                    logging.debug("Redirect - Response code is: {} and new url is: {} and \n old was {}...".format(response_code, plain_url_to_request, current_page.url))
+                    logging.debug("Redirect - Response code is: {} from {} to {}...".format(response_code, plain_url_to_request, current_page.url))
                     self.handle_possible_logout()
                     response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
@@ -721,9 +721,6 @@ class Crawler(QObject):
     def initial_login(self):
         logging.debug("Initial Login...")
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
-        self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
-        self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
-        self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
         num_of_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
         self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:

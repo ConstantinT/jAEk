@@ -10,6 +10,7 @@ from urllib.parse import urlparse, urljoin
 from models.url import Url
 from models.urlstructure import ParameterType, ParameterOrigin, UrlStructure
 
+INGORE_FILES = ['.png', ".jpg", ".js", ".swf"]
 
 class DomainHandler():
 
@@ -31,10 +32,11 @@ class DomainHandler():
             url = url.toString()
         except AttributeError:
             url = url
-        url_splits = url.split(".")
-        end_of_url = url_splits[len(url_splits) - 1]
-        if end_of_url in ['png', "jpg"]:
-            return False
+        url_splits = url.split("?")
+        interesting_part = url_splits[0]
+        for file_ending in INGORE_FILES:
+            if file_ending in interesting_part:
+                return False
         parsed_url = urlparse(url)
         if parsed_url.netloc.find(self.domain) != -1 and parsed_url.fragment == "":
             return True

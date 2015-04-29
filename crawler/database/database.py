@@ -72,7 +72,6 @@ class Database():
             tmp.sessions = user['sessions']
             return tmp
 
-        
     def insert_user_into_db(self, user):
         num_of_users = self.users.count()
         user_id = num_of_users + 1
@@ -91,10 +90,8 @@ class Database():
         return doc
 
     def insert_url_into_db(self, current_session, url, is_redirected_url = False):
-        if not is_redirected_url:
-            if self.urls.find({"url":url.toString(), "session":current_session}).count() > 0 and self.urls.find({"redirected_to":url.toString(), "session":current_session}).count() > 0:
-                return
-
+        if self.urls.find({"url": url.toString(), "session": current_session}).count() > 0 or self.urls.find({"redirected_to": url.toString(), "session": current_session}).count() > 0:
+            return
         document = self._url_to_doc_without_abstract_url(url)
         document['session'] = current_session
         document["url_counter"] = self._per_session_url_counter
@@ -124,7 +121,6 @@ class Database():
 
     def get_all_unvisited_urls_sorted_by_hash(self, current_session):
         """
-
         @:returns dict(url_hash) = list(urls)
         """
         raw_data = self.urls.find({"session": current_session, "visited": False})
@@ -157,18 +153,15 @@ class Database():
             result.append(url)
         return result
 
-    def visit_url(self, current_session, url, webpage_id, response_code, redirected_to = None):
+    def visit_url(self, current_session, url, webpage_id, response_code, redirected_to=None):
         search_doc = {}
         try:
             search_doc['url'] = url.toString()
         except AttributeError:
             search_doc['url'] = url
         search_doc['session'] = current_session
-        update_doc = {}
-        update_doc['response_code'] = response_code
-        update_doc['visited'] = True
-        update_doc['page_id'] = webpage_id
-        update_doc['redirected_to'] = redirected_to
+        update_doc = {'response_code': response_code, 'visited': True, 'page_id': webpage_id,
+                      'redirected_to': redirected_to}
         self.urls.update(search_doc, {"$set": update_doc})
 
     def count_visited_urls_per_hash(self, current_session, url_hash):

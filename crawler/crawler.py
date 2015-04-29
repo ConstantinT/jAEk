@@ -160,7 +160,9 @@ class Crawler(QObject):
                         logging.debug("Too less cookies... possible logout!")
                         self.handle_possible_logout()
                         response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
-                elif self.crawl_with_login and response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
+                elif self.crawl_with_login \
+                        and response_code in [300, 301, 302, 303, 304] \
+                        and current_page.url != plain_url_to_request:
                     logging.debug("Redirect - Response code is: {} from {} to {}...".format(response_code, plain_url_to_request, current_page.url))
                     self.handle_possible_logout()
                     response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
@@ -304,6 +306,7 @@ class Crawler(QObject):
                         delta_page.delta_depth = current_page.delta_depth + 1
                     except AttributeError:
                         delta_page.delta_depth = 1
+
                     if event_state == EventResult.URLChanged:
                         logging.debug("DeltaPage has new Url...{}".format(delta_page.url))
                         clickable.clicked = True
@@ -311,7 +314,7 @@ class Crawler(QObject):
                         clickable.clickable_type = ClickableType.Link
                         new_url = Url(delta_page.url)
                         self.database_manager.insert_url_into_db(new_url)
-                        self.database_manager.visit_url(new_url, delta_page.id, 302)
+                        self.database_manager.visit_url(new_url, delta_page.id, 1000) #1000 is the code for a redirected url
                         clickables.append(clickable)
                         self.database_manager.update_clickable(current_page.id, clickable)
                     """

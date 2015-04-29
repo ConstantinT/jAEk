@@ -133,7 +133,7 @@ def calculate_similarity_between_pages(page1, page2, clickable_weight = 1.0, for
         f.write(" \n \n ======================================================= \n \n")
         f.write(page2.toString())
         f.write("\n \n ====================Result=========================== \n \n")
-        f.write("Similatiry = " + str(result) + " - Formsimilarity: " + str(form_similarity) + " - Linksimilarity: " + str(link_similarity) + " - Clickablesimilarity: " + str(clickable_similarity))
+        f.write("Similarity = " + str(result) + " - Formsimilarity: " + str(form_similarity) + " - Linksimilarity: " + str(link_similarity) + " - Clickablesimilarity: " + str(clickable_similarity))
         f.write("\n Formweight: "+ str(form_weight) + " Formnum: " +str(form_counter) + " - Linkweight: " + str(link_weight) + " Linknum: " + str(link_counter) + " - Clickableweight: " + str(clickable_weight) + " Clickablenum: " + str(clickable_counter) )
         f.close()
         #logging.debug("PageID: " + str(page1.id) + " and PageID: " + str(page2.id) + " has a similarity from: " + str(result))

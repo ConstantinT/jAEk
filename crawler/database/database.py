@@ -673,3 +673,19 @@ class Database():
     def num_of_ignored_urls(self, current_session, url_hash):
         return self.urls.find({"url_hash": url_hash, "session": current_session, "response_code": 0}).count()
 
+
+    def get_id_to_url(self, current_session, url):
+        """
+
+        :param current_session:
+        :param url:
+        :return: PageId if available, if not -1... I cannot use None here, because it might happen that the Id is None
+                 because of errors or 500 codes or other reasons...
+        """
+        raw_data = self.urls.find_one({"session": current_session, "url": url})
+        if raw_data is not None:
+            return raw_data["page_id"]
+        raw_data = self.urls.find_one({"session": current_session, "redirected_to": url})
+        if raw_data is not None:
+            return raw_data["page_id"]
+        return -1

@@ -182,7 +182,7 @@ class EventExecutor(InteractionCore):
                 self.ajax_requests.append(ajax_request)
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        logging.debug("Console(EventExecutor): " + message + " at: " + str(lineNumber))
+        #logging.debug("Console(EventExecutor): " + message + " at: " + str(lineNumber))
         pass
 
     def capture_timeout_call(self, timingevent):

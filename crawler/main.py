@@ -29,7 +29,7 @@ if __name__ == '__main__':
     #user = User("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
     #user = User("owncloud2", 0, "http://localhost:8080/", login_data = {"user" : "jaek", "password" : "jaek"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
-    user = User("Gallery2", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
+    user = User("Gallery99", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
     #user = User("GalleryGuestij", 0, session="ABC")
     #user = User("PHPbb2", 0, "http://localhost:8080/phpbb/ucp.php?mode=login", login_data = {"username": "admin", "password": "adminadmin"}, session= "ABC")
 

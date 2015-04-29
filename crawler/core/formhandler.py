@@ -110,7 +110,7 @@ class FormHandler(InteractionCore):
             self.mainFrame().addToJavaScriptWindowObject("jswrapper", self._js_bridge)
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        logging.debug("Console(FormHandler): " + message + " at: " + str(lineNumber))
+        #logging.debug("Console(FormHandler): " + message + " at: " + str(lineNumber))
         pass
 
     def javaScriptAlert(self, frame, msg):

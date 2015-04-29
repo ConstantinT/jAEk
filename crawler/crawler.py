@@ -183,7 +183,11 @@ class Crawler(QObject):
                 self.async_request_handler.handle_requests(current_page)
                 self.database_manager.store_web_page(current_page)
                 if response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
+                    wp_id = self.database_manager.get_id_to_url(current_page.url)
+                    if wp_id is None or wp_id > 0:
+                        continue
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
+
                 elif response_code > 399:
                     self.database_manager.visit_url(url_to_request, None, response_code)
                     logging.debug("{} returns code {}".format(url_to_request.toString(), response_code))
@@ -195,7 +199,7 @@ class Crawler(QObject):
 
             if self.crawler_state == CrawlState.DeltaPage:
                 current_page.html = parent_page.html  # Assigning html
-                logging.debug("Now at Deltapage: " + str(current_page.id))
+                logging.debug("Now at Deltapage: {}".format(current_page.id))
                 self.database_manager.store_delta_page(current_page)
 
             clickable_to_process = deepcopy(current_page.clickables)
@@ -262,13 +266,6 @@ class Crawler(QObject):
                 if event_state == EventResult.UnsupportedTag:
                     clickable.clicked = True
                     clickable.clickable_type = ClickableType.UnsupportedEvent
-                    clickables.append(clickable)
-                    self.database_manager.update_clickable(current_page.id, clickable)
-                    continue
-
-                elif event_state == EventResult.TargetElementNotFound:
-                    clickable.clicked = True
-                    clickable.clickable_type = ClickableType.Error
                     clickables.append(clickable)
                     self.database_manager.update_clickable(current_page.id, clickable)
                     continue

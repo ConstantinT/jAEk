@@ -122,7 +122,7 @@ class InteractionCore(QWebPage):
             self.app.processEvents()
             
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        logging.debug("Console: " + message + " at: " + str(lineNumber))
+        #logging.debug("Console: " + message + " at: " + str(lineNumber))
         pass
 
     def loadComplete(self, reply):

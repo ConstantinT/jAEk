@@ -148,3 +148,6 @@ class DatabaseManager(object):
 
     def url_visited(self, url):
         return self._database.url_visited(self._current_session, url)
+
+    def get_id_to_url(self, url):
+        return self._database.get_id_to_url(self._current_session, url)

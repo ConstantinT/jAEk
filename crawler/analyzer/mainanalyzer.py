@@ -156,7 +156,8 @@ class MainAnalyzer(InteractionCore):
         logging.debug("Frame created")
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        logging.debug("Console(DynamicAnalyzer): " + message + " at: " + str(lineNumber) + " from: " + sourceID)
+        #logging.debug("Console(DynamicAnalyzer): " + message + " at: " + str(lineNumber) + " from: " + sourceID)
+        pass
 
     def loadComplete(self, reply):
         if not self._analyzing_finished:

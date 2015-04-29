@@ -144,7 +144,12 @@ class Crawler(QObject):
                     continue
 
                 if self.database_manager.url_visited(url_to_request):
-                    logging.debug("Crawler tyies to use url: {} twice".format(url_to_request.toString()))
+                    logging.debug("Crawler tries to use url: {} twice".format(url_to_request.toString()))
+                    continue
+
+                if not self.cluster_manager.need_more_urls_of_this_type(url_to_request.url_hash):
+                    self.database_manager.visit_url(url_to_request, None, 000)
+                    logging.debug("Seen enough urls from {} ".format(url_to_request.toString()))
                     continue
 
                 current_page = None
@@ -177,10 +182,14 @@ class Crawler(QObject):
                 self.domain_handler.set_url_depth(current_page, self.current_depth)
                 self.async_request_handler.handle_requests(current_page)
                 self.database_manager.store_web_page(current_page)
-                if response_code not in [300, 301, 302, 303, 304] or current_page.url == plain_url_to_request:
-                    self.database_manager.visit_url(url_to_request, current_page.id, response_code)
-                else:
+                if response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
+                elif response_code > 399:
+                    self.database_manager.visit_url(url_to_request, None, response_code)
+                    logging.debug("{} returns code {}".format(url_to_request.toString(), response_code))
+                    continue
+                else:
+                    self.database_manager.visit_url(url_to_request, current_page.id, response_code)
                 self.domain_handler.extract_new_links_for_crawling(current_page)
                 #logging.debug(page.toString())
 

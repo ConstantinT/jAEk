@@ -130,6 +130,10 @@ class ClusterManager():
         return self._persistence_manager.count_visited_url_per_hash(url_hash)
 
     def need_more_urls_of_this_type(self, url_hash):
+        """
+        :param url_hash:
+        :return: if we have seen enough of an url or not
+        """
         return self.calculate_cluster_per_visited_urls(url_hash) > CLUSTER_THRESHOLD
 
 

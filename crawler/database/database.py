@@ -210,13 +210,21 @@ class Database():
 
     def get_webpage_to_id_from_db(self, current_session, id):
         return self._get_web_page_from_db(current_session, page_id=id)
+
+    def url_visited(self, current_session, url):
+        try:
+            url = url.toString()
+        except AttributeError:
+            pass
+        return self.pages.find_one({"session": current_session, "url": url}) is not None
+
         
-    def _get_web_page_from_db(self, current_session, page_id= None, url= None, page= None):
+    def _get_web_page_from_db(self, current_session, page_id=None, url=None, page=None):
         if page is None:
             if page_id is not None:
-                page = self.pages.find_one({"session": current_session,"web_page_id": page_id })
+                page = self.pages.find_one({"session": current_session, "web_page_id": page_id })
             elif url is not None:
-                page = self.pages.find_one({"session": current_session,"url": url})
+                page = self.pages.find_one({"session": current_session, "url": url})
             else:
                 raise AttributeError("You must specifies either page_id or url")
             if page is None:

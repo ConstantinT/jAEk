@@ -143,6 +143,10 @@ class Crawler(QObject):
                     self.database_manager.visit_url(url_to_request, None, 000)
                     continue
 
+                if self.database_manager.url_visited(url_to_request):
+                    logging.debug("Crawler tyies to use url: {} twice".format(url_to_request.toString()))
+                    continue
+
                 current_page = None
                 num_of_trys = 0
                 while current_page is None and num_of_trys < 3:
@@ -173,7 +177,7 @@ class Crawler(QObject):
                 self.domain_handler.set_url_depth(current_page, self.current_depth)
                 self.async_request_handler.handle_requests(current_page)
                 self.database_manager.store_web_page(current_page)
-                if response_code == 200:
+                if response_code not in [300, 301, 302, 303, 304] or current_page.url == plain_url_to_request:
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code)
                 else:
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)

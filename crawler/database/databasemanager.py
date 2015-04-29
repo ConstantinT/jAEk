@@ -145,3 +145,6 @@ class DatabaseManager(object):
 
     def num_of_ignored_urls(self, url_hash):
         return self._database.num_of_ignored_urls(self._current_session, url_hash)
+
+    def url_visited(self, url):
+        return self._database.url_visited(self._current_session, url)

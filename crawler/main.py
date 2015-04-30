@@ -17,8 +17,8 @@ from utils.utils import calculate_similarity_between_pages
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s: %(levelname)s - %(message)s',
                     datefmt='%d.%m.%Y %H:%M:%S',
-                    filename='Attack.log',
-                    filemode='w'
+                    #filename='Attack.log',
+                    #filemode='w'
                     )
 
 if __name__ == '__main__':
@@ -27,11 +27,12 @@ if __name__ == '__main__':
     #user = User("WPAdmin3", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username" : "admin", "pass" : "admin"})
     #user = User("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
-    #user = User("owncloud2", 0, "http://localhost:8080/", login_data = {"user" : "jaek", "password" : "jaek"}, session="ABC")
+    user = User("owncloud2", 0, "http://localhost:8080/", login_data = {"user" : "jaek", "password" : "jaek"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
-    user = User("Gallery99", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
+    #user = User("Gallery99", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
     #user = User("GalleryGuestij", 0, session="ABC")
-    #user = User("PHPbb2", 0, "http://localhost:8080/phpbb/ucp.php?mode=login", login_data = {"username": "admin", "password": "adminadmin"}, session= "ABC")
+    #user = User("PHPbb3", 0, "http://localhost:8080/phpbb/ucp.php?mode=login", login_data = {"username": "admin", "password": "adminadmin"}, session= "ABC")
+    user = User("Joomla", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"}, session= "ABC")
 
 
 

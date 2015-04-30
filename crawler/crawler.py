@@ -299,7 +299,7 @@ class Crawler(QObject):
                         if error_ratio > .2:
                             self.handle_possible_logout()
                             errors = 0
-                        clickable_to_process.append(0, clickable)
+                        clickable_to_process.insert(0, clickable)
                         continue
                     else:
                         if errors < max_errors:
@@ -356,7 +356,7 @@ class Crawler(QObject):
                         delta_page = subtract_parent_from_delta_page(current_page, delta_page)
                         for p in previous_pages:
                             delta_page = subtract_parent_from_delta_page(p, delta_page)
-
+                    clickable_process_again = None
                     if len(delta_page.clickables) > 0 or len(delta_page.links) > 0 or len(
                             delta_page.ajax_requests) > 0 or len(delta_page.forms) > 0:
                         if len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
@@ -455,7 +455,7 @@ class Crawler(QObject):
 
                         if clickable_process_again is not None:
                             clickable.clicked = False
-                            clickable_to_process.append(clickable)
+                            clickable_to_process.append(clickable_process_again)
                         else:
                             clickables.append(clickable)
 

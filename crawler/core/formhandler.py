@@ -64,7 +64,7 @@ class FormHandler(InteractionCore):
 
 
         if "submit" in form.toString():
-            inputs = target_form.findAll("input")
+            inputs = target_form.findAll("input") + target_form.findAll("button")
             q_submit_button = None
             for el in inputs:
                 if el.attribute("type") == "submit":

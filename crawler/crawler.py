@@ -203,16 +203,18 @@ class Crawler(QObject):
                 self.database_manager.store_delta_page(current_page)
 
             clickable_to_process = deepcopy(current_page.clickables)
+            current_page.clickables = []
+            num_clickables = len(clickable_to_process)
             clickable_to_process = self.edit_clickables_for_execution(clickable_to_process)
             clickables = []
-            counter = 1  # Just a fragment_counter for displaying progress
+            counter = 1  # Just a counter for displaying progress
             errors = 0  # Count the errors(Missing preclickable or target elements)
-            login_retries = 0  # Count the login_retries
-            max_retries_for_clicking = 5
+            login_retries_per_clickable = 0  # Count the login_retries
+            max_login_retires_per_clickable = 3
             max_errors = 3
             timeout_counter = 0
 
-            while len(clickable_to_process) > 0 and login_retries < max_retries_for_clicking:
+            while len(clickable_to_process) > 0 and login_retries_per_clickable < max_login_retires_per_clickable:
                 clickable = clickable_to_process.pop(0)
                 if not self.should_execute_clickable(clickable):
                     clickable.clickable_type = ClickableType.IgnoredByCrawler
@@ -292,12 +294,20 @@ class Crawler(QObject):
 
                 #Event execution error handling...
                 elif event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
-                    clickable.clicked = False
+
                     if self.crawl_with_login:
+                        if login_retries_per_clickable > max_login_retires_per_clickable:
+                            clickable.clickable_type = ClickableType.Error
+                            current_page.clickables.append(clickable)
+                            login_retries_per_clickable = 0
+                            self.database_manager.update_clickable(current_page.id, clickable)
+                            continue
+                        clickable.clicked = False
                         errors += 1
-                        error_ratio = errors / len(current_page.clickables)
+                        error_ratio = errors / num_clickables
                         if error_ratio > .2:
                             self.handle_possible_logout()
+                            login_retries_per_clickable += 1
                             errors = 0
                         clickable_to_process.insert(0, clickable)
                         continue

@@ -36,6 +36,9 @@ class AsyncRequestHandler():
                    except AttributeError:
                        logging.error("AttributeError with request: {}, Key: {}, Value: {}".format(request_hash, key, value))
                        async_request.request_structure = ajax_structure
+                   except KeyError:
+                       logging.debug("KeyError with request: {}, Key: {}, Value: {}".format(request_hash, key, value))
+                       async_request.request_structure = ajax_structure
                 else:
                     async_request.request_structure = ajax_structure
         return web_page

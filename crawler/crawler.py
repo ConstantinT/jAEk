@@ -129,20 +129,24 @@ class Crawler(QObject):
                     url_to_request = possible_urls.pop(random.randint(0, len(possible_urls) - 1))
                     if url_to_request.depth_of_finding is None:
                         self.current_depth = 0
-                        url_to_request.depth_of_finding = 0
                     else:
                         self.current_depth = url_to_request.depth_of_finding + 1
                 else:
                     break
 
             if self.crawler_state == CrawlState.NormalPage:
-                plain_url_to_request = url_to_request.toString()
-                if not self.domain_handler.is_in_scope(
-                        url_to_request) or url_to_request.depth_of_finding > self.crawl_config.max_depth:
-                    logging.debug("Ignoring(Not in scope or max crawl depth reached)...: " + url_to_request.toString())
+                if not self.domain_handler.is_in_scope(url_to_request):
+                    logging.debug("Ignoring {} (Not in scope)... ".format(url_to_request.toString()))
                     self.database_manager.visit_url(url_to_request, None, 000)
                     continue
 
+                if url_to_request.depth_of_finding is not None:
+                    if url_to_request.depth_of_finding + 1 > self.crawl_config.max_depth:
+                        logging.debug("Ignoring {} (Max crawl depth)... ".format(url_to_request.toString()))
+                        self.database_manager.visit_url(url_to_request, None, 000)
+                        continue
+
+                plain_url_to_request = url_to_request.toString()
                 if self.database_manager.url_visited(url_to_request):
                     logging.debug("Crawler tries to use url: {} twice".format(url_to_request.toString()))
                     continue
@@ -219,7 +223,6 @@ class Crawler(QObject):
                 if not self.should_execute_clickable(clickable):
                     clickable.clickable_type = ClickableType.IgnoredByCrawler
                     self.database_manager.update_clickable(current_page.id, clickable)
-                    #clickables.append(clickable)
                     continue
                 logging.debug(
                     "Processing Clickable Number {} - {} left".format(str(counter), str(len(clickable_to_process))))
@@ -294,34 +297,46 @@ class Crawler(QObject):
 
                 #Event execution error handling...
                 elif event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
-
                     if self.crawl_with_login:
-                        if login_retries_per_clickable > max_login_retires_per_clickable:
+                        if login_retries_per_clickable >= max_login_retires_per_clickable:
                             clickable.clickable_type = ClickableType.Error
                             current_page.clickables.append(clickable)
                             login_retries_per_clickable = 0
                             self.database_manager.update_clickable(current_page.id, clickable)
-                            continue
-                        clickable.clicked = False
-                        errors += 1
-                        error_ratio = errors / num_clickables
-                        if error_ratio > .2:
-                            self.handle_possible_logout()
-                            login_retries_per_clickable += 1
+                            logging.debug("Max Loginretires per clickable: Set clickable to error and go on...")
                             errors = 0
-                        clickable_to_process.insert(0, clickable)
-                        continue
+                        else:
+                            if errors >= max_errors:
+                                self.handle_possible_logout()
+                                login_retries_per_clickable += 1
+                                errors = 0
+                            else:
+                                clickable.clicked = False
+                                errors += 1
+                                clickable_to_process.insert(0, clickable)
+                            continue
                     else:
                         if errors < max_errors:
                             clickable_to_process.insert(0, clickable)
                             errors += 1
-                            continue
                         else:
                             errors = 0
                             clickable.clickable_type = ClickableType.Error
                             self.database_manager.update_clickable(current_page.id, clickable)
                             clickables.append(clickable)
-                            continue
+                        continue
+                elif event_state == EventResult.CreatesPopup:
+                    clickable.clicked = True
+                    clickable.links_to = delta_page.url
+                    clickable.clickable_type = ClickableType.CreateNewWindow
+                    new_url = Url(delta_page.url)
+                    clickables.append(clickable)
+                    self.database_manager.update_clickable(current_page.id, clickable)
+                    new_url = self.domain_handler.handle_url(new_url, None)
+                    new_url.depth_of_finding = self.current_depth
+                    self.database_manager.insert_url_into_db(new_url)
+                    continue
+
                 else:
                     try:
                         delta_page.delta_depth = current_page.delta_depth + 1
@@ -339,7 +354,7 @@ class Crawler(QObject):
                         if self.database_manager.insert_url_into_db(new_url): # Page does not exist
                             delta_page.id = self.get_next_page_id()
                             self.database_manager.visit_url(new_url, delta_page.id, 1000) #1000 is the code for a redirected url
-                            delta_page.url = new_url.toString()
+                            #delta_page.url = new_url.toString()
                         else:
                             continue
                     """
@@ -367,6 +382,7 @@ class Crawler(QObject):
                         for p in previous_pages:
                             delta_page = subtract_parent_from_delta_page(p, delta_page)
                     clickable_process_again = None
+
                     if len(delta_page.clickables) > 0 or len(delta_page.links) > 0 or len(
                             delta_page.ajax_requests) > 0 or len(delta_page.forms) > 0:
                         if len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
@@ -799,7 +815,7 @@ class Crawler(QObject):
                 self.domain_handler.analyze_urls(page_with_login_form)
                 self.async_request_handler.handle_requests(page_with_login_form)
             else:
-                logging.debug("Start with logging procedure withou event...")
+                logging.debug("Start with logging procedure without event executing...")
             logging.debug("Start submitting login form...")
             response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
         except ValueError:

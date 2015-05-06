@@ -90,6 +90,11 @@ class MainAnalyzer(InteractionCore):
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()
         response_url = self.mainFrame().url().toString()
+
+        f = open("text.txt", "w")
+        f.write(html_after_timeouts)
+        f.close()
+
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
         self._new_clickables.extend(elements_with_event_properties)

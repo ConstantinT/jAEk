@@ -9,6 +9,7 @@ import string
 from enum import Enum
 
 from PyQt5.Qt import QUrl
+from PyQt5.QtWebKitWidgets import QWebPage
 from analyzer.helper.formhelper import extract_forms
 from analyzer.helper.linkhelper import extract_links
 
@@ -35,6 +36,7 @@ class EventExecutor(InteractionCore):
         self.supported_events = self.none_key_events + self.key_events
 
         self.seen_timeouts = {}
+        self.popup = None # reference if a popup occurs...
         self.mainFrame().urlChanged.connect(self._url_changes)
 
     def execute(self, webpage, timeout=5, element_to_click=None, xhr_options=XHRBehavior.ObserveXHR, pre_clicks=[]):
@@ -50,6 +52,7 @@ class EventExecutor(InteractionCore):
         self._capturing_ajax = False
         self._new_clickables = []
         self.element_to_click = element_to_click
+        self.popup = None
         self.mainFrame().setHtml(webpage.html, QUrl(webpage.url))
         target_tag = element_to_click.dom_address.split("/")
         target_tag = target_tag[-1]
@@ -119,13 +122,11 @@ class EventExecutor(InteractionCore):
         self._wait(0.5)
         self._capturing_ajax = False
         links, clickables = extract_links(self.mainFrame(), webpage.url)
+
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
 
         html = self.mainFrame().toHtml()
-        f = open("test.txt", "w")
-        f.write(html)
-        f.close()
 
         if is_key_event:
             generator = KeyClickable(element_to_click, random_char)
@@ -137,6 +138,14 @@ class EventExecutor(InteractionCore):
             self._analyzing_finished = True
             self.mainFrame().setHtml(None)
             return EventResult.URLChanged, delta_page
+        elif self.popup is not None:
+            logging.debug("Event creates Popup with Url: {}".format(self.popup.mainFrame().url().toString()))
+            popup_url = self.popup.mainFrame().url().toString()
+            delta_page = DeltaPage(-1, popup_url, html=None, generator=generator, parent_id=webpage.id)
+            self.popup = None
+            self._analyzing_finished = True
+            self.mainFrame().setHtml(None)
+            return EventResult.CreatesPopup, delta_page
         else:
             delta_page = DeltaPage(-1, webpage.url, html, generator=generator, parent_id=webpage.id,
                                    cookiesjar=webpage.cookiejar)
@@ -205,6 +214,10 @@ class EventExecutor(InteractionCore):
         self._url_changed = True
         self._new_url = url
 
+    def createWindow(self, webWindowType):
+        self.popup = QWebPage()
+        return self.popup
+
 
 class EventResult(Enum):
     Ok = 0
@@ -213,3 +226,4 @@ class EventResult(Enum):
     ErrorWhileInitialLoading = 3
     URLChanged = 4
     UnsupportedTag = 5
+    CreatesPopup = 6

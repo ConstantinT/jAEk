@@ -13,3 +13,4 @@ class ClickableType(Enum):
     SendingAjax = 4
     IgnoredByCrawler = 5
     UnsupportedEvent = 6
+    CreateNewWindow = 7

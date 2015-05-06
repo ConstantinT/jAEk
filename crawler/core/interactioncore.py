@@ -76,6 +76,7 @@ class InteractionCore(QWebPage):
         #self.settings().setAttribute(QWebSettings.AutoLoadImages, loadImages)
         self.settings().setAttribute(QWebSettings.DeveloperExtrasEnabled, True)
         self.settings().setAttribute(QWebSettings.JavascriptEnabled, True)
+        self.settings().setAttribute(QWebSettings.JavascriptCanOpenWindows, True)
         
         if network_access_manager:
             self.setNetworkAccessManager(network_access_manager)

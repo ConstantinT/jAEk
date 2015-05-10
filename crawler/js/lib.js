@@ -259,12 +259,11 @@ function addEventListenerWrapper(elem, args) {
 	dom_adress = "";
 	id = elem.id;
 	html_class = elem.className;
-    //console.log("AddEventLIstenerWrapper")
+    //console.log("AddEventLIstenerWrapper: " + tag + " - Event: " + args[0])
 	dom_adress = getXPath(elem);
 	if (dom_adress.indexOf("/html/body") == -1) {
 		console.log("Domadress is not valid: " + dom_adress)
 		return
-
 	}
 	function_id = MD5(args[1].toString())
 	resp = {
@@ -323,11 +322,11 @@ function addEventListenerWrapper(elem, args) {
 			jswrapper.add_eventListener_to_element(resp)
 		}
 		for (xx = 0; xx < options.length; xx++) {
-			o = options[i]
-			tag = o.tagName
-			id = o.id;
-			html_class = o.className;
-			dom_adress = getXPath(o);
+			element = options[i]
+			tag = element.tagName
+			id = element.id;
+			html_class = element.className;
+			dom_adress = getXPath(element);
 			function_id = "";
 			resp = {
 				"event" : "change",
@@ -341,6 +340,29 @@ function addEventListenerWrapper(elem, args) {
 			jswrapper.add_eventListener_to_element(resp)
 		}
 	}
+    if (tag == "TABLE" && args[0] == "click"){
+        candidates = elem.querySelectorAll("button");
+        for( xx = 0; xx < candidates.length; xx++) {
+            var element = candidates[xx];
+            tag = element.tagName;
+            id = element.id;
+            html_class = element.className;
+            dom_adress = getXPath(element);
+            function_id = "";
+            resp = {
+                "event": "click",
+                "function_id": function_id,
+                "addr": dom_adress,
+                "id": id,
+                "tag": tag,
+                "class": html_class
+            };
+            resp = JSON.stringify(resp);
+            //console.log("Hello " + resp)
+            //console.log(element.click)
+            jswrapper.add_eventListener_to_element(resp);
+        };
+    }
 }
 
 function bodyAddEventListenerWrapper(elem, args) {

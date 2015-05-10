@@ -82,26 +82,33 @@ class EventExecutor(InteractionCore):
                 logging.debug("Preclicking element not found")
                 return EventResult.PreviousClickNotFound, None
 
-            js_code = click.event
-            if js_code[0:2] == "on":
-                js_code = js_code[2:]  # if event beginns with on, escape it
-            js_code = "Simulate." + js_code + "(this);"
-            pre_click_elem.evaluateJavaScript(js_code)  # Waiting for finish processing
+            if "javascript:" not in click.event:
+                js_code = click.event
+                if js_code[0:2] == "on":
+                    js_code = js_code[2:]  # if event beginns with on, escape it
+                js_code = "Simulate." + js_code + "(this);"
+                pre_click_elem.evaluateJavaScript(js_code)  # Waiting for finish processing
+            else:
+                pre_click_elem.evaluateJavaScript(click.event[len("javascript:"):])
             self._wait(self.wait_for_event)
 
-            # Now execute the target event
-
-        self._url_changed = False
-        js_code = element_to_click.event
-        if js_code[0:2] == "on":
-            js_code = js_code[2:]  # if event begins with on, escape it
         is_key_event = False
-        if js_code in self.key_events:
-            is_key_event = True
-            random_char = random.choice(string.ascii_letters)
-            js_code = "Simulate." + js_code + "(this, '" + random_char + "');"
+            # Now execute the target event
+        if "javascript:" not in element_to_click.event:
+            self._url_changed = False
+            js_code = element_to_click.event
+            if js_code[0:2] == "on":
+                js_code = js_code[2:]  # if event begins with on, escape it
+
+            if js_code in self.key_events:
+                is_key_event = True
+                random_char = random.choice(string.ascii_letters)
+                js_code = "Simulate." + js_code + "(this, '" + random_char + "');"
+            else:
+                js_code = "Simulate." + js_code + "(this);"
         else:
-            js_code = "Simulate." + js_code + "(this);"
+            js_code = element_to_click.event[len("javascript:"):]
+
         self.mainFrame().evaluateJavaScript(
             self._addEventListener)  # This time it is here, because I dont want to have the initial addings
 
@@ -127,6 +134,7 @@ class EventExecutor(InteractionCore):
         elements_with_event_properties = property_helper(self.mainFrame())
 
         html = self.mainFrame().toHtml()
+        url = self.mainFrame().url().toString()
 
         if is_key_event:
             generator = KeyClickable(element_to_click, random_char)

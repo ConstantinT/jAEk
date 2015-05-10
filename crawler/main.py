@@ -16,7 +16,7 @@ from utils.utils import calculate_similarity_between_pages
 
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s: %(levelname)s - %(message)s',
-                    datefmt='%d.%m.%Y %H:%M:%S',
+                    #datefmt='%d.%m.%Y %H:%M:%S.%f',
                     #filename='Attack.log',
                     #filemode='w'
                     )
@@ -24,28 +24,29 @@ logging.basicConfig(level=logging.DEBUG,
 if __name__ == '__main__':
     logging.info("Crawler started...")
 
-    user = User("Tidios2", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"}, session="ABC")
+    user = User("Tidios", 0, "http://localhost:8080/wp-login.php", login_data = {"log" : "admin", "pwd" : "admin"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username" : "admin", "pass" : "admin"})
     #user = User("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
-    #user = User("owncloud2", 0, "http://localhost:8080/", login_data = {"user" : "jaek", "password" : "jaek"}, session="ABC")
+    #user = User("owncloud", 0, "http://localhost:8080/", login_data = {"user" : "admin", "password" : "admin"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
-    #user = User("Gallery99", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
+    #user = User("Gallery222", 0, "http://localhost:8080/", login_data = {"name": "admin", "password": "66ca90"}, session= "ABC")
     #user = User("GalleryGuestij", 0, session="ABC")
-    #user = User("PHPbb3", 0, "http://localhost:8080/phpbb/ucp.php?mode=login", login_data = {"username": "admin", "password": "adminadmin"}, session= "ABC")
+    #user = User("PHPbb2", 0, "http://localhost:8080/phpbb/ucp.php?mode=login", login_data = {"username": "admin", "password": "adminadmin"}, session= "ABC")
     #user = User("Joomla", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"}, session= "ABC")
+    #user = User("ModX", 0 , "http://localhost:8080/manager/", login_data= {"username": "admin", "password": "adminadmin"}, session="ABC")
 
 
-
-    url = "http://localhost:8080"
+    url = "http://localhost:8080/"
+    #url = "http://localhost:8080/index.php/admin/advanced_settings"
     #url = "http://localhost:8080/index.php/login"
 
-    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=1,
-max_click_depth=3, crawl_speed=CrawlSpeed.Fast)
+    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=2,
+max_click_depth=2, crawl_speed=CrawlSpeed.Fast)
     attack_config = AttackConfig(url)
 
-    database_manager = DatabaseManager(user, dropping=True)
-    #crawler = Crawler(crawl_config=crawler_config, database_manager=database_manager)  #, proxy="localhost", port=8081)
-    #crawler.crawl(user)
+    database_manager = DatabaseManager(user, dropping=False)
+   # crawler = Crawler(crawl_config=crawler_config, database_manager=database_manager)  #, proxy="localhost", port=8081)
+   # crawler.crawl(user)
     # TODO: It seems to be that, there is an error if we instanciate crawler and attacker and then call the crawl function. Maybe use one global app!
     logging.info("Crawler finished")
     logging.info("Start attacking...")

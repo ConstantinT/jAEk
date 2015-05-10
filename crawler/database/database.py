@@ -176,7 +176,7 @@ class Database():
         all_urls = self.urls.find({"session": current_session, "url_hash": url_hash, "visited": True})
         counter = 0
         for url in all_urls:
-            if url['response_code'] > 100:
+            if url['response_code'] > 100 and url['response_code'] < 1000:
                 counter += 1
         return counter
 
@@ -215,8 +215,8 @@ class Database():
         try:
             url = url.toString()
         except AttributeError:
-            pass
-        return self.pages.find_one({"session": current_session, "url": url}) is not None
+            url = url
+        return self.pages.find_one({"session": current_session, "url": url, "visited": True}) is not None
 
         
     def _get_web_page_from_db(self, current_session, page_id=None, url=None, page=None):
@@ -603,7 +603,7 @@ class Database():
         raw_data = self.urls.find({"session": current_session, "visited": True})
         result = []
         for url in raw_data:
-            if url["response_code"] == 200:
+            if url["response_code"] > 0 and url['response_code'] < 1000:
                 result.append(self._parse_url_from_db(url))
         return result
 
@@ -612,7 +612,7 @@ class Database():
         result = []
         seen_structures = []
         for url in raw_data:
-            if url["response_code"] == 200:
+            if url["response_code"] > 0 and url['response_code'] < 1500:
                 tmp = self._parse_url_from_db_withou_abstract_url(url)
                 if tmp.url_hash not in seen_structures:
                     result.append(tmp)

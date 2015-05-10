@@ -116,8 +116,13 @@ class Crawler(QObject):
                 # Now I'm reaching a non delta-page
                 self.current_depth = parent_page.current_depth
                 url_to_request = parent_page.url
+                if current_page.generator.clickable_depth + 1 > self.crawl_config.max_click_depth:
+                    logging.debug("Don't proceed with Deltapage(max click depth)...")
+                    self.database_manager.store_delta_page(current_page)
+                    continue
 
             else:
+                logging.debug("Looking for the next url...")
                 possible_urls = self.database_manager.get_all_unvisited_urls_sorted_by_hash()
                 if len(possible_urls) > 0:
                     self.crawler_state = CrawlState.NormalPage
@@ -137,13 +142,13 @@ class Crawler(QObject):
             if self.crawler_state == CrawlState.NormalPage:
                 if not self.domain_handler.is_in_scope(url_to_request):
                     logging.debug("Ignoring {} (Not in scope)... ".format(url_to_request.toString()))
-                    self.database_manager.visit_url(url_to_request, None, 000)
+                    self.database_manager.visit_url(url_to_request, None, 1000)
                     continue
 
                 if url_to_request.depth_of_finding is not None:
                     if url_to_request.depth_of_finding + 1 > self.crawl_config.max_depth:
                         logging.debug("Ignoring {} (Max crawl depth)... ".format(url_to_request.toString()))
-                        self.database_manager.visit_url(url_to_request, None, 000)
+                        self.database_manager.visit_url(url_to_request, None, 1001)
                         continue
 
                 plain_url_to_request = url_to_request.toString()
@@ -152,17 +157,18 @@ class Crawler(QObject):
                     continue
 
                 if not self.cluster_manager.need_more_urls_of_this_type(url_to_request.url_hash):
-                    self.database_manager.visit_url(url_to_request, None, 000)
+                    self.database_manager.visit_url(url_to_request, None, 1002)
                     logging.debug("Seen enough urls from {} ".format(url_to_request.toString()))
                     continue
 
                 current_page = None
                 num_of_trys = 0
+                logging.debug("Next Url is: {}".format(url_to_request.toString()))
                 while current_page is None and num_of_trys < 3:
                     response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                     num_of_trys += 1
                 if current_page is None:
-                    self.domain_handler.visit_url(url_to_request, None, -1)
+                    self.domain_handler.visit_url(url_to_request, None, 1004)
                     logging.debug("Fetching url: {} fails.... continue".format(plain_url_to_request))
                     continue
 
@@ -171,14 +177,18 @@ class Crawler(QObject):
                     logging.debug("Having {} cookies...".format(num_cookies))
                     if num_cookies < self.cookie_num:
                         logging.debug("Too less cookies... possible logout!")
-                        self.handle_possible_logout()
-                        response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
+                        if not self.handle_possible_logout():
+                            response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
                 elif self.crawl_with_login \
                         and response_code in [300, 301, 302, 303, 304] \
                         and current_page.url != plain_url_to_request:
                     logging.debug("Redirect - Response code is: {} from {} to {}...".format(response_code, plain_url_to_request, current_page.url))
-                    self.handle_possible_logout()
-                    response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
+                    if not self.handle_possible_logout():
+                        response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
+                elif self.crawl_with_login and response_code in [200]:
+                    if calculate_similarity_between_pages(current_page, self._page_with_loginform_logged_out) > .5:
+                        if not self.handle_possible_logout():
+                            response_code, current_page = self._dynamic_analyzer.analyze(url_to_request, current_depth=self.current_depth)
 
                 current_page.current_depth = self.current_depth
                 self.domain_handler.complete_urls_in_page(current_page)
@@ -186,10 +196,16 @@ class Crawler(QObject):
                 self.domain_handler.set_url_depth(current_page, self.current_depth)
                 self.async_request_handler.handle_requests(current_page)
                 self.database_manager.store_web_page(current_page)
+
+                for clickable in current_page.clickables:
+                    clickable.clickable_depth = 0
+
                 if response_code in [300, 301, 302, 303, 304] and current_page.url != plain_url_to_request:
                     wp_id = self.database_manager.get_id_to_url(current_page.url)
                     if wp_id is None or wp_id > 0:
-                        continue
+                        logging.debug("Redirected page already seen, continue with next...")
+                        self.database_manager.visit_url(url_to_request, wp_id, response_code, current_page.url)
+                        continue #Page was already seen
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
 
                 elif response_code > 399:
@@ -217,7 +233,10 @@ class Crawler(QObject):
             max_login_retires_per_clickable = 3
             max_errors = 3
             timeout_counter = 0
-
+            if len(clickable_to_process) > 0:
+                logging.debug("Start executing events...")
+            else:
+                logging.debug("Page has no events. Cluster it and throw it to the others...")
             while len(clickable_to_process) > 0 and login_retries_per_clickable < max_login_retires_per_clickable:
                 clickable = clickable_to_process.pop(0)
                 if not self.should_execute_clickable(clickable):
@@ -240,7 +259,7 @@ class Crawler(QObject):
                 """
                 If event is not supported, mark it so in the database and continue
                 """
-                if event not in self._event_executor.supported_events:
+                if event not in self._event_executor.supported_events and "javascript:" not in event:
                     clickable.clickable_type = ClickableType.UnsupportedEvent
                     self.database_manager.update_clickable(current_page.id, clickable)
                     clickables.append(clickable)
@@ -307,6 +326,7 @@ class Crawler(QObject):
                             errors = 0
                         else:
                             if errors >= max_errors:
+                                logging.debug("Too many event errors, checking for logout...")
                                 self.handle_possible_logout()
                                 login_retries_per_clickable += 1
                                 errors = 0
@@ -374,7 +394,6 @@ class Crawler(QObject):
                     delta_page = self.domain_handler.set_url_depth(delta_page, self.current_depth)
                     delta_page = self.async_request_handler.handle_requests(delta_page)
 
-
                     if self.crawler_state == CrawlState.NormalPage:
                         delta_page = subtract_parent_from_delta_page(current_page, delta_page)
                     if self.crawler_state == CrawlState.DeltaPage:
@@ -382,6 +401,10 @@ class Crawler(QObject):
                         for p in previous_pages:
                             delta_page = subtract_parent_from_delta_page(p, delta_page)
                     clickable_process_again = None
+
+                    for c in delta_page.clickables:
+                        c.clickable_depth = clickable.clickable_depth + 1
+
 
                     if len(delta_page.clickables) > 0 or len(delta_page.links) > 0 or len(
                             delta_page.ajax_requests) > 0 or len(delta_page.forms) > 0:
@@ -493,6 +516,8 @@ class Crawler(QObject):
             current_page.clickables = clickables
             if self.crawler_state == CrawlState.NormalPage:
                 self.cluster_manager.add_webpage_to_cluster(current_page)
+                self.print_to_file(current_page.toString(), current_page.id)
+                self.print_to_file(current_page.html, str(current_page.id) + "html")
         logging.debug("Crawling is done...")
 
     def handle_delta_page_has_only_new_links(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
@@ -720,7 +745,7 @@ class Crawler(QObject):
         return form
 
     def print_to_file(self, item, filename):
-        f = open("result/"+ filename, "w")
+        f = open("result/"+ str(filename), "w")
         f.write(item)
         f.close()
 
@@ -832,13 +857,17 @@ class Crawler(QObject):
         return page_after_login
 
     def handle_possible_logout(self):
+        """
+        Handles a possible logout
+        :return: True is we were not logged out and false if we were logged out
+        """
         retries = 0
         max_retries = 3
         while retries < max_retries:
             page_with_login_form = self._get_webpage(self.user.url_with_login_form)
             if calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_login_form) < 0.5:
                 logging.debug("Page with loginform and page with loginform logged out are not similar enough... continue")
-                return
+                return True
             login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
             if login_form is not None: #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
@@ -850,7 +879,7 @@ class Crawler(QObject):
                 else:
                     if calculate_similarity_between_pages(hopefully_reloggedin_page, page_with_login_form) < 0.5:
                         logging.debug("Relogin successfull...continue")
-                        return
+                        return False
                     else:
                         logging.debug("Relogin fails, pages to similar...")
                         retries += 1

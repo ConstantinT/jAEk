@@ -98,6 +98,7 @@ class MainAnalyzer(InteractionCore):
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
         self._new_clickables.extend(elements_with_event_properties)
+        self._new_clickables = list(set(self._new_clickables))
         response_code = None
         try:
             response_code = self.response_code[url_to_request]
@@ -161,7 +162,7 @@ class MainAnalyzer(InteractionCore):
         logging.debug("Frame created")
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        #logging.debug("Console(DynamicAnalyzer): " + message + " at: " + str(lineNumber) + " from: " + sourceID)
+        logging.debug("Console(DynamicAnalyzer): " + message + " at: " + str(lineNumber) + " from: " + sourceID)
         pass
 
     def loadComplete(self, reply):

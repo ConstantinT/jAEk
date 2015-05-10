@@ -1,3 +1,4 @@
+import hashlib
 from models.clickabletype import ClickableType
 
 
@@ -58,6 +59,11 @@ class Clickable():
         if not isinstance(other, self.__class__):
             return False
         return self.dom_address == other.dom_address and self.event == other.event and self.clickable_type == other.clickable_type and self.links_to == other.links_to
+
+    def __hash__(self):
+        s_to_hash = self.toString()
+        return hash(s_to_hash)
+
 
     def __ne__(self, other):
         return not self.__eq__(other)        

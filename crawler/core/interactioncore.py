@@ -130,29 +130,20 @@ class InteractionCore(QWebPage):
         pass
 
     def add_eventlistener_to_element(self, msg):
-        try:
-            if msg['id'] != "":
-                id = msg['id']
-            else:
-                id = None
-        except KeyError:
+        #logging.debug(msg)
+        if "id" in msg and msg['id'] != "":
+            id = msg['id']
+        else:
             id = None
-
         dom_address = msg['addr']
         event = msg['event']
         if event == "":
             event = None
-
         tag = msg['tag']
-
-        try:
-            if msg['class'] != "":
-                html_class = msg['class']
-            else:
-                html_class = None
-        except KeyError:
+        if "class" in msg and msg['class'] != "":
+            html_class = msg['class']
+        else:
             html_class = None
-
         function_id = msg['function_id']
         if tag is not None and dom_address != "":
             tmp = Clickable(event, tag, dom_address, id, html_class, function_id=function_id)

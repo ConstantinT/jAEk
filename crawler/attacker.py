@@ -37,13 +37,15 @@ class Attacker(Jaek):
             go_on = self.initial_login()
             if not go_on:
                 raise LoginFailed("Initial login failed...")
-        #self.attack_all_get_forms()
-        #self.attack_all_urls()
-        self.attack_single_url(None)
+        self.attack_all_get_forms()
+        self.attack_all_urls()
+        #url = "http://localhost:8080/index.php/apps/files/ajax/download.php?files=moep&dir=tut"
+        #url = "http://localhost:8080/wp-content/plugins/tidio-gallery/popup-insert-help.php?galleryId=t47sx79npgz01tywyeo3wwuuxz03u7vh"
+        #self.attack_single_url(url)
 
 
     def attack_single_url(self, url):
-        url = Url("http://localhost:8080/wp-content/plugins/tidio-gallery/popup-insert-help.php?galleryId=t47sx79npgz01tywyeo3wwuuxz03u7vh")
+        url = Url(url)
         for parameter_to_attack in url.parameters:
             for vector in self._xss_vector.attack_vectors:
                 attack_url = url.scheme + "://" + url.domain + url.path + "?"
@@ -62,6 +64,9 @@ class Attacker(Jaek):
     def attack_all_urls(self):
         all_urls = self.database_manager.get_one_visited_url_per_structure()
         for url in all_urls:
+            if "http://localhost:8080/index.php/component/config/?controller=config.display.modules" in url.toString():
+                logging.debug("Tut")
+            logging.debug("Now testing with url: {}".format(url.toString()))
             if len(url.parameters) > 0:
                 for parameter_to_attack in url.parameters:
                     empty_counter = 0
@@ -72,7 +77,9 @@ class Attacker(Jaek):
                             if parameter_to_attack == other_parameters:
                                 attack_url += other_parameters + "=" + vector.replace("XSS", random_val) + "&"
                             else:
-                                attack_url += other_parameters + "=" + url.parameters[other_parameters][0] + "&"
+                                attack_url += other_parameters + "="
+                                attack_url += url.parameters[other_parameters][0] if url.parameters[other_parameters][0] is not None else ""
+                                attack_url += "&"
                         attack_url = attack_url[:-1] # Removing the last "&
                         logging.debug("Attack with: {}".format(attack_url))
                         result, response_code = self._xss.attack(attack_url, random_val)

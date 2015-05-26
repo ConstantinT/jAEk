@@ -9,20 +9,18 @@ def extract_links(frame, requested_url):
         requested_url = requested_url.toString()
     except AttributeError:
         requested_url = requested_url
-
-    f = open("test.txt", "w")
-    f.write(frame.toHtml())
-    f.close()
     anchor_tags = frame.findAllElements("a")
-    new_links, new_clickables = _extract_links(anchor_tags, requested_url)
+    new_links, new_clickables = _extract_new_links_from_links(anchor_tags, requested_url)
+    iframes = frame.findAllElements("iframe")
+    new_links = new_links + extract_links_from_iframe(iframes)
     return new_links, new_clickables
 
-def _extract_links( elements, requested_url):
+def _extract_new_links_from_links(elements, requested_url):
     found_links = []
     new_clickables = []
     if(len(elements) == 0):
         #logging.debug("No links found...")
-        pass
+        return [], []
     else:
         for elem in elements:
             href = elem.attribute("href")
@@ -43,15 +41,26 @@ def _extract_links( elements, requested_url):
                 event = "click"
                 tag = "a"
                 new_clickables.append(Clickable(event, tag, dom_address, html_id, html_class, None, None))
-            elif len(href) > 1:
+            elif len(href) > 0:
                 html_id = elem.attribute("id")
                 html_class = elem.attribute("class")
                 dom_address = elem.evaluateJavaScript("getXPath(this)")
                 url = href
                 link = Link(url, dom_address, html_id, html_class)
                 found_links.append(link)
-            elif "http://" in href or "https://" in href:
-                continue
             else:
                 logging.debug("Elem has attribute href: " + str(elem.attribute("href") + " and matches no criteria"))
     return found_links, new_clickables
+
+def extract_links_from_iframe(elements):
+    found_links = []
+    if len(elements) == 0:
+        return []
+    for element in elements:
+        src = element.attribute("src")
+        html_id = element.attribute("id")
+        html_class = element.attribute("class")
+        dom_address = element.evaluateJavaScript("getXPath(this)")
+        link = Link(src, dom_address, html_id, html_class)
+        found_links.append(link)
+    return found_links

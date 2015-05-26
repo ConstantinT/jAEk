@@ -231,3 +231,5 @@ class InteractionCore(QWebPage):
             return None
         else:
             return current_element_in_dom
+
+

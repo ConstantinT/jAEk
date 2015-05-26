@@ -17,7 +17,10 @@ class DatabaseManager(object):
         self._current_session = None
         self.MAX_CACHE_SIZE = 0
         self._current_session = user.session
-        
+
+    def return_session_id_to_username(self, username):
+        return self._database.get_user_to_username(username)
+
     def store_web_page(self, web_page):
         if self.MAX_CACHE_SIZE > 0:
             if len(self._web_page_cache) + 1 > self.MAX_CACHE_SIZE:
@@ -126,7 +129,7 @@ class DatabaseManager(object):
         return  self._database.get_all_url_structures(self._current_session)
 
     def get_all_visited_urls(self):
-        return self._database.get_all_visited_urls(self._current_session)
+        return self._database.get_all_successfully_visited_urls(self._current_session)
 
     def get_one_visited_url_per_structure(self):
         return self._database.get_one_visited_url_per_structure(self._current_session)
@@ -151,3 +154,6 @@ class DatabaseManager(object):
 
     def get_id_to_url(self, url):
         return self._database.get_id_to_url(self._current_session, url)
+
+    def get_all_urls_to_domain(self, domain):
+        return self._database.get_all_urls_to_domain(self._current_session, domain)

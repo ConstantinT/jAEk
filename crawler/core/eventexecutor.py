@@ -19,7 +19,7 @@ from models.deltapage import DeltaPage
 from models.enumerations import XHRBehavior
 from models.keyclickable import KeyClickable
 from core.interactioncore import InteractionCore
-from models.utils import CrawlSpeed
+from models.utils import CrawlSpeed, purge_dublicates
 
 
 class EventExecutor(InteractionCore):
@@ -160,6 +160,7 @@ class EventExecutor(InteractionCore):
             delta_page.clickables = self._new_clickables  # Set by add eventlistener code
             delta_page.clickables.extend(clickables)
             delta_page.clickables.extend(elements_with_event_properties)
+            delta_page.clickables = purge_dublicates(delta_page.clickables)
             delta_page.links = links
             delta_page.forms = forms
             delta_page.ajax_requests = self.ajax_requests
@@ -199,7 +200,7 @@ class EventExecutor(InteractionCore):
                 self.ajax_requests.append(ajax_request)
 
     def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        #logging.debug("Console(EventExecutor): " + message + " at: " + str(lineNumber))
+        logging.debug("Console(EventExecutor): " + message + " at: " + str(lineNumber))
         pass
 
     def capture_timeout_call(self, timingevent):

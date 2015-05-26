@@ -20,7 +20,7 @@ class XSSAttacker(InteractionCore):
         self.content_type = {}
         self.attack_counter = 0
 
-    def attack(self, url, random_value, timeout = 10):
+    def attack(self, url, random_value, timeout = 10, verbose= False):
         self._analyzing_finished = False
         self._loading_complete = False
         self._attack_successfull = False
@@ -52,30 +52,37 @@ class XSSAttacker(InteractionCore):
         except KeyError:
             content_type = ""
 
+        if verbose:
+            self._analyzing_finished = True
+            f = open("attackresult/" + str(self.attack_counter), "w")
+            f.write("Url: " + url + " \n")
+            f.write("================================================== \n")
+            f.write(response_html)
+            f.write(" \n =============================================== \n")
 
-        self._analyzing_finished = True
-        f = open("attackresult/" + str(self.attack_counter), "w")
-        f.write("Url: " + url + " \n")
-        f.write("================================================== \n")
-        f.write(response_html)
-        f.write(" \n =============================================== \n")
         self.networkAccessManager().finished.disconnect(self.load_complete)
         self.mainFrame().setHtml(None)
 
         if self._attack_successfull:
-            f.write(" \n Success!!!! \n")
-            f.close()
+            if verbose:
+                f.write(" \n Success!!!! \n")
+                f.close()
             return AttackResult.AttackSuccessfull, response_code
         else:
-            f.write(" \n Fail... \n")
-            f.close()
-            if random_value not in response_html and "javascript" in content_type:
-                return AttackResult.JSON, response_code
-            elif random_value not in response_html and "html" in content_type:
-                return AttackResult.NotFound, response_code
-            else:
-                return AttackResult.AttackFailed, response_code
-
+            if verbose:
+                f.write(" \n Fail... \n")
+                f.close()
+            try:
+                if response_html is None:
+                    return AttackResult.NotFound, response_code
+                if random_value not in response_html and "javascript" in content_type:
+                    return AttackResult.JSON, response_code
+                elif random_value not in response_html and "html" in content_type:
+                    return AttackResult.NotFound, response_code
+                else:
+                    return AttackResult.AttackFailed, response_code
+            except TypeError:
+                print("Error in {}, Random value: {}, Content Type: {}".format(url, random_value, content_type))
 
     def loadFinishedHandler(self, result):
         if not self._analyzing_finished:  # Just to ignoring setting of non page....
@@ -94,7 +101,6 @@ class XSSAttacker(InteractionCore):
     def load_complete(self, reply):
         if not self._analyzing_finished:
             self.content_type[reply.url().toString()] = reply.header(QNetworkRequest.ContentTypeHeader)
-
             if reply.attribute(QNetworkRequest.HttpStatusCodeAttribute) is None:
                 logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
                 return

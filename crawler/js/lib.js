@@ -84,7 +84,11 @@
 		element.dispatchEvent(evt);
 
 	}
-	var events = [ 'click', 'focus', 'blur', 'dblclick', 'input', 'mousedown',
+	//Simulate.click = function(element){
+	//	var evt = new MouseEvent("click");
+    //	element.dispatchEvent(evt);
+	//}
+	var events = ['click', 'focus', 'blur', 'dblclick', 'input', 'mousedown',
 			'mousemove', 'mouseout', 'mouseover', 'mouseup', 'resize',
 			'scroll', 'select', 'submit', 'load', 'unload', 'mouseleave' ]
 	for (var i = events.length; i--;) {
@@ -196,6 +200,8 @@ function XMLHTTPObserverOpen(elem, args) {
 		"url" : args[1],
 		"method" : args[0]
 	};
+	//console.log("Uniq Id set")
+	//elem.jaeks_id = "123456Conny is tool"
 	resp = JSON.stringify(resp)
 	jswrapper.xmlHTTPRequestOpen(resp)
 }
@@ -208,6 +214,7 @@ function XMLHTTPObserverSend(elem, args) {
 	resp = {
 		"parameters" : elems
 	};
+	//console.log("Uniq Id: " + elem.jaeks_id)
 	resp = JSON.stringify(resp)
 	jswrapper.xmlHTTPRequestSend(resp)
 }

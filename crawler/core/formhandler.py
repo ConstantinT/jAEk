@@ -7,8 +7,7 @@ from core.eventexecutor import EventResult
 from analyzer.helper.formhelper import extract_forms
 from analyzer.helper.linkhelper import extract_links
 from models.clickable import Clickable
-from models.utils import CrawlSpeed
-
+from models.utils import CrawlSpeed, purge_dublicates
 
 __author__ = 'constantin'
 
@@ -61,11 +60,9 @@ class FormHandler(InteractionCore):
                 if not elem_found:
                     return EventResult.TargetElementNotFound, None
         # Now we should have set all known parameters, next click the submit button
-
-
+        q_submit_button = None
         if "submit" in form.toString():
             inputs = target_form.findAll("input") + target_form.findAll("button")
-            q_submit_button = None
             for el in inputs:
                 if el.attribute("type") == "submit":
                     q_submit_button = el
@@ -73,8 +70,17 @@ class FormHandler(InteractionCore):
             #q_submit_button.evaluateJavaScript("this.id='oxyfrymbel'")
         else:
             logging.debug(form.toString())
+
+        if q_submit_button is None:
+            inputs = target_form.findAll("button")
+            q_submit_button = None
+            if len(inputs) > 1:
+                logging.debug("Cannot locate login button...")
+                return EventResult.TargetElementNotFound, None
+            elif len(inputs) == 1:
+                q_submit_button = inputs[0]
+
         method = target_form.attribute("onsubmit")
-        #method  = "_chj($('libs_qf_1bbae4d400dd068c367ef84d19555f40').serialize()+'&__action_module__=%2FBase_Box%7C0%2FBase_User_Login%7Clogin','Logge ein','');"
         if method is not None and method != "":
             js_code_snippets = method.split(";")
             for snippet in js_code_snippets:
@@ -83,15 +89,21 @@ class FormHandler(InteractionCore):
                     continue
                 logging.debug("Eval: {}".format(snippet+";"))
                 self.mainFrame().evaluateJavaScript(snippet+";")
-                self._wait(.5)
+                self._wait(3)
             self.mainFrame().evaluateJavaScript(self._addEventListener)
-            self._wait(5)
+            self._wait(3)
         else:
             #TODO: Implement way for sending forms without onsubmit-method
             # check between: target_form.evaluateJavaScript("Simulate or document.?form?.submit())
             # or submit_button click
-            q_submit_button.evaluateJavaScript("Simulate.click(this);")
-            self._wait(5)
+            if q_submit_button is not None:
+                logging.debug("Click on submit button...")
+                q_submit_button.evaluateJavaScript("Simulate.click(this);")
+                self._wait(3)
+            else:
+                logging.debug("Trigger submit event on form...")
+                target_form.evaluateJavaScript("Simulate.submit(this);")
+                self._wait(3)
 
         links, clickables = extract_links(self.mainFrame(), url)
         forms = extract_forms(self.mainFrame())
@@ -101,6 +113,7 @@ class FormHandler(InteractionCore):
         #f.close()
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
+        self._new_clickables = purge_dublicates(self._new_clickables)
         return EventResult.Ok, html, self._new_clickables, forms, links, []
 
     def jsWinObjClearedHandler(self): #Adding here the js-scripts corresponding to the phases

@@ -6,9 +6,9 @@ Created on 23.02.2015
   
 class Link():
     
-    def __init__(self, url, dom_adress, html_id = "", html_class = ""):
+    def __init__(self, url, dom_address, html_id = "", html_class = ""):
         self.url = url 
-        self.dom_address = dom_adress
+        self.dom_address = dom_address
         self.html_id = html_id
         self.html_class = html_class
         

@@ -14,7 +14,7 @@ from core.interactioncore import InteractionCore
 from analyzer.helper.formhelper import extract_forms
 from analyzer.helper.linkhelper import extract_links
 from models.timingrequest import TimingRequest
-from models.utils import CrawlSpeed
+from models.utils import CrawlSpeed, purge_dublicates
 
 from models.clickable import Clickable
 from models.webpage import WebPage
@@ -98,7 +98,7 @@ class MainAnalyzer(InteractionCore):
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
         self._new_clickables.extend(elements_with_event_properties)
-        self._new_clickables = list(set(self._new_clickables))
+        self._new_clickables = purge_dublicates(self._new_clickables)
         response_code = None
         try:
             response_code = self.response_code[url_to_request]

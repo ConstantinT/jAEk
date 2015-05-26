@@ -38,6 +38,11 @@ def _extracting_information(elem):
                 else: #Radiobutton name exists not
                     radio_buttons[name] = []
                     radio_buttons[name].append(input_el.attribute("value"))
+        else:
+            if input_el.hasAttribute("name"):
+                name = input_el.attribute("name")
+                tag_name = input_el.tagName()
+                result.append(FormInput(tag_name, name, None, None))
     for key in radio_buttons:
         result.append(FormInput(tag_name, key, input_type, radio_buttons[key]))
     buttons = elem.findAll("button")
@@ -47,16 +52,14 @@ def _extracting_information(elem):
             button_type = button.attribute("type")
         else:
             button_type = None
-            logging.debug("Something mysterious must have happened...")
         if button.hasAttribute("name"):
             name = button.attribute("name")
         else:
-            continue
+            name = None
         if button.hasAttribute("value"):
             value = [button.attribute("value")]
         else:
             value = None
-                #logging.debug(tag_name + " " + name + " " + input_type + " " + value)
         result.append(FormInput(tag_name, name, button_type, value))
 
     selects = elem.findAll("select")#<select> <option>

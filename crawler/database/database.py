@@ -63,14 +63,11 @@ class Database():
         self._per_session_url_counter = 0
         
     def get_user_to_username(self, username):
-        search_doc = {'username' :username}
+        search_doc = {'username': username}
         user = self.users.find_one(search_doc)
         if user is None:
             return None
-        if user['username'] == username:
-            tmp = User(user['username'], user['user_level'], user['url_with_login_form'], user['login_data'])
-            tmp.sessions = user['sessions']
-            return tmp
+        return user['session']
 
     def insert_user_into_db(self, user):
         num_of_users = self.users.count()
@@ -144,13 +141,15 @@ class Database():
 
     def _parse_url_from_db_withou_abstract_url(self, url):
         result = Url(url['url'], url['depth_of_finding'])
+        result.parameters = self.unescape_unloved_signs(result.parameters)
         return result
-    """
+
     def _parse_url_from_db(self, url):
         result = Url(url['url'], url['depth_of_finding'])
+        result.parameters = self.unescape_unloved_signs(result.parameters)
         result.abstract_url = url["abstract_url"]
         return result
-    """
+
     def get_urls_from_db_to_hash(self, current_session, url_hash):
         urls = self.urls.find({"session": current_session, "url_hash": url_hash})
         result = []
@@ -563,10 +562,22 @@ class Database():
         if result is not None:
             document["_id"] = result["_id"]
         document["path"] = url_description.path
-        document["parameters"] = url_description.parameters
+        document["parameters"] = self.escape_unloved_signs(url_description.parameters)
         document["url_hash"] = url_description.url_hash
         document["session"] = current_session
         result = self.url_descriptions.save(document)
+
+    def escape_unloved_signs(self, item):
+        if isinstance(item, dict):
+            for old_key in item:
+                item[old_key.replace(".", "$$$")] = item.pop(old_key)
+        return item
+
+    def unescape_unloved_signs(self, item):
+        if isinstance(item, dict):
+            for old_key in item:
+                item[old_key.replace("$$$", ".")] = item.pop(old_key)
+        return item
 
     def get_url_structure_from_db(self, current_session, url_hash):
         result = self.url_descriptions.find_one({"session": current_session, "url_hash": url_hash})
@@ -599,7 +610,7 @@ class Database():
             result.append(UrlStructure(url_structure['path'], url_structure["parameters"], url_structure['url_hash']))
         return result
 
-    def get_all_visited_urls(self, current_session):
+    def get_all_successfully_visited_urls(self, current_session):
         raw_data = self.urls.find({"session": current_session, "visited": True})
         result = []
         for url in raw_data:
@@ -689,3 +700,11 @@ class Database():
         if raw_data is not None:
             return raw_data["page_id"]
         return -1
+
+    def get_all_urls_to_domain(self, current_session, domain):
+        raw_data = self.urls.find({"session": current_session, "visited": True})
+        result = []
+        for url in raw_data:
+            if domain in url["url"]:
+                result.append(self._parse_url_from_db_withou_abstract_url(url))
+        return result

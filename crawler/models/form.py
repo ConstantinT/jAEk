@@ -9,7 +9,7 @@ import hashlib
 class HtmlForm():
     def __init__(self, parameters, action, method, dom_address=None):
         self.parameter = parameters  # Array of FormInput's
-        self.parameter = sorted(self.parameter, key=lambda parameter: parameter.name)
+        self.parameter = sorted(self.parameter, key=lambda parameter: parameter.name if parameter.name is not None else "")
         self.action = action
         self.method = method
         self.dom_address = dom_address
@@ -41,7 +41,7 @@ class HtmlForm():
     def get_hash(self):
         s_to_hash = self.action.abstract_url + ";" + self.method + ";"
         for p in self.parameter:
-            s_to_hash += p.name + ";" + p.tag + ";" + str(p.input_type) + ";"
+            s_to_hash += str(p.name) + ";" + p.tag + ";" + str(p.input_type) + ";"
         b_to_hash = s_to_hash.encode("utf-8")
         d = hashlib.md5()
         d.update(b_to_hash)

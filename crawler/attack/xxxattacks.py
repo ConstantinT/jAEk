@@ -21,3 +21,14 @@ class XSSVectors():
             result += random.choice(chars)
         return result
 
+    def random_number_generator(self, size=6):
+        i = 1
+        max_num = ""
+        min_num = "1"
+        for i in range(size + 1):
+            max_num += "9"
+            min_num += "0"
+        min_num = min_num[:-1]
+        max_num = int(max_num)
+        min_num = int(min_num)
+        return str(random.randint(min_num, max_num))

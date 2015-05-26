@@ -33,3 +33,10 @@ class CrawlSpeed(Enum):
     Fast = 2
     Speed_of_Lightning = 3        
         
+
+def purge_dublicates(X):
+    unique_X = []
+    for i, row in enumerate(X):
+        if row not in X[i + 1:]:
+            unique_X.append(row)
+    return unique_X

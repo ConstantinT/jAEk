@@ -45,7 +45,6 @@ class Jaek(QObject):
         data2 = keys[1]
         for form in page.forms:
             if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
-                logging.debug("Login form found, without clicking...")
                 return form, None
         if interactive_search:
             for clickable in page.clickables:
@@ -56,7 +55,6 @@ class Jaek(QObject):
                 if event_state == EventResult.Ok:
                     for form in delta_page.forms:
                         if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
-                            logging.debug("Login form found, after clicking {}".format(clickable.toString()))
                             return form, clickable
         return None, None
 
@@ -66,12 +64,12 @@ class Jaek(QObject):
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
         self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
         self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
-        #self.domain_handler.set_url_depth(current_page, self.current_depth)
         self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
         num_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
-        #logging.debug(self._page_with_loginform_logged_out.toString())
         self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:
+            f = open("Exit.txt", "w")
+            f.write(self._page_with_loginform_logged_out.html)
             raise LoginFailed("Cannot find Login form, please check the parameters...")
 
         page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)

@@ -156,22 +156,28 @@ class Attacker(Jaek):
         logging.debug("Attacking with get forms")
         all_forms = self.database_manager.get_one_form_per_destination()
         for form in all_forms:
+            logging.debug(form.toString())
+            if "javascript" in form.action.complete_url:
+                continue
             for param_to_attack in form.parameter:
-                if param_to_attack.input_type == "submit":
+                if param_to_attack.input_type == "submit" or param_to_attack.name is None:
                     continue
+                logging.debug("Now at paramerter {}".format(param_to_attack.toString()))
                 empty_counter = 0
                 for vector in self._xss_vector.attack_vectors:
                     attack_url = form.action.complete_url + "?"
-                    random_val = self._xss_vector.random_string_generator(12)
+                    random_val = self._xss_vector.random_number_generator(12)
                     for other_parameter in form.parameter:
                         if param_to_attack == other_parameter:
-                            if other_parameter is None:
+                            if other_parameter is None or other_parameter.name is None:
                                 continue
                             attack_url += other_parameter.name + "=" + vector.replace("XSS", random_val) + "&"
                         else:
-                            if other_parameter.input_type == "submit":
+                            if other_parameter.input_type == "submit" or other_parameter.name is None:
                                 continue
-                            if other_parameter.values[0] is not None:
+                            elif other_parameter.values is None:
+                                attack_url += other_parameter.name + "=&"
+                            elif other_parameter.values[0] is not None:
                                 attack_url += other_parameter.name + "=" + other_parameter.values[0] + "&"
                             else:
                                 attack_url += other_parameter.name + "=" + self._xss_vector.random_string_generator(6) + "&"

@@ -200,9 +200,10 @@ function XMLHTTPObserverOpen(elem, args) {
 		"url" : args[1],
 		"method" : args[0]
 	};
-	//console.log("Uniq Id set")
-	//elem.jaeks_id = "123456Conny is tool"
-	resp = JSON.stringify(resp)
+	random_num =  Math.floor((Math.random() * 10000) + 1);
+	//console.log("Uniq Id set: " + random_num);
+	elem.jaeks_id = random_num;
+	resp = JSON.stringify(resp);
 	jswrapper.xmlHTTPRequestOpen(resp)
 }
 
@@ -214,7 +215,7 @@ function XMLHTTPObserverSend(elem, args) {
 	resp = {
 		"parameters" : elems
 	};
-	//console.log("Uniq Id: " + elem.jaeks_id)
+	//console.log("Uniq Id: " + elem.jaeks_id);
 	resp = JSON.stringify(resp)
 	jswrapper.xmlHTTPRequestSend(resp)
 }

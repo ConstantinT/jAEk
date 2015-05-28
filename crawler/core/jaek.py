@@ -62,29 +62,29 @@ class Jaek(QObject):
     def initial_login(self):
         logging.debug("Initial Login...")
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
-        self.domain_handler.complete_urls_in_page(self._page_with_loginform_logged_out)
-        self.domain_handler.analyze_urls(self._page_with_loginform_logged_out)
-        self.async_request_handler.handle_requests(self._page_with_loginform_logged_out)
-        num_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
+        num_of_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
+        logging.debug("Number of cookies before initial login: {}".format(num_of_cookies_before_login))
         self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:
-            f = open("Exit.txt", "w")
+            f = open("No_login_form.txt", "w")
             f.write(self._page_with_loginform_logged_out.html)
+            f.close()
             raise LoginFailed("Cannot find Login form, please check the parameters...")
 
-        page_with_loginform_logged_in = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
-        self.domain_handler.complete_urls_in_page(page_with_loginform_logged_in)
-        self.domain_handler.analyze_urls(page_with_loginform_logged_in)
-        #self.domain_handler.set_url_depth(page_with_loginform_logged_in, self.current_depth)
-        self.async_request_handler.handle_requests(page_with_loginform_logged_in)
-        login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_with_loginform_logged_in) < 0.5
+        page_after_login = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
+        f = open("after_login.txt", "w")
+        f.write(page_after_login.html)
+        f.close()
+        if page_after_login is None:
+            raise LoginFailed("Cannot load loginpage anymore...stop...")
+        login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_after_login) < 0.5
         if login_successfull:
             num_cookies_after_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
-            if num_cookies_after_login > num_cookies_before_login:
+            if num_cookies_after_login > num_of_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
             logging.debug("Initial login successfull!")
             return True
-        return False
+        raise LoginFailed("Cannot login, sorry...")
 
     def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None, login_clickable= None):
         if page_with_login_form is None:
@@ -93,48 +93,71 @@ class Jaek(QObject):
             if login_clickable is not None:
                 tmp_page = deepcopy(page_with_login_form)
                 event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
+                if event_state == EventResult.ErrorWhileInitialLoading:
+                    sleep(2000)
+                    event_state, page_with_login_form = self._event_executor.execute(tmp_page, element_to_click=login_clickable)
+                    if event_state == EventResult.ErrorWhileInitialLoading:
+                        logging.debug("Two time executing fails.. stop crawling")
+                        return None
                 self.domain_handler.complete_urls_in_page(page_with_login_form)
                 self.domain_handler.analyze_urls(page_with_login_form)
+                self.async_request_handler.handle_requests(page_with_login_form)
+            logging.debug("Start submitting login form...")
             response_code, html_after_timeouts, new_clickables, forms, links, timemimg_requests = self._form_handler.submit_form(login_form, page_with_login_form, login_data)
         except ValueError:
             return None
-        landing_page_logged_in = WebPage(-1, page_with_login_form.url, html_after_timeouts)
-        landing_page_logged_in.clickables = new_clickables
-        landing_page_logged_in.links = links
-        landing_page_logged_in.timing_requests = timemimg_requests
-        landing_page_logged_in.forms = forms
-
-        return landing_page_logged_in
+        #TODO: Put building of Webpage inside submit function
+        page_after_login = WebPage(-1, page_with_login_form.url, html_after_timeouts)
+        page_after_login.clickables = new_clickables
+        page_after_login.links = links
+        page_after_login.timing_requests = timemimg_requests
+        page_after_login.forms = forms
+        self.domain_handler.complete_urls_in_page(page_after_login)
+        self.domain_handler.analyze_urls(page_after_login)
+        self.async_request_handler.handle_requests(page_after_login)
+        return page_after_login
 
     def handle_possible_logout(self):
+        """
+        Handles a possible logout
+        :return: True is we were not logged out and false if we were logged out
+        """
         retries = 0
         max_retries = 3
         while retries < max_retries:
+            logging.debug("Start with relogin try number: {}".format(retries+1))
             page_with_login_form = self._get_webpage(self.user.url_with_login_form)
-            self.domain_handler.complete_urls_in_page(page_with_login_form)
-            self.domain_handler.analyze_urls(page_with_login_form)
-            self.async_request_handler.handle_requests(page_with_login_form)
             login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
             if login_form is not None: #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
-                page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)
-                self.domain_handler.complete_urls_in_page(page)
-                self.domain_handler.analyze_urls(page)
-                self.async_request_handler.handle_requests(page)
-                retries += 1
-                if calculate_similarity_between_pages(page, page_with_login_form) < 0.5:
-                    logging.debug("Relogin successfull...continue")
-                    return
-                else:
+                hopefully_reloggedin_page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)
+                if hopefully_reloggedin_page is None:
+                    retries += 1
                     logging.debug("Relogin attempt number {} failed".format(retries))
                     sleep(2000)
+                else:
+                    login_form, login_clickable = self.find_form_with_special_parameters(hopefully_reloggedin_page, self.user.login_data)
+                    if login_form is None:
+                        logging.debug("Relogin successfull...continue")
+                        return False
+                    else:
+                        logging.debug("Relogin fails, loginform is still present...")
+                        retries += 1
+                        sleep(2000)
             else:
                 logging.debug("Login Form is not there... we can continue (I hope)")
-                return
+                if retries < 3:
+                    return True
+                else:
+                    return False
         raise LoginFailed("We cannot login anymore... stop crawling here")
+
 
     def _get_webpage(self, url):
         response_code, result = self._dynamic_analyzer.analyze(url, timeout=10)
+        self.domain_handler.complete_urls_in_page(result)
+        self.domain_handler.analyze_urls(result)
+        self.async_request_handler.handle_requests(result)
         return result
 
     def check_login_status(self):

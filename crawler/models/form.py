@@ -67,6 +67,10 @@ class FormInput():
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def toString(self):
+        return "[Param: " + str(self.tag) + " Name: " + str(self.name) + " Inputtype: " + str(
+                self.input_type) + " Values: " + str(self.values) + "] \n"
+
 
 class InputField():
     def __init__(self, input_type, html_id=None, html_class=None, value=None):

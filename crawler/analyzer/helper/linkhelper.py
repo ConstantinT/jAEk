@@ -11,7 +11,7 @@ def extract_links(frame, requested_url):
         requested_url = requested_url
     anchor_tags = frame.findAllElements("a")
     new_links, new_clickables = _extract_new_links_from_links(anchor_tags, requested_url)
-    iframes = frame.findAllElements("iframe")
+    iframes = frame.findAllElements("iframe") + frame.findAllElements("frame")
     new_links = new_links + extract_links_from_iframe(iframes)
     return new_links, new_clickables
 

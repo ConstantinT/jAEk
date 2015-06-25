@@ -81,6 +81,13 @@ class MainAnalyzer(InteractionCore):
         if overall_waiting_time < 0.5:
             self._wait((0.5 - overall_waiting_time))
 
+        f = open("text.txt", "w")
+        f.write(self.mainFrame().toHtml())
+        f.close()
+        base_url = self.mainFrame().findFirstElement("base")
+        if base_url is not None:
+            base_url = base_url.attribute("href")
+
         links, clickables = extract_links(self.mainFrame(), url_to_request)
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
@@ -90,10 +97,6 @@ class MainAnalyzer(InteractionCore):
         self._analyzing_finished = True
         html_after_timeouts = self.mainFrame().toHtml()
         response_url = self.mainFrame().url().toString()
-
-        f = open("text.txt", "w")
-        f.write(html_after_timeouts)
-        f.close()
 
         self.mainFrame().setHtml(None)
         self._new_clickables.extend(clickables)
@@ -114,6 +117,8 @@ class MainAnalyzer(InteractionCore):
         current_page.clickables = self._new_clickables
         current_page.links = links
         current_page.forms = forms
+        if base_url is not None and base_url != "":
+            current_page.base_url = base_url
         return response_code, current_page
 
 

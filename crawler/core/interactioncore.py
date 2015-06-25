@@ -69,7 +69,7 @@ class InteractionCore(QWebPage):
         self._property_obs_js = f.read()
         f.close()
 
-        enablePlugins = False
+        enablePlugins = True
         loadImages = False
         self.settings().setAttribute(QWebSettings.PluginsEnabled, enablePlugins)
         self.settings().setAttribute(QWebSettings.JavaEnabled, enablePlugins)

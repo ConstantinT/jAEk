@@ -50,6 +50,11 @@ class Jaek(QObject):
             for clickable in page.clickables:
                 tmp_page = deepcopy(page)
                 event_state, delta_page = self._event_executor.execute(tmp_page, element_to_click=clickable)
+                if delta_page is None:
+                    sleep(2000)
+                    event_state, delta_page = self._event_executor.execute(tmp_page, element_to_click=clickable)
+                if delta_page is None:
+                    continue
                 delta_page = self.domain_handler.complete_urls_in_page(delta_page)
                 delta_page = self.domain_handler.analyze_urls(delta_page)
                 if event_state == EventResult.Ok:

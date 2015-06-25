@@ -67,6 +67,8 @@ class Crawler(QObject):
         self.start_page_url = Url(self.crawl_config.start_page_url)
         self.database_manager.insert_url_into_db(self.start_page_url)
 
+        self.interactive_login_form_search = True
+
         if self.user.login_data is not None:
             self.crawl_with_login = True
             successfull = self.initial_login()
@@ -80,6 +82,7 @@ class Crawler(QObject):
             parent_page = None  # Saves the parent of the delta-page (not other delta pages)
             previous_pages = []  # Saves all the pages the crawler have to pass to reach my delta-page
             delta_page = None
+
 
             if round_counter < 10:
                 round_counter += 1
@@ -172,7 +175,7 @@ class Crawler(QObject):
                     self.async_request_handler.handle_requests(current_page)
                     num_of_trys += 1
                 if current_page is None:
-                    self.domain_handler.visit_url(url_to_request, None, 1004)
+                    self.database_manager.visit_url(url_to_request, None, 1004)
                     logging.debug("Fetching url: {} fails.... continue".format(plain_url_to_request))
                     continue
 
@@ -227,7 +230,7 @@ class Crawler(QObject):
                     if wp_id is None or wp_id > 0:
                         logging.debug("Redirected page already seen, continue with next...")
                         self.database_manager.visit_url(url_to_request, wp_id, response_code, current_page.url)
-                        continue #Page was already seen
+                        continue  #Page was already seen
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code, current_page.url)
 
                 elif response_code > 399:
@@ -237,7 +240,6 @@ class Crawler(QObject):
                 else:
                     self.database_manager.visit_url(url_to_request, current_page.id, response_code)
                 self.domain_handler.extract_new_links_for_crawling(current_page)
-                #logging.debug(page.toString())
 
             if self.crawler_state == CrawlState.DeltaPage:
                 current_page.html = parent_page.html  # Assigning html
@@ -538,8 +540,8 @@ class Crawler(QObject):
             current_page.clickables = clickables
             if self.crawler_state == CrawlState.NormalPage:
                 self.cluster_manager.add_webpage_to_cluster(current_page)
-                self.print_to_file(current_page.toString(), current_page.id)
-                self.print_to_file(current_page.html, str(current_page.id) + "html")
+                #self.print_to_file(current_page.toString(), current_page.id)
+                #self.print_to_file(current_page.html, str(current_page.id) + "html")
         logging.debug("Crawling is done...")
 
     def handle_delta_page_has_only_new_links(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
@@ -549,7 +551,6 @@ class Crawler(QObject):
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.store_delta_page(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
-        self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
 
     def handle_delta_page_has_only_new_clickables(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         delta_page.generator.clickable_type = ClickableType.CreatesNewNavigatables
@@ -566,7 +567,7 @@ class Crawler(QObject):
         self.database_manager.store_delta_page(delta_page)
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
-        self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
+
 
     def handle_delta_page_has_only_ajax_requests(self, clickable, delta_page, parent_page=None, xhr_behavior=None):
         self.domain_handler.extract_new_links_for_crawling(delta_page)
@@ -592,7 +593,7 @@ class Crawler(QObject):
         self.domain_handler.extract_new_links_for_crawling(delta_page)
         self.database_manager.store_delta_page(delta_page)
         self.database_manager.update_clickable(parent_page.id, clickable)
-        self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
+
 
     def handle_delta_page_has_new_links_and_ajax_requests(self, clickable, delta_page, parent_page=None,
                                                           xhr_behavior=None):
@@ -605,7 +606,7 @@ class Crawler(QObject):
             delta_page.ajax_requests = []
             self.database_manager.store_delta_page(delta_page)
             self.database_manager.update_clickable(parent_page.id, clickable)
-            self.print_to_file(delta_page.toString(), str(delta_page.id) + ".txt")
+
         else:
             clickable.clickable_type = ClickableType.SendingAjax
             return clickable
@@ -739,12 +740,14 @@ class Crawler(QObject):
 
 
     def find_form_with_special_parameters(self, page, login_data, interactive_search=True):
+        logging.debug("Searching for form with given parameter names...")
         keys = list(login_data.keys())
         data1 = keys[0]
         data2 = keys[1]
         for form in page.forms:
             if form.toString().find(data1) > -1 and form.toString().find(data2) > -1:
                 logging.debug("Login form found, without clicking...")
+                self.interactive_login_form_search= False
                 return form, None
         if interactive_search:
             for clickable in page.clickables:
@@ -831,15 +834,12 @@ class Crawler(QObject):
         logging.debug("Number of cookies before initial login: {}".format(num_of_cookies_before_login))
         self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:
-            f = open("No_login_form.txt", "w")
-            f.write(self._page_with_loginform_logged_out.html)
-            f.close()
+            #f = open("No_login_form.txt", "w")
+            #f.write(self._page_with_loginform_logged_out.html)
+            #f.close()
             raise LoginFailed("Cannot find Login form, please check the parameters...")
 
         page_after_login = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
-        f = open("after_login.txt", "w")
-        f.write(page_after_login.html)
-        f.close()
         if page_after_login is None:
             raise LoginFailed("Cannot load loginpage anymore...stop...")
         login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_after_login) < 0.5
@@ -892,7 +892,7 @@ class Crawler(QObject):
         while retries < max_retries:
             logging.debug("Start with relogin try number: {}".format(retries+1))
             page_with_login_form = self._get_webpage(self.user.url_with_login_form)
-            login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
+            login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data, self.interactive_login_form_search)
             if login_form is not None: #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
                 hopefully_reloggedin_page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)

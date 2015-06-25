@@ -10,5 +10,8 @@
     <orderEntry type="module" module-name="BenchmarkProject" />
     <orderEntry type="module" module-name="Graphy" />
     <orderEntry type="module" module-name="CrawlerDBAnalyzer" />
+    <orderEntry type="module" module-name="UrlComparer" />
+    <orderEntry type="module" module-name="WgetLogAnalyzer" />
+    <orderEntry type="module" module-name="URLAnalyzer" />
   </component>
 </module>

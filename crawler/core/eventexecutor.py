@@ -125,6 +125,8 @@ class EventExecutor(InteractionCore):
             return EventResult.TargetElementNotFound, None
 
         self._capturing_ajax = True
+        #js_code = "document.getElementById('" + element_to_click.id + "').click();"
+        logging.debug(js_code + " on " + real_clickable.attribute("id"))
         real_clickable.evaluateJavaScript(js_code)
         self._wait(0.5)
         self._capturing_ajax = False
@@ -132,6 +134,8 @@ class EventExecutor(InteractionCore):
 
         forms = extract_forms(self.mainFrame())
         elements_with_event_properties = property_helper(self.mainFrame())
+        self.mainFrame().evaluateJavaScript(self._property_obs_js)
+        self._wait(0.1)
 
         html = self.mainFrame().toHtml()
         url = self.mainFrame().url().toString()
@@ -161,6 +165,10 @@ class EventExecutor(InteractionCore):
             delta_page.clickables.extend(clickables)
             delta_page.clickables.extend(elements_with_event_properties)
             delta_page.clickables = purge_dublicates(delta_page.clickables)
+            try:
+                delta_page.clickables.remove(self.element_to_click) # remove the clickable self...
+            except ValueError:
+                pass
             delta_page.links = links
             delta_page.forms = forms
             delta_page.ajax_requests = self.ajax_requests

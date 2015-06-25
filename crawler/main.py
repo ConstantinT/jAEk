@@ -14,9 +14,9 @@ from utils.user import User
 import csv
 from utils.utils import calculate_similarity_between_pages
 
+# Here you can specify the logging. Now it logs to the console. If you uncomment the two lines below, then it logs in the file.
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s: %(levelname)s - %(message)s',
-                    #datefmt='%d.%m.%Y %H:%M:%S.%f',
                     #filename='Attack.log',
                     #filemode='w'
                     )

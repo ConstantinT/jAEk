@@ -120,3 +120,4 @@ crawler/database/databaselegacy.py
 main2.py
 
 .idea/
+.project

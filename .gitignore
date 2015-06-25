@@ -115,5 +115,8 @@ local.properties
 
 crawler/similarities/
 crawler/result/
+crawler/database/databaselegacy.py
 
 main2.py
+
+.idea/

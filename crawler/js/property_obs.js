@@ -72,8 +72,7 @@ for (my_counter_i = 0; my_counter_i < elems.length; my_counter_i++) {
 				"addr" : dom_adress,
 				"class" : html_class
 			}
-			resp = JSON.stringify(resp)
-			console.log(resp)
+			resp = JSON.stringify(resp);
 			jswrapper.add_eventlistener_to_element(resp)
 		}
 	}

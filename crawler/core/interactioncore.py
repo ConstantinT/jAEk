@@ -5,8 +5,8 @@ Created on 21.11.2014
 '''
 
 from PyQt5.Qt import QWebPage, QWebSettings
-from PyQt5.QtNetwork import QNetworkProxy
-from PyQt5.QtCore import QSize
+from PyQt5.QtNetwork import QNetworkProxy, QNetworkRequest
+from PyQt5.QtCore import QSize, QUrl, QByteArray
 
 from time import time, sleep
 from core.jsbridge import JsBridge
@@ -233,3 +233,18 @@ class InteractionCore(QWebPage):
             return current_element_in_dom
 
 
+    def make_request(self, url):
+        request = QNetworkRequest()
+        request.setUrl(QUrl(url))
+        return request
+
+    def post_data_to_array(self, post_data):
+        post_params = QByteArray()
+        for (key, value) in post_data.items():
+            if isinstance(value, list):
+                for val in value:
+                    post_params.append(key + "=" + val + "&")
+            else:
+                post_params.append(key + "=" + value + "&")
+        post_params.remove(post_params.length() - 1, 1)
+        return post_params

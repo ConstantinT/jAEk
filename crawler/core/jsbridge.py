@@ -48,3 +48,7 @@ class JsBridge(QObject):
         msg = json.loads(msg)
         #logging.debug(msg)
         self.analyzer.add_eventlistener_to_element(msg)
+
+    @pyqtSlot(str)
+    def attack(self, msg):
+        self.analyzer.xss_callback(msg)

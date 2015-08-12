@@ -125,8 +125,6 @@ class EventExecutor(InteractionCore):
             return EventResult.TargetElementNotFound, None
 
         self._capturing_ajax = True
-        #js_code = "document.getElementById('" + element_to_click.id + "').click();"
-        logging.debug(js_code + " on " + real_clickable.attribute("id"))
         real_clickable.evaluateJavaScript(js_code)
         self._wait(0.5)
         self._capturing_ajax = False

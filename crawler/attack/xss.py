@@ -108,6 +108,18 @@ class XSSAttacker(InteractionCore):
                 #logging.debug("Response Code for {} is {}".format(reply.url().toString(), reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)))
                 self.response_code[reply.url().toString()] = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
 
+    def jsWinObjClearedHandler(self):  # Adding here the js-scripts I need
+        if not self._analyzing_finished:
+            self.mainFrame().addToJavaScriptWindowObject("jsb", self._js_bridge)
+
+    def xss_callback(self, msg):
+        logging.debug("XSS callback occurs with message: {}".format(msg))
+        if self._random_value in msg:
+            self._attack_successfull = True
+
+
+
+
 
 class AttackResult(Enum):
     AttackSuccessfull = 0

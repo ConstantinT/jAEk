@@ -35,9 +35,9 @@ if __name__ == '__main__':
 
 
     # Crawl without user session. Parameter desc: Name of DB - Privilege level - session
-    user = User("RUN1", 0, session="ABC")
+    user = User("Test", 0, session="ABC")
 
-    url = "http://example.com"
+    url = "http://localhost/"
     # Creates the crawler config: URL: start url of the crawler(independent from login) - max_dept: how deep to crawl(link), max_click_depth: how deep to follow events - Crawlspeed: Fast is the best value here
     crawler_config = CrawlConfig("Some Name, doesn't matter", url, max_depth=1, max_click_depth=2, crawl_speed=CrawlSpeed.Fast)
 

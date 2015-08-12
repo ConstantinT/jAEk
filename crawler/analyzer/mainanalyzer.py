@@ -48,7 +48,7 @@ class MainAnalyzer(InteractionCore):
         if method == "GET":
             self.mainFrame().load(QUrl(url_to_request))
         else:
-            request = self._make_request(url_to_request)
+            request = self.make_request(url_to_request)
             data = self.post_data_to_array(data)
             request.setRawHeader('Content-Type', QByteArray('application/x-www-form-urlencoded'))
             self.mainFrame().load(request,
@@ -81,9 +81,10 @@ class MainAnalyzer(InteractionCore):
         if overall_waiting_time < 0.5:
             self._wait((0.5 - overall_waiting_time))
 
-        f = open("text.txt", "w")
-        f.write(self.mainFrame().toHtml())
-        f.close()
+        # Just for debugging
+        #f = open("text.txt", "w")
+        #f.write(self.mainFrame().toHtml())
+        #f.close()
         base_url = self.mainFrame().findFirstElement("base")
         if base_url is not None:
             base_url = base_url.attribute("href")
@@ -176,23 +177,6 @@ class MainAnalyzer(InteractionCore):
                 logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
                 return
             self.response_code[reply.url().toString()] = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
-
-
-    def _make_request(self, url):
-        request = QNetworkRequest()
-        request.setUrl(QUrl(url))
-        return request
-
-    def post_data_to_array(self, post_data):
-        post_params = QByteArray()
-        for (key, value) in post_data.items():
-            if isinstance(value, list):
-                for val in value:
-                    post_params.append(key + "=" + val + "&")
-            else:
-                post_params.append(key + "=" + value + "&")
-        post_params.remove(post_params.length() - 1, 1)
-        return post_params
 
     def javaScriptAlert(self, frame, msg):
         logging.debug("Alert occurs in frame: {} with message: {}".format(frame.baseUrl().toString(), msg))

@@ -31,7 +31,8 @@ class Crawler(QObject):
         QObject.__init__(self)
         self.app = QApplication(sys.argv)
         self._network_access_manager = QNetworkAccessManager(self)
-        #self._network_access_manager = None
+        #self._network_access_manager = self._dynamic_analyzer.networkAccessManager()
+
         self._event_executor = EventExecutor(self, proxy, port, crawl_speed=crawl_config.process_speed,
                                              network_access_manager=self._network_access_manager)
         self._dynamic_analyzer = MainAnalyzer(self, proxy, port, crawl_speed=crawl_config.process_speed,
@@ -39,7 +40,7 @@ class Crawler(QObject):
         self._form_handler = FormHandler(self, proxy, port, crawl_speed=crawl_config.process_speed,
                                              network_access_manager=self._network_access_manager)
 
-        #self._network_access_manager = self._dynamic_analyzer.networkAccessManager()
+
 
         self.domain_handler = None
         self.current_depth = 0
@@ -87,6 +88,7 @@ class Crawler(QObject):
             if round_counter < 10:
                 round_counter += 1
             else:
+                # Need to do this to prevent memory leckages, issued by PyQT bindings or something else
                 logging.debug("10 rounds over, renew critical classes...")
                 round_counter = 0
                 self._network_access_manager = None
@@ -222,8 +224,8 @@ class Crawler(QObject):
                 current_page.current_depth = self.current_depth
                 self.database_manager.store_web_page(current_page)
 
-                for clickable in current_page.clickables:
-                    clickable.clickable_depth = 0
+                for current_clickable_to_work_on in current_page.clickables:
+                    current_clickable_to_work_on.clickable_depth = 0
 
                 if response_code in range(300, 350) and current_page.url != plain_url_to_request:
                     wp_id = self.database_manager.get_id_to_url(current_page.url)
@@ -247,10 +249,10 @@ class Crawler(QObject):
                 self.database_manager.store_delta_page(current_page)
 
             clickable_to_process = deepcopy(current_page.clickables)
-            current_page.clickables = []
+            #current_page.clickables = []
             num_clickables = len(clickable_to_process)
             clickable_to_process = self.edit_clickables_for_execution(clickable_to_process)
-            clickables = []
+            finished_clickables = []
             counter = 1  # Just a counter for displaying progress
             errors = 0  # Count the errors(Missing preclickable or target elements)
             login_retries_per_clickable = 0  # Count the login_retries
@@ -262,10 +264,10 @@ class Crawler(QObject):
             else:
                 logging.debug("Page has no events. Cluster it and throw it to the others...")
             while len(clickable_to_process) > 0 and login_retries_per_clickable < max_login_retires_per_clickable:
-                clickable = clickable_to_process.pop(0)
-                if not self.should_execute_clickable(clickable):
-                    clickable.clickable_type = ClickableType.IgnoredByCrawler
-                    self.database_manager.update_clickable(current_page.id, clickable)
+                current_clickable_to_work_on = clickable_to_process.pop(0)
+                if not self.should_execute_clickable(current_clickable_to_work_on):
+                    current_clickable_to_work_on.clickable_type = ClickableType.IgnoredByCrawler
+                    self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                     continue
                 logging.debug(
                     "Processing Clickable Number {} - {} left".format(str(counter), str(len(clickable_to_process))))
@@ -274,32 +276,32 @@ class Crawler(QObject):
                 """
                 If event is something like "onclick", take off the "on"
                 """
-                event = clickable.event
+                event = current_clickable_to_work_on.event
                 if event[0:2] == "on":
                     event = event[2:]
-                if clickable.clicked:
+                if current_clickable_to_work_on.clicked:
                     continue
 
                 """
                 If event is not supported, mark it so in the database and continue
                 """
                 if event not in self._event_executor.supported_events and "javascript:" not in event:
-                    clickable.clickable_type = ClickableType.UnsupportedEvent
-                    self.database_manager.update_clickable(current_page.id, clickable)
-                    clickables.append(clickable)
-                    logging.debug("Unsupported event: {} in {}".format(event, clickable.toString()))
+                    current_clickable_to_work_on.clickable_type = ClickableType.UnsupportedEvent
+                    self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
+                    finished_clickables.append(current_clickable_to_work_on)
+                    logging.debug("Unsupported event: {} in {}".format(event, current_clickable_to_work_on.toString()))
                     continue
                 """
                 Because I want first a run without sending something to the backend, I distinguish if I know an element or not.
                 If I know it(its clickable_type is set) I re-execute the event and let the ajax request pass.
                 If I don't know it, I execute each clickable with an interception.
                 """
-                if clickable.clickable_type is not None:
+                if current_clickable_to_work_on.clickable_type is not None:
                     """
                     The clickable was executed in the past, and has triggered an backend request. Know execute it again and let that request pass
                     """
                     xhr_behavior = XHRBehavior.ObserveXHR
-                    event_state, delta_page = self._event_executor.execute(current_page, element_to_click=clickable,
+                    event_state, delta_page = self._event_executor.execute(current_page, element_to_click=current_clickable_to_work_on,
                                                                            pre_clicks=necessary_clicks,
                                                                            xhr_options=xhr_behavior)
                 else:
@@ -307,34 +309,34 @@ class Crawler(QObject):
                     The clickable was never executed, so execute it with intercepting all backend requests.
                     """
                     xhr_behavior = XHRBehavior.InterceptXHR
-                    event_state, delta_page = self._event_executor.execute(current_page, element_to_click=clickable,
+                    event_state, delta_page = self._event_executor.execute(current_page, element_to_click=current_clickable_to_work_on,
                                                                            pre_clicks=necessary_clicks,
                                                                            xhr_options=xhr_behavior)
 
                 if event_state == EventResult.UnsupportedTag:
-                    clickable.clicked = True
-                    clickable.clickable_type = ClickableType.UnsupportedEvent
-                    clickables.append(clickable)
-                    self.database_manager.update_clickable(current_page.id, clickable)
+                    current_clickable_to_work_on.clicked = True
+                    current_clickable_to_work_on.clickable_type = ClickableType.UnsupportedEvent
+                    finished_clickables.append(current_clickable_to_work_on)
+                    self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                     continue
 
                 elif event_state == EventResult.ErrorWhileInitialLoading:
                     if timeout_counter < 10:
-                        clickable.clicked = True
-                        clickable.clickable_type = ClickableType.Error
-                        clickables.append(clickable)
-                        self.database_manager.update_clickable(current_page.id, clickable)
+                        current_clickable_to_work_on.clicked = True
+                        current_clickable_to_work_on.clickable_type = ClickableType.Error
+                        finished_clickables.append(current_clickable_to_work_on)
+                        self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                         timeout_counter += 1
                         continue
                     else:
                         timeout_counter = 0
                         logging.debug("Too many loading errors... mark all clickables as error and continue")
                         while len(clickable_to_process) > 0:
-                            clickable = clickable_to_process.pop(0)
-                            clickable.clicked = True
-                            clickable.clickable_type = ClickableType.Error
-                            clickables.append(clickable)
-                            self.database_manager.update_clickable(current_page.id, clickable)
+                            current_clickable_to_work_on = clickable_to_process.pop(0)
+                            current_clickable_to_work_on.clicked = True
+                            current_clickable_to_work_on.clickable_type = ClickableType.Error
+                            finished_clickables.append(current_clickable_to_work_on)
+                            self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                             break
                         continue
 
@@ -342,10 +344,10 @@ class Crawler(QObject):
                 elif event_state == EventResult.PreviousClickNotFound or event_state == EventResult.TargetElementNotFound:
                     if self.crawl_with_login:
                         if login_retries_per_clickable >= max_login_retires_per_clickable:
-                            clickable.clickable_type = ClickableType.Error
-                            current_page.clickables.append(clickable)
+                            current_clickable_to_work_on.clickable_type = ClickableType.Error
+                            finished_clickables.append(current_clickable_to_work_on)
                             login_retries_per_clickable = 0
-                            self.database_manager.update_clickable(current_page.id, clickable)
+                            self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                             logging.debug("Max Loginretires per clickable: Set clickable to error and go on...")
                             errors = 0
                         else:
@@ -355,27 +357,27 @@ class Crawler(QObject):
                                 login_retries_per_clickable += 1
                                 errors = 0
                             else:
-                                clickable.clicked = False
+                                current_clickable_to_work_on.clicked = False
                                 errors += 1
-                                clickable_to_process.insert(0, clickable)
+                                clickable_to_process.insert(0, current_clickable_to_work_on)
                             continue
                     else:
                         if errors < max_errors:
-                            clickable_to_process.insert(0, clickable)
+                            clickable_to_process.insert(0, current_clickable_to_work_on)
                             errors += 1
                         else:
                             errors = 0
-                            clickable.clickable_type = ClickableType.Error
-                            self.database_manager.update_clickable(current_page.id, clickable)
-                            clickables.append(clickable)
+                            current_clickable_to_work_on.clickable_type = ClickableType.Error
+                            self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
+                            finished_clickables.append(current_clickable_to_work_on)
                         continue
                 elif event_state == EventResult.CreatesPopup:
-                    clickable.clicked = True
-                    clickable.links_to = delta_page.url
-                    clickable.clickable_type = ClickableType.CreateNewWindow
+                    current_clickable_to_work_on.clicked = True
+                    current_clickable_to_work_on.links_to = delta_page.url
+                    current_clickable_to_work_on.clickable_type = ClickableType.CreateNewWindow
                     new_url = Url(delta_page.url)
-                    clickables.append(clickable)
-                    self.database_manager.update_clickable(current_page.id, clickable)
+                    finished_clickables.append(current_clickable_to_work_on)
+                    self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                     new_url = self.domain_handler.handle_url(new_url, None)
                     new_url.depth_of_finding = self.current_depth
                     self.database_manager.insert_url_into_db(new_url)
@@ -389,12 +391,12 @@ class Crawler(QObject):
 
                     if event_state == EventResult.URLChanged:
                         logging.debug("DeltaPage has new Url...{}".format(delta_page.url))
-                        clickable.clicked = True
-                        clickable.links_to = delta_page.url
-                        clickable.clickable_type = ClickableType.Link
+                        current_clickable_to_work_on.clicked = True
+                        current_clickable_to_work_on.links_to = delta_page.url
+                        current_clickable_to_work_on.clickable_type = ClickableType.Link
                         new_url = Url(delta_page.url)
-                        clickables.append(clickable)
-                        self.database_manager.update_clickable(current_page.id, clickable)
+                        finished_clickables.append(current_clickable_to_work_on)
+                        self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
                         if self.database_manager.insert_url_into_db(new_url): # Page does not exist
                             delta_page.id = self.get_next_page_id()
                             self.database_manager.visit_url(new_url, delta_page.id, 1000) #1000 is the code for a redirected url
@@ -410,8 +412,8 @@ class Crawler(QObject):
                           the real DeltaPage
                         - Handle it after the result of the subtraction
                     """
-                    clickable.clicked = True
-                    clickable.clickable_depth = delta_page.delta_depth
+                    current_clickable_to_work_on.clicked = True
+                    current_clickable_to_work_on.clickable_depth = delta_page.delta_depth
                     delta_page.current_depth = self.current_depth
                     delta_page = self.domain_handler.complete_urls_in_page(delta_page)
                     delta_page = self.domain_handler.analyze_urls(delta_page)
@@ -427,94 +429,94 @@ class Crawler(QObject):
                     clickable_process_again = None
 
                     for c in delta_page.clickables:
-                        c.clickable_depth = clickable.clickable_depth + 1
+                        c.clickable_depth = current_clickable_to_work_on.clickable_depth + 1
 
 
                     if len(delta_page.clickables) > 0 or len(delta_page.links) > 0 or len(
                             delta_page.ajax_requests) > 0 or len(delta_page.forms) > 0:
                         if len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_only_new_links(clickable, delta_page, current_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_links(current_clickable_to_work_on, delta_page, current_page,
                                                                                   xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_only_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_only_ajax_requests(current_clickable_to_work_on, delta_page,
                                                                                       current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_and_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_and_ajax_requests(current_clickable_to_work_on, delta_page,
                                                                                                current_page,
                                                                                                xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_only_new_clickables(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_clickables(current_clickable_to_work_on, delta_page,
                                                                                        current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clicclickable_process_againkable = self.handle_delta_page_has_new_links_and_clickables(clickable, delta_page,
+                            clicclickable_process_againkable = self.handle_delta_page_has_new_links_and_clickables(current_clickable_to_work_on, delta_page,
                                                                                             current_page, xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_new_clickables_and_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_clickables_and_ajax_requests(current_clickable_to_work_on,
                                                                                                     delta_page,
                                                                                                     current_page,
                                                                                                     xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) == 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_ajax_requests__clickables(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_links_ajax_requests__clickables(current_clickable_to_work_on,
                                                                                                        delta_page,
                                                                                                        current_page,
                                                                                                        xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_only_new_forms(clickable, delta_page, current_page,
+                            clickable_process_again = self.handle_delta_page_has_only_new_forms(current_clickable_to_work_on, delta_page, current_page,
                                                                                   xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_and_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_and_forms(current_clickable_to_work_on, delta_page,
                                                                                        current_page, xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_forms_and_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_forms_and_ajax_requests(current_clickable_to_work_on, delta_page,
                                                                                                current_page,
                                                                                                xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) == 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_forms_ajax_requests(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_forms_ajax_requests(current_clickable_to_work_on, delta_page,
                                                                                                  current_page,
                                                                                                  xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_clickable_and_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_clickable_and_forms(current_clickable_to_work_on, delta_page,
                                                                                            current_page, xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) == 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms(clickable, delta_page,
+                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms(current_clickable_to_work_on, delta_page,
                                                                                               current_page,
                                                                                               xhr_behavior)
 
                         elif len(delta_page.links) == 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_clickables_forms_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_clickables_forms_ajax_requests(current_clickable_to_work_on,
                                                                                                       delta_page,
                                                                                                       current_page,
                                                                                                       xhr_behavior)
 
                         elif len(delta_page.links) != 0 and len(delta_page.ajax_requests) != 0 and len(
                                 delta_page.clickables) != 0 and len(delta_page.forms) != 0:
-                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms_ajax_requests(clickable,
+                            clickable_process_again = self.handle_delta_page_has_new_links_clickables_forms_ajax_requests(current_clickable_to_work_on,
                                                                                                             delta_page,
                                                                                                             current_page,
                                                                                                             xhr_behavior)
@@ -527,17 +529,17 @@ class Crawler(QObject):
                             logging.debug("    AjaxRequests: " + str(len(delta_page.ajax_requests)))
 
                         if clickable_process_again is not None:
-                            clickable.clicked = False
+                            current_clickable_to_work_on.clicked = False
                             clickable_to_process.append(clickable_process_again)
                         else:
-                            clickables.append(clickable)
+                            finished_clickables.append(current_clickable_to_work_on)
 
                     else:
-                        clickable.clickable_type = ClickableType.UIChange
-                        self.database_manager.update_clickable(current_page.id, clickable)
-                        clickables.append(clickable)
+                        current_clickable_to_work_on.clickable_type = ClickableType.UIChange
+                        self.database_manager.update_clickable(current_page.id, current_clickable_to_work_on)
+                        finished_clickables.append(current_clickable_to_work_on)
 
-            current_page.clickables = clickables
+            current_page.clickables = finished_clickables
             if self.crawler_state == CrawlState.NormalPage:
                 self.cluster_manager.add_webpage_to_cluster(current_page)
                 #self.print_to_file(current_page.toString(), current_page.id)

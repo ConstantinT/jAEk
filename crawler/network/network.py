@@ -15,8 +15,6 @@ class NetWorkAccessManager(QNetworkAccessManager):
         
     def _finished(self, reply):
         reply.deleteLater()
-        pass
-
         
     def createRequest(self, op, req, device=None):
         self.reply = None

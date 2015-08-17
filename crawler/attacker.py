@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from attack.xss import XSSAttacker, AttackResult
 from attack.xxxattacks import XSSVectors
-from core.jaek import Jaek
+from core.jaekcore import JaekCore
 from models.url import Url
 from models.utils import CrawlSpeed
 from utils.domainhandler import DomainHandler
@@ -17,7 +17,7 @@ from utils.execptions import LoginFailed
 __author__ = 'constantin'
 
 EMPTY_LIMIT = 5
-class Attacker(Jaek):
+class Attacker(JaekCore):
     def __init__(self, config, proxy="", port=0, database_manager=None):
         super(Attacker, self).__init__(config, proxy="", port=0, database_manager=database_manager)
 

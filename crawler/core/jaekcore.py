@@ -14,7 +14,7 @@ from utils.utils import count_cookies, calculate_similarity_between_pages
 
 __author__ = 'constantin'
 
-class Jaek(QObject):
+class JaekCore(QObject):
 
 
     def __init__(self, config, proxy="", port=0, database_manager=None):

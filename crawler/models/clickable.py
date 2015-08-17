@@ -58,7 +58,10 @@ class Clickable():
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return self.dom_address == other.dom_address and self.event == other.event and self.clickable_type == other.clickable_type and self.links_to == other.links_to
+        if self.clickable_type is not None and other.clickable_type is not None:
+            return self.dom_address == other.dom_address and self.event == other.event and self.clickable_type == other.clickable_type and self.links_to == other.links_to
+        else:
+            return self.dom_address == other.dom_address and self.event == other.event and self.links_to == other.links_to
 
     def __hash__(self):
         s_to_hash = self.toString()

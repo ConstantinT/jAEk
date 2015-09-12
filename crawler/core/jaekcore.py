@@ -38,8 +38,9 @@ class JaekCore(QObject):
                                              network_access_manager=self._network_access_manager)
 
         self.cookie_num = -1
+        self.interactive_login_form_search = False
 
-    def find_form_with_special_parameters(self, page, login_data, interactive_search=True):
+    def _find_form_with_special_parameters(self, page, login_data, interactive_search=True):
         keys = list(login_data.keys())
         data1 = keys[0]
         data2 = keys[1]
@@ -63,13 +64,12 @@ class JaekCore(QObject):
                             return form, clickable
         return None, None
 
-
-    def initial_login(self):
+    def _initial_login(self):
         logging.debug("Initial Login...")
         self._page_with_loginform_logged_out = self._get_webpage(self.user.url_with_login_form)
         num_of_cookies_before_login = count_cookies(self._network_access_manager, self.user.url_with_login_form)
         logging.debug("Number of cookies before initial login: {}".format(num_of_cookies_before_login))
-        self._login_form, login_clickables = self.find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
+        self._login_form, login_clickables = self._find_form_with_special_parameters(self._page_with_loginform_logged_out, self.user.login_data)
         if self._login_form is None:
             f = open("No_login_form.txt", "w")
             f.write(self._page_with_loginform_logged_out.html)
@@ -77,9 +77,6 @@ class JaekCore(QObject):
             raise LoginFailed("Cannot find Login form, please check the parameters...")
 
         page_after_login = self._login_and_return_webpage(self._login_form, self._page_with_loginform_logged_out, self.user.login_data, login_clickables)
-        f = open("after_login.txt", "w")
-        f.write(page_after_login.html)
-        f.close()
         if page_after_login is None:
             raise LoginFailed("Cannot load loginpage anymore...stop...")
         login_successfull = calculate_similarity_between_pages(self._page_with_loginform_logged_out, page_after_login) < 0.5
@@ -88,7 +85,10 @@ class JaekCore(QObject):
             if num_cookies_after_login > num_of_cookies_before_login:
                 self.cookie_num = num_cookies_after_login
             logging.debug("Initial login successfull!")
-            return True
+            if login_clickables is not None:
+                return True, True # If we login with a click
+            else:
+                return True, False # If we don't login with a click
         raise LoginFailed("Cannot login, sorry...")
 
     def _login_and_return_webpage(self, login_form, page_with_login_form=None, login_data=None, login_clickable= None):
@@ -122,7 +122,7 @@ class JaekCore(QObject):
         self.async_request_handler.handle_requests(page_after_login)
         return page_after_login
 
-    def handle_possible_logout(self):
+    def _handle_possible_logout(self):
         """
         Handles a possible logout
         :return: True is we were not logged out and false if we were logged out
@@ -132,8 +132,9 @@ class JaekCore(QObject):
         while retries < max_retries:
             logging.debug("Start with relogin try number: {}".format(retries+1))
             page_with_login_form = self._get_webpage(self.user.url_with_login_form)
-            login_form, login_clickable = self.find_form_with_special_parameters(page_with_login_form, self.user.login_data)
-            if login_form is not None: #So login_form is visible, we are logged out
+            login_form, login_clickable = self._find_form_with_special_parameters(page_with_login_form, self.user.login_data, self.interactive_login_form_search)
+            if login_form is not None:
+            #So login_form is visible, we are logged out
                 logging.debug("Logout detected, visible login form...")
                 hopefully_reloggedin_page = self._login_and_return_webpage(login_form, page_with_login_form, self.user.login_data, login_clickable)
                 if hopefully_reloggedin_page is None:
@@ -141,7 +142,7 @@ class JaekCore(QObject):
                     logging.debug("Relogin attempt number {} failed".format(retries))
                     sleep(2000)
                 else:
-                    login_form, login_clickable = self.find_form_with_special_parameters(hopefully_reloggedin_page, self.user.login_data)
+                    login_form, login_clickable = self._find_form_with_special_parameters(hopefully_reloggedin_page, self.user.login_data)
                     if login_form is None:
                         logging.debug("Relogin successfull...continue")
                         return False
@@ -150,7 +151,7 @@ class JaekCore(QObject):
                         retries += 1
                         sleep(2000)
             else:
-                logging.debug("Login Form is not there... we can continue (I hope)")
+                logging.debug("Login form is not there... we can continue (I hope)")
                 if retries < 3:
                     return True
                 else:
@@ -165,8 +166,7 @@ class JaekCore(QObject):
         self.async_request_handler.handle_requests(result)
         return result
 
-    def check_login_status(self):
-        #logging.debug("We have {} from {} cookies".format(count_cookies(self._network_access_manager, self.user.url_with_login_form), self.cookie_num))
+    def _check_login_status_with_cookies(self):
         if self.cookie_num > 0:
             current_cookie_num = count_cookies(self._network_access_manager, self.user.url_with_login_form)
             return current_cookie_num >= self.cookie_num

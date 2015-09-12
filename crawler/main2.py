@@ -26,8 +26,7 @@ if __name__ == '__main__':
 
     #user = User("WordpressX", 0, "http://localhost:8080/wp-login.php", login_data = {"log": "admin", "pwd": "admin"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username" : "admin", "pass" : "admin"})
-    #user = ser("constantin", 0, "https://plus.google.com/", login_data={"Email": "constantin.tschuertz@gmail.com","Passwd": "NmE4NjliZm"})
-    #user = User("local", 0, "http://localhost:8080/", login_data = {"user": "admin", "password": "admin"}, session="ABC")
+    user = User("Test42", 0, "http://localhost:8080/", login_data = {"user": "admin", "password": "admin"}, session="ABC")
     #user = User("constantin", 0, "http://localhost:8080/", login_data = {"username": "admin", "password": "admin"})
     #user = User("Gallery2", 0, "http://localhost:8080/", login_data= {"name": "admin", "password": "34edbc"}, session= "ABC")
     #user = User("Gallery41", 0, session="ABC")
@@ -40,13 +39,15 @@ if __name__ == '__main__':
     #user = User("Mediawiki", 0)
     #user = User("MyBB2", 0, "http://localhost:8080/index.php", login_data= {"quick_username": "admin", "quick_password": "admin"}, session="ABC")
     #user = User("MyBB2", 0, "http://localhost:8080/admin/index.php", login_data= {"username": "admin", "password": "admin"}, session="ABC")
-    user = User("local", 0)
+    #user = User("local", 0)
 
     #url = "http://localhost/test3.php"
     #url = "http://localhost:8080/showthread.php?tid=1"
-    url = "http://localhost:8080/pages/18.php"
+    #url = "http://localhost:8080/pages/18.php"
     #url = "http://localhost/submission_test1.php"
-    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=1, max_click_depth=5, crawl_speed=CrawlSpeed.Fast)
+    url = "http://localhost:8080/"
+    url = "http://localhost:8080/index.php/apps/files/"
+    crawler_config = CrawlConfig("Was weiß ich", url, max_depth=2, max_click_depth=5, crawl_speed=CrawlSpeed.Fast)
     attack_config = AttackConfig(url)
 
     database_manager = DatabaseManager(user, dropping=True)

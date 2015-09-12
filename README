@@ -1,10 +1,12 @@
-JÄk allows you to crawl Web applications build with JavaScript. 
+This is jÄk, I developed during my master thesis.
+
+JÄk allows you to crawl Web applications build with JavaScript.
 
 For using it you need a current version of Python3, PYQT5, mongodb and the pymongo bindings < 3.x.x.
 
-The start file of JÄk is the main.py(will later changed). There you find comments on how to use it.
-If you find bugs just use the issue tool from github and please provide me the last 50 lines of output. If this is 
-not possible send me a mail at constantin.tschuertz@gmail.com with the same informations ;)
+The start file of JÄk is the main.py. There you find comments on how to use it. In the example.py you find the
+configuration I used for my thesis and the paper.
+If you find bugs just use the issue tool from github and please provide me the last 50 lines of output.
 I will fix them as soon as possible.
 
 Enjoy using it and good luck ;)

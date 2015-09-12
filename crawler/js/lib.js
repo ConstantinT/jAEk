@@ -242,24 +242,16 @@ function intervallWrapper(elem, args) {
 function getXPath(element) {
 	try {
 		var xpath = '';
-		//console.log("==================================")
-		//console.log("Now at: " + element.tagName + " with ID: " + element.id)
 		for (; element && element.nodeType == 1; element = element.parentNode) {
 			var sibblings = element.parentNode.childNodes;
-			//console.log("Current  Element: " + element.tagName + " Num sibblings: " + sibblings.length + " Parent: " + element.parentNode.tagName);
 			var same_tags = []
 			for (var i = 0; i < sibblings.length; i++) { // collecting same
-				//console.log("Sibbling is: " + sibblings[i].tagName)
 				if (element.tagName === sibblings[i].tagName) {
-					//console.log("Sibbling " + sibblings[i].tagName + " added")
 					same_tags[same_tags.length] = sibblings[i]
 				}
 			}
-			//for (var i = 0; i < same_tags.length; i++) {
-    			//console.log("The ID of element " + i + " is: " + same_tags[i].id);
-			//}
+
 			var id = same_tags.indexOf(element) + 1;
-			//console.log("ID is: " + id);
 			id > 1 ? (id = '[' + id + ']') : (id = '');
 			xpath = '/' + element.tagName.toLowerCase() + id + xpath;
 		}

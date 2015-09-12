@@ -15,7 +15,13 @@ from models.clickabletype import ClickableType
 from models.form import HtmlForm, FormInput
 from models.deltapage import DeltaPage
 
-#Keywords
+# This is the database handling class. You don't really want to look down what there is.
+# Really you won't!
+
+
+
+
+
 
 SESSION = "session"
 DOM_ADDRESS = "dom_address"

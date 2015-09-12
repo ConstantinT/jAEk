@@ -37,7 +37,7 @@ class MainAnalyzer(InteractionCore):
         except AttributeError:
             url_to_request = url_to_request
 
-        logging.debug("Start analyzing of {}...".format(url_to_request))
+        logging.debug("Start analyzing the url {}...".format(url_to_request))
         self._timing_requests = []
         self._new_clickables = []
         self._timeming_events = []
@@ -56,7 +56,6 @@ class MainAnalyzer(InteractionCore):
                                   data)
         t = 0
         while (not self._loading_complete and t < timeout ):  # Waiting for finish processing
-            # logging.debug("Waiting...")
             self._wait(self.wait_for_processing)
             t += self.wait_for_processing
 
@@ -122,11 +121,9 @@ class MainAnalyzer(InteractionCore):
             current_page.base_url = base_url
         return response_code, current_page
 
-
     def loadFinishedHandler(self, result):
         if not self._analyzing_finished:  # Just to ignoring setting of non page....
             self._loading_complete = True
-
 
     def jsWinObjClearedHandler(self):  # Adding here the js-scripts I need
         if not self._analyzing_finished:
@@ -163,7 +160,6 @@ class MainAnalyzer(InteractionCore):
         except KeyError:
             pass
 
-
     def frameCreatedHandler(self, frame):
         logging.debug("Frame created")
 
@@ -173,8 +169,8 @@ class MainAnalyzer(InteractionCore):
 
     def loadComplete(self, reply):
         if not self._analyzing_finished:
+            #sometimes the response code is none, but in reality it is valid
             if reply.attribute(QNetworkRequest.HttpStatusCodeAttribute) is None:
-                logging.error("Response Code is None: Maybe, you dumb idiot, has set a proxy but not one running!!!")
                 return
             self.response_code[reply.url().toString()] = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
 

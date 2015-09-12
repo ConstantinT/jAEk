@@ -31,7 +31,7 @@ class Attacker(JaekCore):
         self.user = user
         if user.login_data is not None:
             self.process_with_login = True
-            go_on = self.initial_login()
+            go_on = self._initial_login()
             if not go_on:
                 raise LoginFailed("Initial login failed...")
         self.attack_all_urls_with_replacing()
@@ -75,7 +75,7 @@ class Attacker(JaekCore):
             if len(url.parameters) > 0:
                 logging.debug("Now testing with url: {}".format(url.toString()))
                 if self.process_with_login:
-                    self.handle_possible_logout()
+                    self._handle_possible_logout()
                 for parameter_to_attack in url.parameters:
                     empty_counter = 0
                     for vector in self._xss_vector.attack_vectors:
@@ -92,9 +92,9 @@ class Attacker(JaekCore):
                         attack_url = attack_url[:-1] # Removing the last "&
                         logging.debug("Attack with: {}".format(attack_url))
                         result, response_code = self._xss.attack(attack_url, random_val)
-                        if not self.check_login_status():
+                        if not self._check_login_status_with_cookies():
                             sleep(2000)
-                            self.initial_login()
+                            self._initial_login()
                             result, response_code = self._xss.attack(attack_url, random_val)
                         if response_code is None:
                             continue
@@ -117,7 +117,7 @@ class Attacker(JaekCore):
             if len(url.parameters) > 0:
                 logging.debug("Now testing with url: {}".format(url.toString()))
                 if self.process_with_login:
-                    self.handle_possible_logout()
+                    self._handle_possible_logout()
                 for parameter_to_attack in url.parameters:
                     empty_counter = 0
                     for vector in self._xss_vector.attack_vectors:
@@ -133,9 +133,9 @@ class Attacker(JaekCore):
                         attack_url = attack_url[:-1] # Removing the last "&
                         logging.debug("Attack with: {}".format(attack_url))
                         result, response_code = self._xss.attack(attack_url, random_val)
-                        if not self.check_login_status():
+                        if not self._check_login_status_with_cookies():
                             sleep(2000)
-                            self.initial_login()
+                            self._initial_login()
                             result, response_code = self._xss.attack(attack_url, random_val)
                         if response_code is None:
                             continue
@@ -152,7 +152,7 @@ class Attacker(JaekCore):
 
     def attack_all_get_forms(self):
         if self.process_with_login:
-                self.handle_possible_logout()
+                self._handle_possible_logout()
         logging.debug("Attacking with get forms")
         all_forms = self.database_manager.get_one_form_per_destination()
         for form in all_forms:
@@ -184,9 +184,9 @@ class Attacker(JaekCore):
                     attack_url = attack_url[:-1]
                     logging.debug("Attack with: {}".format(attack_url))
                     result, response_code = self._xss.attack(attack_url, random_val)
-                    if not self.check_login_status():
+                    if not self._check_login_status_with_cookies():
                         sleep(2000)
-                        self.initial_login()
+                        self._initial_login()
                         result, response_code = self._xss.attack(attack_url, random_val)
                     if response_code is None:
                         continue

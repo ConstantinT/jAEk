@@ -1,12 +1,22 @@
-This is jÄk, I developed during my master thesis.
+jÄk
 
-JÄk allows you to crawl Web applications build with JavaScript.
+jÄk is a web vulnerability crawler and scanner that I developed during my master thesis.
+It aim is it to crawl web applications heavily build with JavaScript.
 
-For using it you need a current version of Python3, PYQT5, mongodb and the pymongo bindings < 3.x.x.
+To implement this, we used JavaScript function hooking to find all events attached with the addEventListener
+function. In addition this technique allows jÄk to recognize the execution of other interessting function. 
+Moreover we implement methods to analyze staticaly all HTML elements
+within the tree to find static events.
 
-The start file of JÄk is the main.py. There you find comments on how to use it. In the example.py you find the
-configuration I used for my thesis and the paper.
-If you find bugs just use the issue tool from github and please provide me the last 50 lines of output.
-I will fix them as soon as possible.
+For using it you need:
+ - Python3
+ - PYQT5 (Version 5.3 - 5.4)
+ - mongodb 
+ - pymongo bindings < 3.x.x.
+
+Acutally you cannot start it with the command line. To start it copy and overwrite the main.py file and start this.
+There you find comments on how to use it. In the example.py you find the configuration I used for my 
+thesis and the paper. If you find bugs just use the issue tool from github and please provide 
+me the last 50 lines of output and the software you tested. I will fix them as soon as possible.
 
 Enjoy using it and good luck ;)

@@ -71,4 +71,4 @@ crawler.crawl(user)
 
 ## License
 
-jÄk is released as XYZ
+jÄk is released as General Public License version 3 or later.

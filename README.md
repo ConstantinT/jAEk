@@ -1,6 +1,6 @@
 # jÄk - jet Änother krawler.
 
-jÄk (or jAEk) is a web application crawler and scanner which uses dynamic JavaScript code analysis. jÄk installs hooks in JavaScript APIs in order to detect the registration of event handlers, the use of network communication APIs, and dynamically-generated URLs or user forms. It then builds and mantains a navigation graph to crawl and test web applications. For more details on the internals please have a look at [my thesis and our paper](#papers-and-further-readings)
+jÄk (or jAEk, pron. Jack) is a web application crawler and scanner which uses dynamic JavaScript code analysis. jÄk installs hooks in JavaScript APIs in order to detect the registration of event handlers, the use of network communication APIs, and dynamically-generated URLs or user forms. It then builds and mantains a navigation graph to crawl and test web applications. For more details on the internals please have a look at [my thesis and our paper](#papers-and-further-readings)
 
 ## Requirements
 

@@ -1,21 +1,3 @@
-Copyright (C) 2015 Constantin Tschürtz
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
-//console.log("Lib loading...")
-
 /*
  * Simulate.js from https://github.com/airportyh/simulate.js
  */
@@ -124,56 +106,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 		})
 	}
 }();
-
 /*
- * object.watch polyfill
+ * From down here
  * 
- * 2012-04-03
+ *Copyright (C) 2015 Constantin Tschürtz
  * 
- * By Eli Grey, http://eligrey.com Public Domain. NO WARRANTY EXPRESSED OR
- * IMPLIED. USE AT YOUR OWN RISK.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+ *
+ *This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
-// object.watch
-if (!Object.prototype.watch) {
-	// console.log("Watch function created...")
-	Object.defineProperty(Object.prototype, "watch", {
-		enumerable : false,
-		configurable : true,
-		writable : false,
-		value : function(prop, handler) {
-			var oldval = this[prop], newval = oldval, getter = function() {
-				return newval;
-			}, setter = function(val) {
-				oldval = val;
-				return newval = handler.call(this, prop, oldval, val);
-			};
-
-			if (delete this[prop]) { // can't watch constants
-				Object.defineProperty(this, prop, {
-					get : getter,
-					set : setter,
-					enumerable : true,
-					configurable : true
-				});
-			}
-		}
-	});
-}
-
-// object.unwatch
-if (!Object.prototype.unwatch) {
-	Object.defineProperty(Object.prototype, "unwatch", {
-		enumerable : false,
-		configurable : true,
-		writable : false,
-		value : function(prop) {
-			var val = this[prop];
-			delete this[prop]; // remove accessors
-			this[prop] = val;
-		}
-	});
-}
 
 function callbackWrap(object, property, argumentIndex, wrapperFactory) {
 	var original = object[property];

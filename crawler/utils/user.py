@@ -1,3 +1,4 @@
+'''
 Copyright (C) 2015 Constantin Tschürtz
 
 This program is free software: you can redistribute it and/or modify
@@ -14,11 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-'''
-Created on 23.02.2015
-
-@author: constantin
-
 This class contains everything, that is important for a user. It specifies, mainly the login behaviour.
 Notice: A crawl session(one config) can have multiple users
     - username - for identifying later the user
@@ -27,6 +23,7 @@ Notice: A crawl session(one config) can have multiple users
     - login_data = dict, that contains mainly username and password
 
 '''
+
 import uuid
 
 

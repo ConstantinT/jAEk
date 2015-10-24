@@ -1,3 +1,4 @@
+'''
 Copyright (C) 2015 Constantin Tschürtz
 
 This program is free software: you can redistribute it and/or modify
@@ -12,13 +13,8 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-
 '''
-Created on 23.02.2015
 
-@author: constantin
-'''
 class WebPage:
     
     def __init__(self, id, url = None, html = None, cookiesjar = None, depth = None, base_url = None):

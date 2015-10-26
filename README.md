@@ -38,18 +38,18 @@ where:
 * `max_depth` is the maximum depth of the web application link tree;
 * `max_click_depth` is the maximum depth of click event that are fired;
 * `crawl_speed` specifies the time that the crawler waits after it loads a page or triggered an event. 
-*       CrawlSpeed.Slow:
-            wait after loading: 1 sec.
-            wait after event: 2 sec.
-        CrawlSpeed.Medium:
-            wait after loading: 0.3 sec.
-            wait after event: 1 sec.
-        CrawlSpeed.Fast:
-            wait after loading: 0.1 sec.
-            wait after event: 0.5 sec.
-        CrawlSpeed.Speed_of_Lightning:
-            wait after loading: 0.01 sec.
-            wait after event: 0.1 sec.
+* CrawlSpeed.Slow:
+*   wait after loading: 1 sec.
+*   wait after event: 2 sec.
+* CrawlSpeed.Medium:
+*   wait after loading: 0.3 sec.
+*   wait after event: 1 sec.
+* CrawlSpeed.Fast:
+*   wait after loading: 0.1 sec.
+*   wait after event: 0.5 sec.
+* CrawlSpeed.Speed_of_Lightning:
+*   wait after loading: 0.01 sec.
+*   wait after event: 0.1 sec.
 
 #### 1.3 Database
 

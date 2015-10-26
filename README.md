@@ -21,9 +21,9 @@ user = User("Wordpress", 0, "http://localhost:8080/wp-login.php", login_data = {
 Parameters:
   1. Name of the used database
   2. (Deprecated) Privilege Level of the User (0 is ok)
-  3. URL of the page that contains the login form
-  4. Data neede to login(key of the input field, value is the value that should be set)
-  5. Needed if you want to perform multiple runs with the same database
+  3. URL of the login page with the HTML form
+  4. Login data for the user login, e.g., `log` and `pwd` are the form input field names 
+  5. If you want to use the credentials in parallel runs of jÄk with the same database, set >1
 
 #### 1.2 Crawler and Attacker Configuration
 
@@ -37,19 +37,19 @@ attack_config = AttackConfig(url)
 where:
 * `max_depth` is the maximum depth of the web application link tree;
 * `max_click_depth` is the maximum depth of click event that are fired;
-* `crawl_speed` specifies the time that the crawler waits after it loads a page or triggered an event. 
-* CrawlSpeed.Slow:
- * wait after loading: 1 sec.
- * wait after event: 2 sec.
-* CrawlSpeed.Medium:
- *   wait after loading: 0.3 sec.
- *   wait after event: 1 sec.
-* CrawlSpeed.Fast:
- * wait after loading: 0.1 sec.
- *   wait after event: 0.5 sec.
-* CrawlSpeed.Speed_of_Lightning:
- * wait after loading: 0.01 sec.
- * wait after event: 0.1 sec.
+* `crawl_speed` specifies the time that the crawler waits after it loads a page or triggered an event. These are the possible values:
+ * CrawlSpeed.Slow:
+   * wait after loading: 1 sec.
+    * wait after event: 2 sec.
+ * CrawlSpeed.Medium:
+   * wait after loading: 0.3 sec.
+    * wait after event: 1 sec.
+ * CrawlSpeed.Fast:
+   * wait after loading: 0.1 sec.
+    * wait after event: 0.5 sec.
+ * CrawlSpeed.Speed_of_Lightning:
+   * wait after loading: 0.01 sec.
+    * wait after event: 0.1 sec.
 
 #### 1.3 Database
 

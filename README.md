@@ -19,7 +19,7 @@ jÄk can use user credential and perform user login. The URL of the login page a
 user = User("Wordpress", 0, "http://localhost:8080/wp-login.php", login_data = {"log": "admin", "pwd": "admin"}, session="1")
 ```
 Parameters:
-  1. Name of the MongoDB database name (it can be an arbitrary choice)
+  1. Name of the MongoDB database name (it can be an arbitrary name)
   2. (Deprecated) Privilege Level of the User (0 is ok)
   3. URL of the login page with the HTML form
   4. Login data for the user login, e.g., `log` and `pwd` are the form input field names 
@@ -87,4 +87,4 @@ crawler.crawl(user)
 
 ## License
 
-jÄk is released as General Public License version 3 or later.
+See jÄk is released as General Public License version 3 or later (See L[ICENSE.txt](https://github.com/ConstantinT/jAEk/blob/master/LICENSE.txt)).

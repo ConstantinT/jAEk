@@ -1,3 +1,4 @@
+# -*- coding: latin-1 -*-"
 ﻿'''
 Copyright (C) 2015 Constantin Tschürtz
 

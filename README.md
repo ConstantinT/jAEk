@@ -4,7 +4,7 @@ jÄk (or jAEk, pron. Jack) is a web application crawler and scanner which uses d
 
 ## Requirements
 
-jÄk is written in python (version 3) and it is based on [PyQT5](https://riverbankcomputing.com/software/pyqt/intro) (version 5.3 - 5.4). To store data, jÄk uses mongodb via the [pymongo](https://api.mongodb.org/python/current/) 3.x.x bindings. Please, install the required packaged using pip, the packages manager of your distribution, or follow the documentation.
+jÄk is written in python (version 3) and it is based on [PyQT5](https://riverbankcomputing.com/software/pyqt/intro) (version 5.3 - 5.4). To store data, jÄk uses mongodb via the [pymongo](https://api.mongodb.org/python/current/) 3.x.x bindings. Please, install the required packaged using pip, the packages manager of your distribution, or follow the documentation. jÄk also requires [cython](http://cython.org/).
 
 ## Running jÄk
 

@@ -1,6 +1,5 @@
-# -*- coding: latin-1 -*-"
 ﻿'''
-Copyright (C) 2015 Constantin Tschürtz
+Copyright (C) 2015 Constantin Tschuertz
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -118,19 +117,19 @@ class DataBaseTests(unittest.TestCase):
 
     def test_similar_forms(self):
         form_input1 = FormInput("INPUT", "Test1", input_type="text", values=["Thomas"])
-        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Müller"])
+        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Mueller"])
         form = HtmlForm([form_input1,form_input2], TEST_URL1, "POST", dom_address= None)
         self.database.insert_form(SESSION,form, WEBPAGE_ID)
         self.assertEqual(self.database.forms.count(), 1)
 
         form_input1 = FormInput("INPUT", "Test1", input_type="text", values=["Edgar"])
-        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Müller"])
+        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Mueller"])
         form = HtmlForm([form_input1,form_input2], TEST_URL1, "POST", dom_address= None)
         self.database.insert_form(SESSION,form, WEBPAGE_ID)
         self.assertEqual(self.database.forms.count(), 1)
 
         form_input1 = FormInput("INPUT", "Test1", input_type="text", values=["Thomas, Edgar"])
-        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Müller"])
+        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Mueller"])
         form = HtmlForm([form_input1,form_input2], TEST_URL1, "POST", dom_address= None)
         self.database.insert_form(SESSION,form, WEBPAGE_ID)
         self.assertEqual(self.database.forms.count(), 1)
@@ -142,13 +141,13 @@ class DataBaseTests(unittest.TestCase):
 
     def test_not_similar_forms(self):
         form_input1 = FormInput("INPUT", "Test1", input_type="text", values=["Thomas"])
-        form_input2 = FormInput("INPUT", "Test3", input_type="text", values=["Müller"])
+        form_input2 = FormInput("INPUT", "Test3", input_type="text", values=["Mueller"])
         form = HtmlForm([form_input1,form_input2], TEST_URL1, "POST", dom_address= None)
         self.database.insert_form(SESSION,form, WEBPAGE_ID)
         self.assertEqual(self.database.forms.count(), 1)
 
         form_input1 = FormInput("INPUT", "Test1", input_type="text", values=["Edgar"])
-        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Müller"])
+        form_input2 = FormInput("INPUT", "Test2", input_type="text", values=["Mueller"])
         form = HtmlForm([form_input1,form_input2], TEST_URL1, "POST", dom_address= None)
         self.database.insert_form(SESSION,form, WEBPAGE_ID)
         self.assertEqual(self.database.forms.count(), 2)

@@ -109,7 +109,7 @@
 /*
  * From down here
  * 
- *Copyright (C) 2015 Constantin Tschürtz
+ *Copyright (C) 2015 Constantin Tschuertz
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

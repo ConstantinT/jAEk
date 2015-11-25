@@ -28,7 +28,7 @@ function array(n) {
 
 
 
-/* Einige grundlegenden Funktionen müssen wegen
+/* Einige grundlegenden Funktionen muessen wegen
  * Javascript Fehlern umgeschrieben werden.
  * Man versuche z.B. 0xffffffff >> 4 zu berechnen..
  * Die nun verwendeten Funktionen sind zwar langsamer als die Originale,

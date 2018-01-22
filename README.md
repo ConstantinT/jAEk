@@ -78,7 +78,7 @@ crawler.crawl(user)
 ## Papers and further readings
 
 * C. Tschürtz. *Improving Crawling with JavaScript Function Hooking* [DE: Verbesserung von Webcrawling durch JavaScript Funktion Hooking].
-* G. Pellegrino, C. Tschürtz, E. Bodden, and C. Rossow. *jÄk: Using Dynamic Analysis to Crawl and Test Modern Web Applications*. Proceedings of Research in Attacks, Intrusions and Defenses (RAID) Symposium (RAID 2015). [PDF](http://trouge.net/gp/papers/jAEk_raid2015.pdf)
+* G. Pellegrino, C. Tschürtz, E. Bodden, and C. Rossow. *jÄk: Using Dynamic Analysis to Crawl and Test Modern Web Applications*. Proceedings of Research in Attacks, Intrusions and Defenses (RAID) Symposium (RAID 2015). [PDF](http://trouge.net/papers/jAEk_raid2015.pdf)
 
 ## Contacts
 
